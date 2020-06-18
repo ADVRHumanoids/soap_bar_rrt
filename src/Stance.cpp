@@ -4,7 +4,6 @@ Stance::Stance(){
 	contactsList.clear();
 }
 
-
 Contact* Stance::getContact(int i){
 	return contactsList.at(i);
 }
@@ -21,8 +20,8 @@ void Stance::clear(){
 	contactsList.clear();
 }
 
-std::vector<Contact::EndEffector> Stance::retrieveActiveEndEffectors(){
-    std::vector<Contact::EndEffector> activeEEs;
+std::vector<EndEffector> Stance::retrieveActiveEndEffectors(){
+    std::vector<EndEffector> activeEEs;
 
 	for(int i = 0; i < contactsList.size(); i++){
 		activeEEs.push_back(contactsList.at(i)->getEndEffectorName());		
@@ -30,3 +29,24 @@ std::vector<Contact::EndEffector> Stance::retrieveActiveEndEffectors(){
 
 	return activeEEs;
 }
+
+bool Stance::isActiveEndEffector(EndEffector pk){
+	std::vector<EndEffector> activeEEs;
+
+	for(int i = 0; i < contactsList.size(); i++){
+		if(contactsList.at(i)->getEndEffectorName() == pk) return true;		
+	}
+	
+	return false;	
+}
+
+Eigen::Vector3d Stance::retrieveContactPosition(EndEffector pk){
+	//note: this function returns the position of the ee pk as described in the stance, assuming that it actually contains a contact involving pk
+	// this assumption must always be verified before calling this function!
+
+	for(int i = 0; i < contactsList.size(); i++){
+		if(contactsList.at(i)->getEndEffectorName() == pk) return contactsList.at(i)->getPosition();
+	}
+
+} 
+

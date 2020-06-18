@@ -1,12 +1,10 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include <stdio.h>
-#include <map> //
+#include <stdlib.h>
 #include <vector>
-#include <iostream> //
 #include "enum.h"
-#include "Eigen/Dense" //
+#include <Eigen/Dense> 
 #include "Stance.hpp" 
 #include "Configuration.hpp" 
 #include "constant_values.hpp"
@@ -14,6 +12,7 @@
 class Vertex {
 
 	private:
+
 		Stance sigma;
 		Configuration q;
 		

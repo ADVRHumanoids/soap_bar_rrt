@@ -1,15 +1,12 @@
 #ifndef STANCE_H
 #define STANCE_H
 
-#include <stdio.h>
-#include <map> //
+#include <stdlib.h>
 #include <vector>
-#include <iostream> //
 #include "enum.h"
-#include "Eigen/Dense" //
+#include <Eigen/Dense>  
 #include "Contact.hpp"
 #include "constant_values.hpp"
-
 
 class Stance {
 
@@ -26,7 +23,9 @@ class Stance {
         int getSize();
 		void clear();
 
-        std::vector<Contact::EndEffector> retrieveActiveEndEffectors();
+        std::vector<EndEffector> retrieveActiveEndEffectors();
+		bool isActiveEndEffector(EndEffector pk);
+		Eigen::Vector3d retrieveContactPosition(EndEffector pk);
 
 };
 

@@ -1,17 +1,11 @@
 #ifndef TREE_H
 #define TREE_H
 
-#include <stdio.h> //
+#include <stdlib.h>  
 #include <vector>
-#include <map> //
-#include <iostream> //
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 #include "Vertex.hpp"
-#include "enum.h" //
-#include "constant_values.hpp" //
-#include "utils.hpp" //
-#include <stdlib.h> //
-#include <algorithm> //
+#include "utils.hpp"  
 
 class Tree {
 

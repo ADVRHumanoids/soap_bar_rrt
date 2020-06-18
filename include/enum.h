@@ -1,6 +1,6 @@
 #pragma once
 
-enum EndEffectors{
+enum EndEffector{
 	L_HAND,
 	R_HAND,
 	L_KNEE,

@@ -1,22 +1,22 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-#include <iostream> // check if these are all needed
 #include <stdlib.h>
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-
 
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
 class Configuration {
 
 	private:
+
 		Vector6d q_fb;
 		Eigen::VectorXd q_jnt;
 
 	public:
+
 		Configuration();
 		Configuration(int dof);
         ~Configuration();

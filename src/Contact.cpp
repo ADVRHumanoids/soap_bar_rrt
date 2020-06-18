@@ -6,8 +6,7 @@ Contact::Contact(EndEffector _name, Eigen::Vector3d _position, Eigen::Vector3d _
 	force = _force;
 }
 
-
-Contact::EndEffector Contact::getEndEffectorName(){
+EndEffector Contact::getEndEffectorName(){
 	return name;
 }
 
