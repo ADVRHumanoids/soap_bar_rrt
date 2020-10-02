@@ -909,7 +909,7 @@ void PlannerExecutor::init_interpolator()
     ///TODO: qdot, qddot limits? 
 }
 
-/*
+
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
@@ -939,8 +939,9 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     _goal_model->eigenToMap(q_ref, jmap);
     //ci->setReferencePosture(jmap);
 }
-*/
+ 
 
+/*
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
@@ -985,6 +986,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     _goal_model->eigenToMap(q_ref, jmap);
     ci->setReferencePosture(jmap);
 }
+*/
 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req,
                                            multi_contact_planning::CartesioGoal::Response &res)
