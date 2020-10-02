@@ -1,0 +1,34 @@
+#manifold:
+    #param_name: "problem_description_constraint"
+
+state_validity_check:
+    - self_collision
+    #- stability
+
+self_collision:
+    type: "CollisionCheck"
+    include_environment: true
+
+stability:
+    type: "ConvexHull"
+    links:
+      - "l_foot_lower_left_link"
+      - "l_foot_lower_right_link"
+      - "l_foot_upper_left_link"
+      - "l_foot_upper_right_link"
+      - "r_foot_lower_left_link"
+      - "r_foot_lower_right_link"
+      - "r_foot_upper_left_link"
+      - "r_foot_upper_right_link"
+
+    stability_margin: 0.03
+
+RRTstar:
+    GoalBias: 0.1
+    KNearest: true
+    Range: 1000
+
+state_space:
+    floating_base_pos_min: [-10, -10, -10]
+    floating_base_pos_max: [ 10,  10,  10]
+    type: "Atlas"
