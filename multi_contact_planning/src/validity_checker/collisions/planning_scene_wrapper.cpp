@@ -92,6 +92,8 @@ void PlanningSceneWrapper::startMonitor()
     // this starts monitored planning scene publisher
     _monitor->startPublishingPlanningScene(planning_scene_monitor::PlanningSceneMonitor::UPDATE_SCENE);
 
+    acm = _monitor->getPlanningScene()->getAllowedCollisionMatrix();
+
 }
 
 void PlanningSceneWrapper::stopMonitor()
@@ -181,6 +183,7 @@ void PlanningSceneWrapper::update()
             };
 
             robot_state.setJointPositions(jname, jpos);
+            robot_state.update();
 
         }
         else if(jtype == urdf::Joint::FIXED)
@@ -202,10 +205,16 @@ bool PlanningSceneWrapper::checkCollisions() const
     MonitorLockguardRead lock_r(_monitor);
 
     collision_detection::CollisionRequest collision_request;
+    collision_request.contacts = true;
+    collision_request.max_contacts = 100;
 
     collision_detection::CollisionResult collision_result;
 
-    _monitor->getPlanningScene()->checkCollision(collision_request, collision_result);
+    //_monitor->getPlanningScene()->checkCollision(collision_request, collision_result);
+    _monitor->getPlanningScene()->checkCollision(collision_request, collision_result, _monitor->getPlanningScene()->getCurrentState(), acm);
+
+    // print colliding
+    for (auto i : collision_result.contacts) ROS_INFO("Contact between: %s and %s", i.first.first.c_str(), i.first.second.c_str());
 
     return collision_result.collision;
 }

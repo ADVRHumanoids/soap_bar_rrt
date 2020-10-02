@@ -573,7 +573,24 @@ void PlannerExecutor::init_load_model()
     _goal_model->update();
     //////////////////////////////////////////////////////////////////////////////////////////  
         
-    _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, "filtered_cloud2");
+    //_pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, "filtered_cloud2");
+
+    Eigen::Affine3d T;
+    _model->getPose("l_sole", T);
+
+    Eigen::Vector3d center;
+    center << 0.0, 0.0, T.translation().z();
+    double side_x = 2.0;
+    double side_y = 2.0;
+    double side_z = 3.0;
+    double resolution = 0.1;
+
+    _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, center, side_x, side_y, side_z, resolution);
+    _pc_manager->computeNormals(0.2);
+    _pc_manager->fromNormaltoMarkerArray(0.2);
+
+    _pc_pub = _n.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1, true);
+    _pc_pub.publish(_pc_manager->getPCLPointCloud());
 }
 
 void PlannerExecutor::init_load_config()
@@ -734,6 +751,23 @@ void PlannerExecutor::init_load_validity_checker()
 
     _vc_context.planning_scene->startMonitor();
 
+   
+    ///////////////////////////////////////////////////////////////////////
+    _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("LFootmot", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("LLowLeg", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("LWrMot2", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("LWrMot3", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("RFootmot", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("RLowLeg", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("RWrMot2", "<octomap>", true);
+    //_vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);
+    ///////////////////////////////////////////////////////////////////////
+   
+
     _get_planning_scene_srv = _nh.advertiseService("get_planning_scene",
                                                    &PlannerExecutor::get_planning_scene_service, this);
 
@@ -875,6 +909,7 @@ void PlannerExecutor::init_interpolator()
     ///TODO: qdot, qddot limits? 
 }
 
+/*
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
@@ -891,8 +926,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
         //ci->setActivationState(active_tasks_all.at(i), ActivationState::Disabled);
         ci->getTask(active_tasks_all.at(i))->setLambda(0.1);   
     }
-
-    
+   
     Eigen::Affine3d T_ref;
     for(int i = 0; i < active_tasks.size(); i++){
         //ci->setActivationState(active_tasks.at(i), ActivationState::Enabled);
@@ -904,8 +938,52 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     XBot::JointNameMap jmap;
     _goal_model->eigenToMap(q_ref, jmap);
     //ci->setReferencePosture(jmap);
-    
+}
+*/
 
+void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
+    std::cout << "SETTING REFERENCES" << std::endl;
+
+    auto ci = _goal_generator->getCartesianInterface();
+
+    std::vector<std::string> active_tasks_all;
+    active_tasks_all.push_back("Com");
+    active_tasks_all.push_back("TCP_L");
+    active_tasks_all.push_back("TCP_R");
+    active_tasks_all.push_back("l_sole");
+    active_tasks_all.push_back("r_sole");
+
+    _vc_context.planning_scene->acm.clear();
+
+    for(int i = 0; i < active_tasks_all.size(); i++){
+    std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), active_tasks_all[i]);
+
+    if (it != active_tasks.end())
+    {
+    ci->setActivationState(active_tasks_all[i], ActivationState::Enabled);
+    ci->setPoseReference(active_tasks_all[i], ref_tasks[i]);
+    }
+    else
+    ci->setActivationState(active_tasks_all[i], ActivationState::Disabled);
+    }
+
+    for (auto i : active_tasks)
+    {
+    if (i == "Com")
+    continue;
+    else if (i == "TCP_R")
+    _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
+    else if (i == "TCP_L")
+    _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);
+    else if (i == "l_sole")
+    _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
+    else if (i == "r_sole")
+    _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);
+    }
+
+    XBot::JointNameMap jmap;
+    _goal_model->eigenToMap(q_ref, jmap);
+    ci->setReferencePosture(jmap);
 }
 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req,

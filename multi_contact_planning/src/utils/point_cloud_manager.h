@@ -32,9 +32,10 @@ class PointCloudManager {
 
 public:
 
-    PointCloudManager(ros::NodeHandle nh, std::string topic_name);
+    //PointCloudManager(ros::NodeHandle nh, std::string topic_name);
+   PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d center, double side_x, double side_y, double side_z, double resolution );
 
-    void Callback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& msg);
+    //void Callback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& msg);
     
     void computeNormals(const double radius_search);
     
@@ -48,6 +49,9 @@ public:
 
     void refineNormals (const double radius_search);
 
+    pcl::PointCloud< pcl::PointXYZ > getPCLPointCloud(); 
+
+
 private:
     
     ros::NodeHandle _nh;
@@ -57,8 +61,8 @@ private:
     bool _callbackDone;
     Eigen::MatrixXd _pointCloud, _normals;
     
-    pcl::PointCloud<pcl::PointXYZ>::ConstPtr _pcl_pointcloud;
-    //pcl::PointCloud<pcl::PointXYZ>::Ptr _pcl_pointcloud;
+    //pcl::PointCloud<pcl::PointXYZ>::ConstPtr _pcl_pointcloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr _pcl_pointcloud;
     pcl::PointCloud<pcl::Normal>::Ptr _pcl_normals;
 };
 } }

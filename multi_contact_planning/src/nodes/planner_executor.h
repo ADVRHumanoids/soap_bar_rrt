@@ -152,6 +152,7 @@ private:
     XBot::Cartesian::Planning::RobotViz::Ptr _start_viz, _goal_viz;
 
     ros::Publisher _trj_pub;
+    ros::Publisher _pc_pub;
     std::vector<ros::Publisher> _cartesian_trajectory_publishers;
     std::vector<std::string> _base_links, _distal_links;
 

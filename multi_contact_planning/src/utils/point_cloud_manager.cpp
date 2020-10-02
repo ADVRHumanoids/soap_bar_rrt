@@ -2,6 +2,7 @@
 
 using namespace XBot::Planning;
 
+/*
 PointCloudManager::PointCloudManager ( ros::NodeHandle nh, std::__cxx11::string topic_name ): 
     _nh(nh),
     _pcl_normals(new pcl::PointCloud<pcl::Normal>),
@@ -11,7 +12,59 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle nh, std::__cxx11::string 
     _sub = _nh.subscribe<pcl::PointCloud<pcl::PointXYZ>>(topic_name, 1000, &PointCloudManager::Callback, this);
     _pub = _nh.advertise<visualization_msgs::MarkerArray> ( "normals_plane", 1, true);
 }
+*/
 
+PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d center, double side_x, double side_y, double side_z, double resolution ):
+    _pcl_pointcloud(new pcl::PointCloud<pcl::PointXYZ>),
+    _pcl_normals(new pcl::PointCloud<pcl::Normal>),
+    _nh(nh)
+    
+{
+    double x, y, z;
+    unsigned int index = 0;
+    _pcl_pointcloud->resize(1000);
+    _pub = nh.advertise<visualization_msgs::MarkerArray> ( "normals_plane", 1, true);
+    for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
+    {
+        x = center(0) - (side_x/2.0) + i*resolution;
+        for(int j = 1; j <= (int)(side_y/resolution); j++)
+        {
+            y = center(1) - (side_y/2.0) + j*resolution;
+            z = center(2) + 0.0;
+            _pcl_pointcloud->points[index].x = x;
+            _pcl_pointcloud->points[index].y = y;
+            _pcl_pointcloud->points[index].z = z;
+            index ++;
+        }    
+    }
+    center << 1.0, 0.0, 1.5 + center(2); 
+    for(int i = 1; i <= (int)(side_y/resolution); i++)
+    {
+        x = center(0) + 0.0;
+        y = center(1) - (side_y/2.0) + i*resolution;
+        for(int j = 1; j <= (int)(side_z/resolution); j++)
+        {
+            z = center(2) - (side_z/2.0) + j*resolution;
+            _pcl_pointcloud->points[index].x = x;
+            _pcl_pointcloud->points[index].y = y;
+            _pcl_pointcloud->points[index].z = z;
+            index ++;
+        } 
+    }
+
+    _pointCloud.resize(_pcl_pointcloud->width, 3);        
+    for(int i = 0; i < _pcl_pointcloud->width; i++)
+    {
+        _pointCloud(i,0) = _pcl_pointcloud->points[i].x;
+        _pointCloud(i,1) = _pcl_pointcloud->points[i].y;
+        _pointCloud(i,2) = _pcl_pointcloud->points[i].z;
+    }
+    
+    _pcl_pointcloud->header.frame_id = "world";
+    
+}
+
+/*
 void PointCloudManager::Callback ( const pcl::PointCloud< pcl::PointXYZ >::ConstPtr& msg )
 {
      
@@ -27,6 +80,7 @@ void PointCloudManager::Callback ( const pcl::PointCloud< pcl::PointXYZ >::Const
     //std::cout << "pointcloud width: " << _pcl_pointcloud->width << std::endl;
     
 }
+*/
 
 void PointCloudManager::computeNormals (const double radius_search) 
 {    
@@ -187,6 +241,11 @@ void PointCloudManager::refineNormals (const double radius_search)
     }
 
     std::cout << "nullNormals = " << nullNormals << std::endl;
+}
+
+pcl::PointCloud< pcl::PointXYZ > PointCloudManager::getPCLPointCloud() 
+{
+    return *_pcl_pointcloud;
 }
 
 
