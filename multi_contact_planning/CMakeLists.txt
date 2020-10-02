@@ -185,7 +185,7 @@ target_link_libraries(multi_contact_planning ###################################
     ${OMPL_LIBRARIES}
     ${cartesian_interface_LIBRARIES}
     ${catkin_LIBRARIES}
-	Cpl
+	/home/luca/src/MultiDoF-superbuild/build/install/lib/libCpl.so
     yaml-cpp
     matlogger2::matlogger2
     PRIVATE
@@ -407,7 +407,7 @@ install(DIRECTORY launch/
 
 add_subdirectory(examples/)
 
-add_subdirectory(bindings/python/)
+# add_subdirectory(bindings/python/)
 
 # compilation flags
 option(MULTI_CONTACT_PLANNING_COMPILE_TESTS "Compile internal tests" FALSE) ########################################### PF
