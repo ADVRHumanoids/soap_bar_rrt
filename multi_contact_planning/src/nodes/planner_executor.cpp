@@ -909,7 +909,7 @@ void PlannerExecutor::init_interpolator()
     ///TODO: qdot, qddot limits? 
 }
 
-
+/* 
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
@@ -923,14 +923,14 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     active_tasks_all.push_back("r_sole");
 
     for(int i = 0; i < active_tasks_all.size(); i++){
-        //ci->setActivationState(active_tasks_all.at(i), ActivationState::Disabled);
-        ci->getTask(active_tasks_all.at(i))->setLambda(0.1);   
+        ci->setActivationState(active_tasks_all.at(i), ActivationState::Disabled);
+        //ci->getTask(active_tasks_all.at(i))->setLambda(0.1);   
     }
    
     Eigen::Affine3d T_ref;
     for(int i = 0; i < active_tasks.size(); i++){
-        //ci->setActivationState(active_tasks.at(i), ActivationState::Enabled);
-        ci->getTask(active_tasks.at(i))->setLambda(1.0);   
+        ci->setActivationState(active_tasks.at(i), ActivationState::Enabled);
+        //ci->getTask(active_tasks.at(i))->setLambda(1.0);   
         T_ref = ref_tasks.at(i);
         ci->setPoseReference(active_tasks.at(i), T_ref);
     }
@@ -938,10 +938,18 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     XBot::JointNameMap jmap;
     _goal_model->eigenToMap(q_ref, jmap);
     //ci->setReferencePosture(jmap);
-}
- 
 
-/*
+    for (auto i : active_tasks)
+    {
+        if (i == "Com") continue;
+        else if (i == "TCP_R") _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+        else if (i == "TCP_L") _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
+        else if (i == "l_sole") _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
+        else if (i == "r_sole") _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
+    }
+}
+*/
+ 
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
@@ -954,39 +962,36 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     active_tasks_all.push_back("l_sole");
     active_tasks_all.push_back("r_sole");
 
-    _vc_context.planning_scene->acm.clear();
-
     for(int i = 0; i < active_tasks_all.size(); i++){
-    std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), active_tasks_all[i]);
+        int index = -1;
+        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == active_tasks_all[i]) index = j;
+    
+        if(index == -1) ci->setActivationState(active_tasks_all[i], ActivationState::Disabled);
+        else{
+            ci->setActivationState(active_tasks_all[i], ActivationState::Enabled);
+            ci->setPoseReference(active_tasks_all[i], ref_tasks[index]);
+        }
+    }
+    
 
-    if (it != active_tasks.end())
-    {
-    ci->setActivationState(active_tasks_all[i], ActivationState::Enabled);
-    ci->setPoseReference(active_tasks_all[i], ref_tasks[i]);
-    }
-    else
-    ci->setActivationState(active_tasks_all[i], ActivationState::Disabled);
-    }
-
-    for (auto i : active_tasks)
-    {
-    if (i == "Com")
-    continue;
-    else if (i == "TCP_R")
-    _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
-    else if (i == "TCP_L")
-    _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);
-    else if (i == "l_sole")
-    _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
-    else if (i == "r_sole")
-    _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);
-    }
+    //_vc_context.planning_scene->acm.clear(); // this does not work
+    _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
+    _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
+    _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", false);    
+    _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", false);    
+    for (auto i : active_tasks) {
+        if (i == "Com") continue;
+        else if (i == "TCP_R") _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+        else if (i == "TCP_L") _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
+        else if (i == "l_sole") _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
+        else if (i == "r_sole") _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
+    } 
 
     XBot::JointNameMap jmap;
     _goal_model->eigenToMap(q_ref, jmap);
-    ci->setReferencePosture(jmap);
+    //ci->setReferencePosture(jmap);
 }
-*/
+ 
 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req,
                                            multi_contact_planning::CartesioGoal::Response &res)
@@ -1002,9 +1007,9 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 
     //active_tasks.push_back("Com");
     active_tasks.push_back("TCP_L");
-    //active_tasks.push_back("TCP_R");
+    active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
-    active_tasks.push_back("r_sole");
+    //active_tasks.push_back("r_sole");
 
     _goal_model->getJointPosition(q_ref); // for postural task 
 
@@ -1012,19 +1017,18 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     Eigen::Matrix3d rot_ref;
     Eigen::Vector3d pos_ref;
 
-    //LH
-    rot_ref << 0.0, 1.0, 0.0,
+    //LH 
+    //rot_ref << 0.0, 1.0, 0.0,
+    //            1.0, 0.0, 0.0,
+    //            0.0, 0.0, -1.0;
+    //pos_ref << 0.7, 0.4, 0.1;
+    rot_ref << 0.0, 0.0, 1.0,
                 1.0, 0.0, 0.0,
-                0.0, 0.0, -1.0;
-    
-    //rot_ref << 0.0, 0.0, 1.0,
-      //          1.0, 0.0, 0.0,
-        //        0.0, 1.0, 0.0;
-    pos_ref << 1.0, 0.2, 0.5;//0.7, 0.4, 0.0;
+                0.0, 1.0, 0.0;
+    pos_ref << 0.7, 0.4, 0.0; //1.0, 0.2, 0.5;//
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
-    /*
     //RH
     rot_ref << 0.0, 1.0, 0.0, 
                 1.0, 0.0, 0.0,
@@ -1033,7 +1037,6 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
-    */
     //LF
     rot_ref << 1.0, 0.0, 0.0,
                 0.0, 1.0, 0.0,
@@ -1042,6 +1045,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
+    /*
     //RF
     rot_ref << 1.0, 0.0, 0.0,
                 0.0, 1.0, 0.0,
@@ -1050,6 +1054,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
+    */
 
     setReferences( active_tasks, ref_tasks, q_ref );
      
@@ -1323,44 +1328,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             
     // construct the environment description    
 
-    std::vector<Eigen::Vector3d> point_cloud_vect;
-    std::vector<Eigen::Vector3d> point_normals_vect;
-    Eigen::Vector3d center;
-    double resolution = 0.1;
-    double side_x, side_y, side_z;
-    double x, y, z;
-
-    center << 0.0, 0.0, 0.0; 
-    side_x = 2.0;
-    side_y = 2.0;
-    for(int i = 1; i <= (int)(side_x/resolution)-1; i++){
-        x = center(0) - (side_x/2.0) + i*resolution;
-        for(int j = 1; j <= (int)(side_y/resolution); j++){
-            y = center(1) - (side_y/2.0) + j*resolution;
-            z = center(2) + 0.0;
-            point_cloud_vect.push_back(Eigen::Vector3d(x,y,z));
-            point_normals_vect.push_back(Eigen::Vector3d(0.0,0.0,1.0));
-        }    
-    }
-    center << 1.0, 0.0, 1.5; 
-    side_y = 2.0;
-    side_z = 3.0;
-    for(int i = 1; i <= (int)(side_y/resolution); i++){
-        x = center(0) + 0.0;
-        y = center(1) - (side_y/2.0) + i*resolution;
-        for(int j = 1; j <= (int)(side_z/resolution); j++){
-            z = center(2) - (side_z/2.0) + j*resolution;
-            point_cloud_vect.push_back(Eigen::Vector3d(x,y,z));
-            point_normals_vect.push_back(Eigen::Vector3d(-1.0,0.0,0.0));  
-        }    
-    }       
-
-    Eigen::MatrixXd pointCloud(point_cloud_vect.size(), 3);
-    Eigen::MatrixXd pointNormals(point_cloud_vect.size(), 3);
-    for(int i = 0; i < point_cloud_vect.size(); i++){
-        pointCloud.row(i) = point_cloud_vect.at(i).transpose();
-        pointNormals.row(i) = point_normals_vect.at(i).transpose();
-    }
+    Eigen::MatrixXd pointCloud = _pc_manager->getPointCloud();
+    Eigen::MatrixXd pointNormals = _pc_manager->getNormals();
 
     // construct allowed end-effectors description
     
@@ -1369,7 +1338,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     allowedEEs.push_back(L_FOOT);
     allowedEEs.push_back(R_FOOT);
     allowedEEs.push_back(L_HAND);
-    allowedEEs.push_back(R_HAND);    
+    allowedEEs.push_back(R_HAND);  
 
     // plan a solution    
        
@@ -1377,6 +1346,11 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList_1, qList_2;
     bool sol_found_1, sol_found_2;
 
+        // create/initialize the planner
+        Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator);
+        std::cout << "planner created!" << std::endl;
+
+    /*
     if(index_config == -1){
         
         // create/initialize the planner
@@ -1445,7 +1419,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::cout << "index_config = " << index_config << std::endl;
     std::cout << "plan.size() = " << plan.size() << std::endl;
 
-    if(index_config == plan.size()) index_config = 0;    
+    if(index_config == plan.size()) index_config = 0; 
+    */   
     
     return true; // if solution found
          
@@ -1560,8 +1535,8 @@ void PlannerExecutor::publish_and_check_start_and_goal_models(ros::Time time)
 
     std::vector<std::string> red_links = _vc_context.planning_scene->getCollidingLinks();
 
-    for(unsigned int i = 0; i < red_links.size(); ++i)
-        ROS_WARN("start robot: colliding link %i --> %s",i ,red_links[i].c_str());
+    //for(unsigned int i = 0; i < red_links.size(); ++i)
+        //ROS_WARN("start robot: colliding link %i --> %s",i ,red_links[i].c_str());
 
     _start_viz->setRGBA(start_color);
     _start_viz->publishMarkers(time, red_links);
@@ -1579,8 +1554,8 @@ void PlannerExecutor::publish_and_check_start_and_goal_models(ros::Time time)
 
     red_links = _vc_context.planning_scene->getCollidingLinks();
 
-    for(unsigned int i = 0; i < red_links.size(); ++i)
-        ROS_WARN("goal robot: colliding link %i --> %s",i ,red_links[i].c_str());
+    //for(unsigned int i = 0; i < red_links.size(); ++i)
+        //ROS_WARN("goal robot: colliding link %i --> %s",i ,red_links[i].c_str());
 
     _goal_viz->setRGBA(goal_color);
     _goal_viz->publishMarkers(time, red_links);

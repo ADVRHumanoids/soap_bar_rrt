@@ -81,10 +81,9 @@ Planner::Planner(Configuration _qInit, std::vector<Eigen::Affine3d> _poseActiveE
 	rotationGenerator.seed(5*b);
 
 
-	std::cout << "pointCloud size = " << pointCloud.rows() << " X " << pointCloud.cols() << std::endl;
-	std::cout << "pointNormals size = " << pointNormals.rows() << " X " << pointNormals.cols() << std::endl;
-	
-
+	//std::cout << "pointCloud size = " << pointCloud.rows() << " X " << pointCloud.cols() << std::endl;
+	//std::cout << "pointNormals size = " << pointNormals.rows() << " X " << pointNormals.cols() << std::endl;
+		
 }
  
 Planner::~Planner(){ }
