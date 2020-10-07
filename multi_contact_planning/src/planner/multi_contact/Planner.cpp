@@ -12,9 +12,10 @@ static std::uniform_int_distribution<int> pointInWorkspaceDistribution(0, std::n
 static std::default_random_engine rotationGenerator;
 static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
-static std::ofstream foutLogMCP("/home/paolo/catkin_ws/external/build/multi_contact_planning/logMCP.txt", std::ofstream::trunc);
+static std::ofstream foutLogMCP("/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
 
-Planner::Planner(Configuration _qInit, std::vector<Eigen::Affine3d> _poseActiveEEsInit, std::vector<EndEffector> _activeEEsInit, std::vector<Eigen::Affine3d> _poseActiveEEsGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator){
+//Planner::Planner(Configuration _qInit, std::vector<Eigen::Affine3d> _poseActiveEEsInit, std::vector<EndEffector> _activeEEsInit, std::vector<Eigen::Affine3d> _poseActiveEEsGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator){
+Planner::Planner(Configuration _qInit, std::vector<Eigen::Affine3d> _poseActiveEEsInit, std::vector<EndEffector> _activeEEsInit, std::vector<Eigen::Affine3d> _poseActiveEEsGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
 
 	// set model, goal generator and cartesian interface
 	planner_model = _planner_model;
@@ -80,6 +81,8 @@ Planner::Planner(Configuration _qInit, std::vector<Eigen::Affine3d> _poseActiveE
 	pointInWorkspaceGenerator.seed(4*b);
 	rotationGenerator.seed(5*b);
 
+	// needed for collision checking
+	vc_context = _vc_context;
 
 	//std::cout << "pointCloud size = " << pointCloud.rows() << " X " << pointCloud.cols() << std::endl;
 	//std::cout << "pointNormals size = " << pointNormals.rows() << " X " << pointNormals.cols() << std::endl;
@@ -354,7 +357,8 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
 			if(d < 1e-4) c7 = false;	
 		}
 			 
-		bool allConditionsRespected = c1 && c2 && c3 && c4 && c5 && c6 && c7; 
+		//bool allConditionsRespected = c1 && c2 && c3 && c4 && c5 && c6 && c7;
+		bool allConditionsRespected = c1 && c2 && c7; 
 
 		  
 		/*	
@@ -383,10 +387,10 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
 		*/
 
 		if(allConditionsRespected){
-			Eigen::Affine3d T_cur = computeForwardKinematics(q, pk);
-			Eigen::Vector3d p_cur = T_cur.translation();
+			//Eigen::Affine3d T_cur = computeForwardKinematics(q, pk);
+			//Eigen::Vector3d p_cur = T_cur.translation();
 			
-			/*
+			 
 			Eigen::Affine3d T_cur;
 			Eigen::Vector3d p_cur;
 			if(sigma.isActiveEndEffector(pk)){
@@ -400,7 +404,7 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
 				T_cur = computeForwardKinematics(q, pk);
 				p_cur = T_cur.translation();	
 			}	
-			*/
+			 
 
 			double dMin_k = euclideanDistance(p_cur, r);
 
@@ -500,6 +504,44 @@ bool Planner::computeIKSolutionWithoutCoM(Stance sigma, Configuration &q, Config
 	c_ref.segment(3,3) = rotFB;
 	c_ref.tail(n_dof-6) = q_ref.getJointValues();
 
+	// set references
+    std::vector<std::string> all_tasks;
+    all_tasks.push_back("Com");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
+    for(int i = 0; i < all_tasks.size(); i++){
+        int index = -1;
+        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
+  
+        if(index == -1) ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        //if(index == -1) ci->getTask(all_tasks.at(i))->setLambda(0.1);
+    	//if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+        else{
+            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
+            //ci->getTask(all_tasks.at(i))->setLambda(1.0);  
+            //ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            ci->setPoseReference(all_tasks[i], ref_tasks[index]);
+        }
+    }
+ 
+ 	 
+    // set collision checking 
+    vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
+    vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
+    vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", false);    
+    vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", false);    
+    for (auto i : active_tasks) {
+        if (i == "Com") continue;
+        else if (i == "TCP_R") vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+        else if (i == "TCP_L") vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
+        else if (i == "l_sole") vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
+        else if (i == "r_sole") vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
+    } 
+	 
+
+	/*
 	// set references 
     std::vector<std::string> all_tasks;
     all_tasks.push_back("Com");
@@ -514,11 +556,12 @@ bool Planner::computeIKSolutionWithoutCoM(Stance sigma, Configuration &q, Config
         T_ref = ref_tasks.at(i);
         ci->setPoseReference(active_tasks.at(i), T_ref);
     }
+	*/
 
     // set postural
     XBot::JointNameMap jmap;
     planner_model->eigenToMap(c_ref, jmap);
-    //ci->setReferencePosture(jmap); 
+    ci->setReferencePosture(jmap); 
 
     // search IK solution
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
@@ -559,6 +602,42 @@ bool Planner::computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Confi
 	c_ref.segment(3,3) = rotFB;
 	c_ref.tail(n_dof-6) = q_ref.getJointValues();
 
+	// set references
+    std::vector<std::string> all_tasks;
+    all_tasks.push_back("Com");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
+    for(int i = 0; i < all_tasks.size(); i++){
+        int index = -1;
+        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
+    
+        if(index == -1) ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        //if(index == -1) ci->getTask(all_tasks.at(i))->setLambda(0.1);
+        //if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+    	else{
+            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
+            //ci->getTask(all_tasks.at(i))->setLambda(1.0);
+            //ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            ci->setPoseReference(all_tasks[i], ref_tasks[index]);
+        }
+    }
+
+    // set collision checking 
+    vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
+    vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
+    vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", false);    
+    vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", false);    
+    for (auto i : active_tasks) {
+        if (i == "Com") continue;
+        else if (i == "TCP_R") vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+        else if (i == "TCP_L") vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
+        else if (i == "l_sole") vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
+        else if (i == "r_sole") vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
+    } 
+
+	/*
 	// set references 
     std::vector<std::string> all_tasks;
     all_tasks.push_back("Com");
@@ -573,11 +652,12 @@ bool Planner::computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Confi
         T_ref = ref_tasks.at(i);
         ci->setPoseReference(active_tasks.at(i), T_ref);
     }
+	*/
 
     // set postural
     XBot::JointNameMap jmap;
     planner_model->eigenToMap(c_ref, jmap);
-    //ci->setReferencePosture(jmap);  
+    ci->setReferencePosture(jmap);  
 
     // search IK solution
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
@@ -622,7 +702,7 @@ bool Planner::retrieveSolution1stStage(std::vector<Stance> &sigmaList, std::vect
 } 
 
 bool Planner::retrieveSolution2ndStage(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList){
-	if(sol_len < sigmaList2ndStage.size()){
+	if(sol_len > sigmaList2ndStage.size()){
 		sigmaList.clear();
 		qList.clear();
 		return false;	
@@ -1015,8 +1095,15 @@ void Planner::run1stStage(){
 			}
 
 			Configuration qNew;
-			bool resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
-				
+			//bool resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
+			
+			bool resIK;
+			if(sigmaNew.getSize() == 4) resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
+			else{
+				resIK = true;
+				qNew = qNear;
+			}	
+			
 			if(resIK) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
 			else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
 
@@ -1026,7 +1113,8 @@ void Planner::run1stStage(){
 				foutLogMCP << "L_FOOT = " << computeForwardKinematics(qNew, L_FOOT).translation().transpose() << std::endl;
 				foutLogMCP << "R_FOOT = " << computeForwardKinematics(qNew, R_FOOT).translation().transpose() << std::endl;
 					 
-				bool similar = similarityTest(qNew);
+				//bool similar = similarityTest(qNew);
+				bool similar = false;
 				if(!similar){
 					vNew = new Vertex(sigmaNew, qNew, iNear);  
 					tree->addVertex(vNew);

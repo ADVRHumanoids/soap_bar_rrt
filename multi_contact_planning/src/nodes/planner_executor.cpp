@@ -14,474 +14,124 @@
 
 using namespace XBot::Cartesian;
 
-/*
-std::vector<Stance> createStanceSeq(){
-    std::vector<Stance> sigmaList;
-
-    Stance sigma;
-    Eigen::Vector3d F(0.0, 0.0, 0.0);
-    EndEffector ee;
-    Contact* c;
-    Eigen::Affine3d T;
-    Eigen::Vector3d pos;
-    Eigen::Matrix3d rot = Eigen::Matrix3d::Identity(3,3);
-
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = L_HAND;
-    pos << 0.700001, 0.399988, -9.75582e-06;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-
-    ee = R_HAND;
-    pos << 0.700003, -0.599988, -6.52124e-06;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
+void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
+    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePath = filePrefix + fileName + ".txt";
+    static std::ofstream fileOut(filePath, std::ofstream::trunc);
     
-    ee = L_FOOT;
-    pos << -0.499999, 2.05919e-08, -4.33193e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    ee = R_FOOT;
-    pos << -0.499999, -0.2, -2.55988e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
+    for(int i = 0; i < qList.size(); i++){
+        Configuration q = qList.at(i);
+        Eigen::VectorXd c(n_dof);
+        c.segment(0,3) = q.getFBPosition();
+        c.segment(3,3) = q.getFBOrientation();
+        c.tail(n_dof-6) = q.getJointValues();
+        fileOut << c.transpose() << std::endl;
+    } 
+}
 
-    ee = L_HAND;
-    pos << 0.700001, 0.399988, -9.75582e-06;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
+void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
+    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePath = filePrefix + fileName + ".txt";
+    std::ifstream fileIn(filePath.c_str());
+    std::string line;       
+    
+    while(getline(fileIn, line)){
+        std::stringstream linestream(line);
+        std::string value;
+        Eigen::VectorXd c(n_dof);
+        int index = 0;
+
+        while(linestream >> value){
+            c(index) = boost::lexical_cast<double>(value);
+            index++;
+        }
+
+        Configuration q;
+        q.setFBPosition(c.segment(0,3));
+        q.setFBOrientation(c.segment(3,3));
+        q.setJointValues(c.tail(n_dof-6));
+        qList.push_back(q);
+    }
+}
+
+void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName){
+    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePath = filePrefix + fileName + ".txt";
+    static std::ofstream fileOut(filePath, std::ofstream::trunc);
+    
+    for(int i = 0; i < sigmaList.size(); i++){
+        Stance sigma = sigmaList.at(i);
+        fileOut << sigma.getSize() << std::endl;
+        for(int j = 0; j < sigma.getSize(); j++){
+            Contact* c = sigma.getContact(j);
+            EndEffector ee = c->getEndEffectorName();
+            Eigen::Affine3d T = c->getPose();
+            Eigen::Vector3d F = c->getForce();
+            Eigen::Vector3d n = c->getNormal();
+
+            fileOut << ee << std::endl;
+            fileOut << T.translation().transpose() << std::endl;
+            fileOut << F.transpose() << std::endl;
+            fileOut << n.transpose() << std::endl;
+        }
+    } 
+}
+
+void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
+    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePath = filePrefix + fileName + ".txt";
+    std::ifstream fileIn(filePath.c_str());
+    std::string line;       
+    
+    while(getline(fileIn, line)){
+
+        double sigma_size = boost::lexical_cast<double>(line);
+        Stance sigma;
+        std::string value;
+        int index;
+
+        for(int i = 0; i < sigma_size; i++){
+            getline(fileIn, line); // end effector name
+            EndEffector ee = (EndEffector)boost::lexical_cast<int>(line);
+            
+            getline(fileIn, line); // pose
+            Eigen::Vector3d pos;
+            std::stringstream pose_stream(line);
+            index = 0;
+            while(pose_stream >> value){
+                pos(index) = boost::lexical_cast<double>(value);
+                index++;
+            }
+            Eigen::Affine3d T;
+            T.translation() = pos;
+            T.linear() = Eigen::Matrix3d::Identity(3,3);
+
+            getline(fileIn, line); // force
+            Eigen::Vector3d F;
+            std::stringstream force_stream(line);
+            index = 0;
+            while(force_stream >> value){
+                F(index) = boost::lexical_cast<double>(value);
+                index++;
+            }
+                
+            getline(fileIn, line); // normal
+            Eigen::Vector3d n;
+            std::stringstream normal_stream(line);
+            index = 0;
+            while(normal_stream >> value){
+                n(index) = boost::lexical_cast<double>(value);
+                index++;
+            }
+                
+            Contact* c = new Contact(ee, T, F, n);
+            sigma.addContact(c);            
+        }    
         
-    ee = L_FOOT;
-    pos << -0.499999, 2.05919e-08, -4.33193e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    ee = R_FOOT;
-    pos << -0.499999, -0.2, -2.55988e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = L_HAND;
-    pos << 0.700001, 0.399988, -9.75582e-06;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << -0.499999, 2.05919e-08, -4.33193e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_FOOT;
-    pos << -0.499999, -0.2, -2.55988e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = L_FOOT;
-    pos << -0.499999, 2.05919e-08, -4.33193e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_FOOT;
-    pos << -0.499999, -0.2, -2.55988e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = L_FOOT;
-    pos << -0.499999, 2.05919e-08, -4.33193e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_FOOT;
-    pos << -0.499999, -0.2, -2.55988e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.3, 1.1;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_FOOT;
-    pos << -0.499999, -0.2, -2.55988e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.3, 1.1;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_FOOT;
-    pos << -0.499999, -0.2, -2.55988e-07;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.3, 1.1;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << 0, 0, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.3, 1.1;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << 0, 0, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.3, 1.1;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << 0, 0, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_FOOT;
-    pos << 0.2, -0.2, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.3, 1.1;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << 0, 0, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.3, 1.1;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << 0, 0, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_FOOT;
-    pos << 0, -0.2, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << 0, 0, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_FOOT;
-    pos << 0, -0.2, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    ///////////////////////////////////////////////////////////////
-    sigma.clear();
-
-    ee = R_HAND;
-    pos << 1, -0.4, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_FOOT;
-    pos << 0, 0, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = R_FOOT;
-    pos << 0, -0.2, 0;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    ee = L_HAND;
-    pos << 1, 0.2, 1.4;
-    T.translation() = pos;
-    T.linear() = rot;   
-    c = new Contact(ee, T, F);
-    sigma.addContact(c);
-    
-    sigmaList.push_back(sigma);    
-    
-    
-
-    return sigmaList;
+        sigmaList.push_back(sigma);
+    }
 }
-*/
-
-/*
-std::vector<Configuration> createConfigSeq(){
-    std::vector<Configuration> qList;
-
-    int n_dof = 34; /////
-
-    Configuration q;
-    Eigen::VectorXd c(n_dof);
-    
-    c << 0.217985, -0.10009, 0.456835, -6.33851e-05, 1.85751, 6.07472e-05, -0.00580356, -0.984831, -0.0086337, 0, -0.872665, 0.00497784, 0.00610452, -0.984829, 0.00913627, -3.90313e-17, -0.872665, -0.00526755, -0.000177679, -1.45736e-06, -0.0970049, 0.561798, 1.1621, -1.50125, 0.309817, -1.32588, -1.01255, -0.0970371, -0.561348, -1.16201, -1.50134, -0.309885, -1.32605, 1.0127;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.238945, 0.0331937, 0.560864, -3.18347, -4.2918, -3.10407, -0.145627, -0.259608, -0.2317, 0, -0.872665, 0.24635, -0.137918, -0.261309, -0.220605, 0, -0.872665, 0.234457, -0.523599, -0.513194, 0.204, 0.67403, 1.06024, -0.777835, -0.0834317, -1.48641, -1.48314, -0.0970371, -0.561348, -1.16201, -1.50134, -0.309885, -1.32605, 1.0127;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.229727, -0.114105, 0.56098, -3.43654, 1.83278, -2.66953, 0.00952541, -0.584013, -0.148487, 0.125581, -0.872665, -0.0641423, 0.032572, -0.460005, -0.13455, 0, -0.872665, -0.0674817, -0.523599, -0.812375, 0.57917, 0.850768, 1.40301, -0.761327, 0.0215237, -1.4742, -1.21125, -0.600531, -1.58417, -1.75803, -0.749646, -0.744495, -0.761166, 1.09475;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.172219, -0.134628, 0.654692, -0.0900627, 1.11274, 0.194341, 0.0401115, -0.541715, -0.059002, 0.248544, -0.827439, -0.069853, 0.0504014, -0.5115, -0.0489284, 0.252158, -0.861706, -0.0786068, -0.523599, -0.393793, -0.0970049, 0.561798, 1.1621, -1.50125, 0.309817, -1.32588, -1.01255, -0.556858, -1.58497, -1.53661, -0.915987, -0.839103, -0.892029, 1.31374;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.177879, -0.113874, 0.592923, 2.2398, 2.06109, -1.67081, 0.0434415, -0.813887, -0.558505, 0.121397, -0.746289, -0.207833, 0.150942, -0.573958, -0.540127, 0, -0.872665, -0.133634, -0.174212, -1.17885, 0.270453, 2.84064, 1.53448, -0.852406, 0.662326, -0.832704, -1.62181, -0.504497, -1.64373, -1.4125, -0.90415, -1.23381, -0.915245, 1.43675;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.251814, -0.0333602, 0.579968, 0.284507, 1.04067, -0.526181, -0.00580349, -0.984831, -0.00863362, 4.49348e-10, -0.872665, 0.00497784, -0.185166, -0.307858, 0.131212, 0.0685935, -0.872665, 0.168917, 0.108539, -0.687517, 1.603, 0.836487, -2.30882, -1.26821, 0.023345, -0.598757, -0.651842, -0.00813966, -3.43, 0.691075, -0.361751, 2.12129, -1.31712, 1.25256;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.176669, -0.10043, 0.713677, 0.486632, 0.883857, -0.398944, -0.142976, -1.74306, 0.191758, 1.48906, -0.695395, 0.0527802, -0.320315, -0.377683, -0.0114497, 0.253072, -0.822008, 0.0256349, -0.132615, -0.023759, 1.21884, 2.63721, -1.82704, -1.03053, -0.909092, -1.562, -0.613717, 0.339506, -2.684, -1.66442, -0.906809, -1.22268, -1.00773, 1.9857;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.746705, -0.244035, 0.537678, -0.0965887, 1.25781, 0.118805, 0.198832, -0.370429, 0.238681, 0.000947154, -0.872665, -0.261799, 0.00610452, -0.984829, 0.00913627, 2.96499e-10, -0.872665, -0.00526755, -0.0745053, -0.282244, -1.62253, 2.44668, 1.7387, -1.64012, 1.59761, 0.640445, -1.56992, -2.33253, -3.43, -0.435202, -1.51401, 2.55, -0.505004, 2.55;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.284657, -0.106175, 0.841163, -0.602423, 1.00883, 0.609899, 0.206943, -1.32536, -0.127938, 0.566899, -0.358148, -0.053356, 0.198522, -1.29653, -0.134912, 0.199524, -0.0190701, -0.0473304, -0.523599, -0.329349, -2.10418, 0.287201, 1.73029, 0.298, 0.510981, 1.478, 1.42851, -0.227029, -0.889059, -1.81537, -0.833313, -0.815628, -1.28291, 0.899506;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.210303, -0.227482, 0.82117, -0.0903267, 1.11074, 0.279916, 0.0409309, -1.19022, -0.0861633, 0.172296, -0.110485, -0.184765, 0.00610452, -0.984829, 0.00913627, 1.39617e-15, -0.872665, -0.00526755, -0.523599, -0.502553, 0.683468, 2.6933, -1.41406, 0.298, -2.55, -1.562, -1.37646, -1.03115, -0.875726, -1.01623, -1.66541, -0.646961, -0.855256, 1.60806;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.55752, -0.140101, 0.789188, -3.02014, -3.34543, -2.89018, -0.00941238, 0.196901, -0.268906, 0.480948, -0.872665, -0.0589698, 0.033566, 0.37487, -0.285828, 0.2985, -0.872665, -0.0488281, -0.523599, -0.372153, 0.0173169, 0.464435, 0.895997, -1.401, -0.0459046, -1.562, -1.23218, -0.330786, -0.163797, -0.904021, -1.53428, -0.244207, -1.1864, 1.27197;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.36902, -0.251066, 0.85981, -3.03565, 2.65259, -2.54664, -0.0660433, -0.37368, -0.558505, 0.260766, -0.400268, -0.261799, -0.171835, -0.507352, -0.604118, 0.851949, -0.827275, -0.255078, -0.523599, -0.110756, -0.0970498, 0.561817, 1.16211, -1.50124, 0.309827, -1.32587, -1.0125, -0.241437, -0.408786, -1.35394, -1.59748, -0.219736, -1.19407, 1.45121;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    c << 0.614607, -0.212115, 0.626, 3.21582, 1.63712, 3.05883, 0.181735, -0.848921, 0.233873, 0, -0.64131, -0.145341, 0.220133, -0.9321, 0.2657, 0.157144, -0.711896, -0.148798, -0.202328, 0.19804, -1.18868, 2.71689, 1.95495, -1.47849, 0.146856, 0.525623, -0.444083, 1.606, 0, 1.43176, -0.859602, -0.533208, 0.429947, 0.972357;
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));
-    qList.push_back(q);
-
-    return qList;
-}
-*/
-
+            
 PlannerExecutor::PlannerExecutor():
     _nh("planner"),
     _nhpr("~"), 
@@ -950,6 +600,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
 }
 */
  
+/* 
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
@@ -971,9 +622,9 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
             ci->setActivationState(active_tasks_all[i], ActivationState::Enabled);
             ci->setPoseReference(active_tasks_all[i], ref_tasks[index]);
         }
-    }
+    }   
     
-
+    
     //_vc_context.planning_scene->acm.clear(); // this does not work
     _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
     _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
@@ -986,12 +637,65 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
         else if (i == "l_sole") _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
         else if (i == "r_sole") _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
     } 
+   
+
+    XBot::JointNameMap jmap;
+    _goal_model->eigenToMap(q_ref, jmap);
+    ci->setReferencePosture(jmap);
+}
+*/
+
+void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
+    std::cout << "SETTING REFERENCES" << std::endl;
+
+    auto ci = _goal_generator->getCartesianInterface();
+
+    std::vector<std::string> active_tasks_all;
+    active_tasks_all.push_back("Com");
+    active_tasks_all.push_back("TCP_L");
+    active_tasks_all.push_back("TCP_R");
+    active_tasks_all.push_back("l_sole");
+    active_tasks_all.push_back("r_sole");
+
+    for(int i = 0; i < active_tasks_all.size(); i++){
+        ci->setPoseReference(active_tasks_all[i], ref_tasks[i]);
+    }
+
+    /*
+    for(int i = 0; i < active_tasks_all.size(); i++){
+        int index = -1;
+        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == active_tasks_all[i]) index = j;
+    
+        //if(index == -1) ci->getTask(active_tasks_all.at(i))->setWeight(0.01*Eigen::MatrixXd::Identity(ci->getTask(active_tasks_all.at(i))->getWeight().rows(), ci->getTask(active_tasks_all.at(i))->getWeight().cols()));  
+        if(index == -1) ci->setActivationState(active_tasks_all[i], ActivationState::Disabled);
+        else{
+            //ci->getTask(active_tasks_all.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(active_tasks_all.at(i))->getWeight().rows(), ci->getTask(active_tasks_all.at(i))->getWeight().cols()));
+            ci->setActivationState(active_tasks_all[i], ActivationState::Enabled);
+            ci->setPoseReference(active_tasks_all[i], ref_tasks[index]);
+        }
+    }   
+    */
+
+    /*
+    //_vc_context.planning_scene->acm.clear(); // this does not work
+    _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
+    _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
+    _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", false);    
+    _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", false);    
+    for (auto i : active_tasks) {
+        if (i == "Com") continue;
+        else if (i == "TCP_R") _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+        else if (i == "TCP_L") _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
+        else if (i == "l_sole") _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
+        else if (i == "r_sole") _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
+    } 
+    */
 
     XBot::JointNameMap jmap;
     _goal_model->eigenToMap(q_ref, jmap);
     //ci->setReferencePosture(jmap);
 }
- 
+
 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req,
                                            multi_contact_planning::CartesioGoal::Response &res)
@@ -1005,56 +709,44 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::vector<Eigen::Affine3d> ref_tasks;
     Eigen::VectorXd q_ref;
 
-    //active_tasks.push_back("Com");
+    active_tasks.push_back("Com");
     active_tasks.push_back("TCP_L");
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
-    //active_tasks.push_back("r_sole");
+    active_tasks.push_back("r_sole");
 
     _goal_model->getJointPosition(q_ref); // for postural task 
 
     Eigen::Affine3d T_ref;
-    Eigen::Matrix3d rot_ref;
+    Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_ref;
 
+    //COM 
+    pos_ref << 0.113322, -0.312488, 0.484222;
+    T_ref.translation() = pos_ref;
+    T_ref.linear() = rot_ref;
+    ref_tasks.push_back(T_ref);
     //LH 
-    //rot_ref << 0.0, 1.0, 0.0,
-    //            1.0, 0.0, 0.0,
-    //            0.0, 0.0, -1.0;
-    //pos_ref << 0.7, 0.4, 0.1;
-    rot_ref << 0.0, 0.0, 1.0,
-                1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0;
     pos_ref << 0.7, 0.4, 0.0; //1.0, 0.2, 0.5;//
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RH
-    rot_ref << 0.0, 1.0, 0.0, 
-                1.0, 0.0, 0.0,
-                0.0, 0.0, -1.0;
     pos_ref << 0.7, -0.6, 0.0;
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //LF
-    rot_ref << 1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 0.0, 1.0;
     pos_ref << -0.5, 0.0, 0.0;  
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
-    /*
     //RF
-    rot_ref << 1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 0.0, 1.0; 
     pos_ref << -0.5, -0.2, 0.0; 
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
-    */
+    
 
     setReferences( active_tasks, ref_tasks, q_ref );
      
@@ -1279,7 +971,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<EndEffector> activeEEsGoal;
     std::vector<Eigen::Affine3d> poseActiveEEsGoal;
     Eigen::Affine3d T_goal;
-    Eigen::Matrix3d rot_goal;
+    Eigen::Matrix3d rot_goal = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_goal;
         
     activeEEsGoal.clear();
@@ -1290,38 +982,27 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     activeEEsGoal.push_back(R_FOOT); 
 
     //LH
-    rot_goal << 0.0, 0.0, 1.0,
-                1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0;
-    //pos_goal << 1.0, 0.2, 1.4;
-    pos_goal << 0.8, 0.4, 0.0; // init 0.7   
+    pos_goal << 1.0, 0.2, 1.4;
+    //pos_goal << 0.8, 0.4, 0.0; // init 0.7   
     T_goal.translation() = pos_goal;
     T_goal.linear() = rot_goal;
     poseActiveEEsGoal.push_back(T_goal);
     //RH
-    rot_goal << 0.0, 0.0, 1.0,
-                1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0;
-    //pos_goal << 1.0, -0.4, 1.4;
-    pos_goal << 0.7, -0.6, 0.0; // init 
+    pos_goal << 1.0, -0.4, 1.4;
+    //pos_goal << 0.7, -0.6, 0.0; // init 
     T_goal.translation() = pos_goal;
     T_goal.linear() = rot_goal;
     poseActiveEEsGoal.push_back(T_goal);
     //LF
-    rot_goal << 1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 0.0, 1.0;
-    //pos_goal << 0.0, 0.0, 0.0;
-    pos_goal << -0.5, 0.0, 0.0; // init
+    pos_goal << 0.0, 0.0, 0.0;
+    //pos_goal << -0.2, 0.1, 0.0;
+    //pos_goal << -0.5, 0.0, 0.0; // init
     T_goal.translation() = pos_goal;
     T_goal.linear() = rot_goal;
     poseActiveEEsGoal.push_back(T_goal);
     //RF
-    rot_goal << 1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 0.0, 1.0;
-    //pos_goal << 0.0, -0.2, 0.0;
-    pos_goal << -0.5, -0.2, 0.0; // init
+    pos_goal << 0.0, -0.2, 0.0;
+    //pos_goal << -0.5, -0.2, 0.0; // init
     T_goal.translation() = pos_goal;
     T_goal.linear() = rot_goal;
     poseActiveEEsGoal.push_back(T_goal);
@@ -1346,60 +1027,88 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList_1, qList_2;
     bool sol_found_1, sol_found_2;
 
-        // create/initialize the planner
-        Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator);
-        std::cout << "planner created!" << std::endl;
+    bool stage_1 = false; 
+    bool stage_2 = false;
 
-    /*
     if(index_config == -1){
         
         // create/initialize the planner
-        Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator);
+        Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
         std::cout << "planner created!" << std::endl;
 
-        // run 1st stage
-        float t_elapsed_1 = 0.0;
-        auto t_start_chrono_1 = std::chrono::steady_clock::now();
-        planner->run1stStage();
-        std::cout << "1st stage completed!" << std::endl;
-        auto t_curr_chrono_1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono_1).count();
-        t_elapsed_1 = (float)t_curr_chrono_1 / 1000.0;
-        std::cout << "Planning Time 1st Stage:: " << t_elapsed_1 << std::endl;  
-            
-        // retrieve 1st stage solution
-        sigmaList_1.clear();
-        qList_1.clear();
-        sol_found_1 = planner->retrieveSolution1stStage(sigmaList_1, qList_1);
-        if(sol_found_1) std::cout << "1st Stage Solution FOUND!" << std::endl;
-        else std::cout << "1st Stage Solution NOT FOUND!" << std::endl;
-        std::cout << "sigmaList_1.size() = " << sigmaList_1.size() << std::endl;
-        std::cout << "qList_1.size() = " << qList_1.size() << std::endl;
-        std::cout << "tree.size() = " << planner->getTreeSize() << std::endl;
+        if(stage_1){
+            // run 1st stage
+            float t_elapsed_1 = 0.0;
+            auto t_start_chrono_1 = std::chrono::steady_clock::now();
+            planner->run1stStage();
+            std::cout << "1st stage completed!" << std::endl;
+            auto t_curr_chrono_1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono_1).count();
+            t_elapsed_1 = (float)t_curr_chrono_1 / 1000.0;
+            std::cout << "Planning Time 1st Stage:: " << t_elapsed_1 << std::endl;  
+                
+            // retrieve 1st stage solution
+            sigmaList_1.clear();
+            qList_1.clear();
+            sol_found_1 = planner->retrieveSolution1stStage(sigmaList_1, qList_1);
+            if(sol_found_1) std::cout << "1st Stage Solution FOUND!" << std::endl;
+            else std::cout << "1st Stage Solution NOT FOUND!" << std::endl;
+            std::cout << "sigmaList_1.size() = " << sigmaList_1.size() << std::endl;
+            std::cout << "qList_1.size() = " << qList_1.size() << std::endl;
+            std::cout << "tree.size() = " << planner->getTreeSize() << std::endl;
+            writeOnFileConfigs(qList_1, "qList_1");
+            writeOnFileStances(sigmaList_1, "sigmaList_1");
+        }
+        else{
+            sigmaList_1.clear();
+            qList_1.clear();    
+            readFromFileConfigs(qList_1, "qList_1");
+            readFromFileStances(sigmaList_1, "sigmaList_1");
+            sol_found_1 = true;        
+        }
         
         if(sol_found_1){
-            // run 2nd stage
-            float t_elapsed_2 = 0.0;
-            auto t_start_chrono_2 = std::chrono::steady_clock::now();
-            planner->run2ndStage(sigmaList_1, qList_1);
-            std::cout << "2nd stage completed!" << std::endl;
-            auto t_curr_chrono_2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono_2).count();
-            t_elapsed_2 = (float)t_curr_chrono_2 / 1000.0;
-            std::cout << "Planning Time 2nd Stage:: " << t_elapsed_2 << std::endl;  
-            
-            // retrieve 2nd stage solution
-            sigmaList_2.clear();
-            qList_2.clear();
-            sol_found_2 = planner->retrieveSolution2ndStage(sigmaList_2, qList_2);
-            if(sol_found_2) std::cout << "2nd Stage Solution FOUND!" << std::endl;
-            else std::cout << "2nd Stage Solution NOT FOUND!" << std::endl;
-            std::cout << "sigmaList_2.size() = " << sigmaList_2.size() << std::endl;
-            std::cout << "qList_2.size() = " << qList_2.size() << std::endl;    
+
+            if(stage_2){
+                // run 2nd stage
+                float t_elapsed_2 = 0.0;
+                auto t_start_chrono_2 = std::chrono::steady_clock::now();
+                planner->run2ndStage(sigmaList_1, qList_1);
+                std::cout << "2nd stage completed!" << std::endl;
+                auto t_curr_chrono_2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono_2).count();
+                t_elapsed_2 = (float)t_curr_chrono_2 / 1000.0;
+                std::cout << "Planning Time 2nd Stage:: " << t_elapsed_2 << std::endl;  
+                
+                // retrieve 2nd stage solution
+                sigmaList_2.clear();
+                qList_2.clear();
+                sol_found_2 = planner->retrieveSolution2ndStage(sigmaList_2, qList_2);
+                if(sol_found_2) std::cout << "2nd Stage Solution FOUND!" << std::endl;
+                else std::cout << "2nd Stage Solution NOT FOUND!" << std::endl;
+                std::cout << "sigmaList_2.size() = " << sigmaList_2.size() << std::endl;
+                std::cout << "qList_2.size() = " << qList_2.size() << std::endl;
+                writeOnFileConfigs(qList_2, "qList_2");
+                writeOnFileStances(sigmaList_2, "sigmaList_2");   
+            }
+            else{
+                sigmaList_2.clear();
+                qList_2.clear();    
+                readFromFileConfigs(qList_2, "qList_2");
+                readFromFileStances(sigmaList_2, "sigmaList_2");
+                sol_found_2 = true;            
+            }
+
         }
+
+        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+        _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
+        _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
+        _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
     
     } 
+
     
     // this is for DEBUGGING
-    if(index_config == -1){
+    if(index_config == -1 && sol_found_2){
         for(int i = 0; i < qList_2.size(); i++){
             Configuration q = qList_2.at(i);
             Eigen::VectorXd c(n_dof);
@@ -1410,17 +1119,20 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
         }    
         index_config++; 
     }
-         
-    _goal_model->setJointPosition(plan[index_config]);
-    _goal_model->update();    
-      
-    index_config++;
-            
-    std::cout << "index_config = " << index_config << std::endl;
-    std::cout << "plan.size() = " << plan.size() << std::endl;
 
-    if(index_config == plan.size()) index_config = 0; 
-    */   
+    if(plan.size() > 0){
+        _goal_model->setJointPosition(plan[index_config]);
+        _goal_model->update();    
+          
+        index_config++;
+                
+        std::cout << "index_config = " << index_config << std::endl;
+        std::cout << "plan.size() = " << plan.size() << std::endl;
+
+        if(index_config == plan.size()) index_config = 0; 
+    }
+         
+    
     
     return true; // if solution found
          

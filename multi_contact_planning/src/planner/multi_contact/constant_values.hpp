@@ -1,13 +1,13 @@
 #ifndef CONSTANT_VALUES_HPP
 #define	CONSTANT_VALUES_HPP
 
-const int MAX_ITERATIONS = 500; 
+const int MAX_ITERATIONS = 1500; 
 const double EXPLOITATION_RATE = 0.9; // between 0 and 1 (it is a threshould for the probability)
 const double GOAL_TOLERANCE = 0.01; // it means 1 cm
-const int MAX_NUM_EXP_PER_VERTEX = 5; //3; // maximum number of times that a certain vertex can be used for an expansion attempt (both successful or not) 
+const int MAX_NUM_EXP_PER_VERTEX = 3; //5; // maximum number of times that a certain vertex can be used for an expansion attempt (both successful or not) 
  
 const double WORKSPACE_RADIUS = 0.25;  //1.5;  
-const double WORKSPACE_RADIUS_FOOT = 0.40;//0.25;   
+const double WORKSPACE_RADIUS_FOOT = 0.40;  
 const double WORKSPACE_RADIUS_HAND = 0.80;   
 const double GOAL_SAMPLER_TIME_BUDGET = 5.0;
 

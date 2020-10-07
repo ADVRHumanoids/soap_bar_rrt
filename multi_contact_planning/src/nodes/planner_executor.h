@@ -36,6 +36,8 @@
 
 #include <chrono>
 #include <thread>
+#include <iostream>
+#include <string>
 
 namespace XBot { namespace Cartesian {
 
@@ -121,6 +123,10 @@ private:
 
     // PF ///////////////////////////////////////////////////////////////////////
     void setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref);
+    void writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName);
+    void writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName);
+    void readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName);
+    void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName);
     /////////////////////////////////////////////////////////////////////////////
 
     void on_start_state_recv(const sensor_msgs::JointStateConstPtr& msg);
