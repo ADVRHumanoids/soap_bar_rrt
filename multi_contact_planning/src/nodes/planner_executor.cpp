@@ -1063,7 +1063,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             qList_1.clear();    
             readFromFileConfigs(qList_1, "qList_1");
             readFromFileStances(sigmaList_1, "sigmaList_1");
-            sol_found_1 = true;        
+            sol_found_1 = true;      
         }
         
         if(sol_found_1){

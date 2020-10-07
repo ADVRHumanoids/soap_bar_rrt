@@ -981,6 +981,40 @@ bool Planner::similarityTest(Configuration qNew){
 	return false;
 }
 
+bool Planner::similarityTest(Configuration qNew, Stance sigmaNew){
+
+	Eigen::VectorXd cNew(n_dof);
+	cNew.segment(0,3) = qNew.getFBPosition();
+	cNew.segment(3,3) = qNew.getFBOrientation();
+    cNew.tail(n_dof-6) = qNew.getJointValues();
+
+    Vertex* v;
+    Configuration q; 
+    Stance sigma;
+	Eigen::VectorXd c(n_dof);
+	Eigen::VectorXd diff(n_dof);
+	for(int i = 0; i < tree->getSize(); i++){
+		v = tree->getVertex(i);
+		q = v->getConfiguration();
+		sigma = v->getStance();	
+
+		if(sigmaNew.getSize() == sigma.getSize()){
+			c.segment(0,3) = q.getFBPosition();
+			c.segment(3,3) = q.getFBOrientation();
+		    c.tail(n_dof-6) = q.getJointValues();
+
+		    diff = cNew - c;
+
+		    bool similar = true;
+		    for(int j = 0; j < n_dof; j++) if(abs(diff(j) > 1e-03)) similar = false;
+
+		    if(similar) return true;
+		}	
+	}
+
+	return false;
+}
+
 void Planner::updateEndEffectorsList(Configuration qNew, Stance sigmaNew){
 
 	std::vector<EndEffector> endEffectorsListAux;
@@ -1114,7 +1148,9 @@ void Planner::run1stStage(){
 				foutLogMCP << "R_FOOT = " << computeForwardKinematics(qNew, R_FOOT).translation().transpose() << std::endl;
 					 
 				//bool similar = similarityTest(qNew);
-				bool similar = false;
+				//bool similar = false;
+				bool similar = similarityTest(qNew, sigmaNew);
+
 				if(!similar){
 					vNew = new Vertex(sigmaNew, qNew, iNear);  
 					tree->addVertex(vNew);

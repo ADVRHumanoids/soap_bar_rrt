@@ -82,6 +82,7 @@ class Planner {
 		bool computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Configuration &q, Configuration q_ref);
 
 		bool similarityTest(Configuration qNew);
+		bool similarityTest(Configuration qNew, Stance sigmaNew);
 
 		void updateEndEffectorsList(Configuration qNew, Stance sigmaNew);
 
