@@ -511,22 +511,25 @@ bool Planner::computeIKSolutionWithoutCoM(Stance sigma, Configuration &q, Config
     all_tasks.push_back("TCP_R");
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
-    for(int i = 0; i < all_tasks.size(); i++){
+
+	ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+    for(int i = 1; i < all_tasks.size(); i++){
+    //for(int i = 0; i < all_tasks.size(); i++){
         int index = -1;
         for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
   
-        if(index == -1) ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        //if(index == -1) ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
         //if(index == -1) ci->getTask(all_tasks.at(i))->setLambda(0.1);
-    	//if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+    	if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
         else{
-            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
+            //ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
             //ci->getTask(all_tasks.at(i))->setLambda(1.0);  
-            //ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
             ci->setPoseReference(all_tasks[i], ref_tasks[index]);
         }
     }
  
- 	 
+ 	/* 
     // set collision checking 
     vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
     vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
@@ -539,7 +542,7 @@ bool Planner::computeIKSolutionWithoutCoM(Stance sigma, Configuration &q, Config
         else if (i == "l_sole") vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
         else if (i == "r_sole") vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
     } 
-	 
+	*/ 
 
 	/*
 	// set references 
@@ -561,7 +564,7 @@ bool Planner::computeIKSolutionWithoutCoM(Stance sigma, Configuration &q, Config
     // set postural
     XBot::JointNameMap jmap;
     planner_model->eigenToMap(c_ref, jmap);
-    ci->setReferencePosture(jmap); 
+    //ci->setReferencePosture(jmap); 
 
     // search IK solution
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
@@ -613,17 +616,21 @@ bool Planner::computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Confi
         int index = -1;
         for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
     
-        if(index == -1) ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        //if(index == -1) ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
         //if(index == -1) ci->getTask(all_tasks.at(i))->setLambda(0.1);
-        //if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+        if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
     	else{
-            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
+            //ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
             //ci->getTask(all_tasks.at(i))->setLambda(1.0);
-            //ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
             ci->setPoseReference(all_tasks[i], ref_tasks[index]);
         }
     }
 
+    //ci->getTask(all_tasks.at(0))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(0))->getWeight().rows(), ci->getTask(all_tasks.at(0))->getWeight().cols()));
+    //ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+
+    /*
     // set collision checking 
     vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
     vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
@@ -636,6 +643,7 @@ bool Planner::computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Confi
         else if (i == "l_sole") vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
         else if (i == "r_sole") vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
     } 
+	*/
 
 	/*
 	// set references 
@@ -657,12 +665,21 @@ bool Planner::computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Confi
     // set postural
     XBot::JointNameMap jmap;
     planner_model->eigenToMap(c_ref, jmap);
-    ci->setReferencePosture(jmap);  
+    //ci->setReferencePosture(jmap);  
+
+    // build initial guess
+	Eigen::VectorXd c_init(n_dof);
+	Eigen::Vector3d posFB_init = q.getFBPosition();
+	Eigen::Vector3d rotFB_init = q.getFBOrientation();
+	c_init.segment(0,3) = posFB_init;
+	c_init.segment(3,3) = rotFB_init;
+	c_init.tail(n_dof-6) = q.getJointValues();
 
     // search IK solution
-    double time_budget = GOAL_SAMPLER_TIME_BUDGET;
+    double time_budget = GOAL_SAMPLER_TIME_BUDGET_COM;
     Eigen::VectorXd c;
-    if(!goal_generator->sample(c, time_budget)) return false;
+    //if(!goal_generator->sample(c, time_budget)) return false;
+    if(!goal_generator->sample(c, time_budget, c_init)) return false;
     else{
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
@@ -702,15 +719,22 @@ bool Planner::retrieveSolution1stStage(std::vector<Stance> &sigmaList, std::vect
 } 
 
 bool Planner::retrieveSolution2ndStage(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList){
+	/*
 	if(sol_len > sigmaList2ndStage.size()){
 		sigmaList.clear();
 		qList.clear();
 		return false;	
 	}
-
+	
 	for(int i = 0; i < sigmaList2ndStage.size(); i++) sigmaList.push_back(sigmaList2ndStage.at(i));
 	for(int i = 0; i < qList2ndStage.size(); i++) qList.push_back(qList2ndStage.at(i));
 
+	return true;		
+	*/
+
+	for(int i = 0; i < sigmaList2ndStage.size(); i++) sigmaList.push_back(sigmaList2ndStage.at(i));
+	for(int i = 0; i < qList2ndStage.size(); i++) qList.push_back(qList2ndStage.at(i));
+	if(sol_len > sigmaList2ndStage.size()) return false;	
 	return true;	
 }
 
@@ -751,7 +775,9 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
 		name = contact_name.at(i);
 		cpl->SetContactPosition(name, rCdes.row(i));
 		cpl->SetContactNormal(name, nCdes.row(i));
-		cpl->SetForceThreshold(name, F_thres); 
+		//cpl->SetForceThreshold(name, F_thres);
+		if(activeEEsDes.at(i) == L_HAND || activeEEsDes.at(i) == R_HAND) cpl->SetForceThreshold(name, FORCE_THRES_HAND);
+		if(activeEEsDes.at(i) == L_FOOT || activeEEsDes.at(i) == R_FOOT) cpl->SetForceThreshold(name, FORCE_THRES_FOOT); 
 	}	
 	 
 	cpl->SetCoMRef(rCoMdes);
@@ -1129,14 +1155,16 @@ void Planner::run1stStage(){
 			}
 
 			Configuration qNew;
-			//bool resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
+			bool resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
 			
+			/*
 			bool resIK;
 			if(sigmaNew.getSize() == 4) resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
 			else{
 				resIK = true;
 				qNew = qNear;
-			}	
+			}
+			*/	
 			
 			if(resIK) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
 			else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
@@ -1178,6 +1206,132 @@ void Planner::run1stStage(){
 	
 }
 
+ 
+void Planner::run2ndStage(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
+
+	foutLogMCP << "********************************* 2ND STAGE *********************************" << std::endl;
+
+	Eigen::VectorXi succ(sigmaList.size());
+	succ.setZero();
+	succ(0) = 1;
+
+	sol_len = sigmaList.size();
+
+	sigmaList2ndStage.clear();
+	qList2ndStage.clear();
+
+	sigmaList2ndStage.push_back(sigmaList.at(0));
+	qList2ndStage.push_back(qList.at(0));
+	
+	Stance sigma;
+	Configuration q;
+
+	for(int i = 1; i < sigmaList.size(); i++){
+		
+		foutLogMCP << "+++++ i = " << i << std::endl;
+
+		sigma = sigmaList.at(i);
+		q = qList.at(i);	
+
+		Eigen::Vector3d rCoMdes = computeCoM(q);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//rCoMdes = (computeForwardKinematics(q, L_FOOT).translation() + computeForwardKinematics(q, R_FOOT).translation()) / 2.0;
+		//rCoMdes(2) = COM_REF_HEIGHT; 
+		//rCoMdes(2) -= 0.10; 
+		//if(computeForwardKinematics(q, L_HAND).translation())
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		std::vector<EndEffector> activeEEsDes = sigma.retrieveActiveEndEffectors();
+		std::cout << "activeEEsDes.size() = " << activeEEsDes.size() << std::endl;
+		Eigen::MatrixXd rCdes(activeEEsDes.size(), 3);
+		Eigen::MatrixXd nCdes(activeEEsDes.size(), 3);
+		Eigen::Vector3d rCoM;
+		Eigen::MatrixXd rC(activeEEsDes.size(), 3);
+		Eigen::MatrixXd FC(activeEEsDes.size(), 3);
+
+		for(int j = 0; j < activeEEsDes.size(); j++){
+			rCdes.row(j) = sigma.getContact(j)->getPose().translation().transpose();
+			nCdes.row(j) = sigma.getContact(j)->getNormal().transpose();
+		}
+
+		foutLogMCP << "rCdes" << std::endl;	
+		foutLogMCP << rCdes << std::endl;	
+		foutLogMCP << "nCdes" << std::endl;	
+		foutLogMCP << nCdes << std::endl;	
+		foutLogMCP << "rCoMdes" << std::endl;	
+		foutLogMCP << rCoMdes.transpose() << std::endl;
+				
+		bool resCPL = computeCentroidalStatics(activeEEsDes, rCoMdes, rCdes, nCdes, rCoM, rC, FC); 
+
+		foutLogMCP << "rC" << std::endl;	
+		foutLogMCP << rC << std::endl;	
+		foutLogMCP << "FC" << std::endl;	
+		foutLogMCP << FC << std::endl;	
+		foutLogMCP << "rCoM" << std::endl;	
+		foutLogMCP << rCoM.transpose() << std::endl;	
+
+		foutLogMCP << "eCoMnorm = " << (rCoMdes - rCoM).norm() << std::endl;
+
+				
+		if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
+		else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;	
+
+		if(resCPL){
+			Stance sigmaBar;
+			for(int j = 0; j < sigma.getSize(); j++){
+				Contact* c_j_bar = sigma.getContact(j);
+				Eigen::Vector3d F_j = FC.row(j).transpose();
+				Contact* c_j = new Contact(c_j_bar->getEndEffectorName(), c_j_bar->getPose(), F_j, c_j_bar->getNormal());
+				sigmaBar.addContact(c_j);	
+			}
+			
+			Eigen::Vector3d rCoMError = rCoMdes - rCoM; 
+			foutLogMCP << "rCoMErrorA = " << rCoMError.transpose() << std::endl;
+			
+			bool resIK_CoM = computeIKSolutionWithCoM(sigmaBar, rCoM, q, qList.at(i-1));
+			/*
+			bool resIK_CoM;
+			if(sigmaBar.getSize() == 4) resIK_CoM = computeIKSolutionWithCoM(sigmaList.at(i), rCoM, q, qList.at(i-1));
+			else resIK_CoM = computeIKSolutionWithCoM(sigmaList.at(i-1), rCoM, q, qList.at(i-1));
+			*/
+
+			foutLogMCP << "L_HAND = " << computeForwardKinematics(q, L_HAND).translation().transpose() << std::endl;
+			foutLogMCP << "R_HAND = " << computeForwardKinematics(q, R_HAND).translation().transpose() << std::endl;
+			foutLogMCP << "L_FOOT = " << computeForwardKinematics(q, L_FOOT).translation().transpose() << std::endl;
+			foutLogMCP << "R_FOOT = " << computeForwardKinematics(q, R_FOOT).translation().transpose() << std::endl;
+			Eigen::Vector3d rCoMErrorB = computeCoM(q) - rCoM; 
+			foutLogMCP << "rCoMErrorB = " << rCoMErrorB.transpose() << std::endl;
+
+			if(resIK_CoM) foutLogMCP << "--------------- GS COM SUCCESS ---------------" << std::endl;
+			else foutLogMCP << "--------------- GS COM FAIL ---------------" << std::endl;
+			
+			if(resIK_CoM){
+				sigmaList2ndStage.push_back(sigmaBar);
+				qList2ndStage.push_back(q);
+				
+				foutLogMCP << "CONFIGURATION # = " << i << std::endl;
+				Eigen::VectorXd c(n_dof);
+				c.segment(0,3) = q.getFBPosition();
+				c.segment(3,3) = q.getFBOrientation();
+				c.tail(n_dof-6) = q.getJointValues();
+				for(int z = 0; z < c.rows(); z++) foutLogMCP << c(z) << ", ";
+				foutLogMCP << ";" << std::endl;			
+
+				succ(i) = 1;
+			}
+			 
+		}
+				
+	}	
+
+	//std::cout << "qList2ndStage.size() = " << qList2ndStage.size() << std::endl;
+	for(int i = 0; i < sigmaList.size(); i++){
+		if(succ(i) == 1) std::cout << i << " SUCCESS" << std::endl;
+		else std::cout << i << " FAILURE" << std::endl;
+	}
+}
+ 
+
+/*
 void Planner::run2ndStage(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
 
 	foutLogMCP << "********************************* 2ND STAGE *********************************" << std::endl;
@@ -1202,7 +1356,11 @@ void Planner::run2ndStage(std::vector<Stance> sigmaList, std::vector<Configurati
 
 		for(int k = 0; k < 10; k++){
 
-			bool resIK = computeIKSolutionWithoutCoM(sigma, q, qList.at(i-1));
+			bool resIK;	
+			if(k = 0) resIK = true;
+			else resIK = computeIKSolutionWithoutCoM(sigma, q, qList.at(i-1)); 
+
+			//bool resIK = computeIKSolutionWithoutCoM(sigma, q, qList.at(i-1));
 
 			if(resIK) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
 			else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;	
@@ -1253,7 +1411,11 @@ void Planner::run2ndStage(std::vector<Stance> sigmaList, std::vector<Configurati
 					Eigen::Vector3d rCoMError = rCoMdes - rCoM; 
 					foutLogMCP << "rCoMErrorA = " << rCoMError.transpose() << std::endl;
 					
-					bool resIK_CoM = computeIKSolutionWithCoM(sigmaBar, rCoM, q, qList.at(i-1));
+					//bool resIK_CoM = computeIKSolutionWithCoM(sigmaBar, rCoM, q, qList.at(i-1));
+					bool resIK_CoM;
+					if(sigmaBar.getSize() == 4) resIK_CoM = computeIKSolutionWithCoM(sigmaList.at(i), rCoM, q, qList.at(i-1));
+					else resIK_CoM = computeIKSolutionWithCoM(sigmaList.at(i-1), rCoM, q, qList.at(i-1));
+					
 					foutLogMCP << "L_HAND = " << computeForwardKinematics(q, L_HAND).translation().transpose() << std::endl;
 					foutLogMCP << "R_HAND = " << computeForwardKinematics(q, R_HAND).translation().transpose() << std::endl;
 					foutLogMCP << "L_FOOT = " << computeForwardKinematics(q, L_FOOT).translation().transpose() << std::endl;
@@ -1289,6 +1451,7 @@ void Planner::run2ndStage(std::vector<Stance> sigmaList, std::vector<Configurati
 
 	}	
 }
+*/
 
 int Planner::getTreeSize(){
 	return tree->getSize();

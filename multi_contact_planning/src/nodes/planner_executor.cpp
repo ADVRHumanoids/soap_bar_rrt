@@ -1028,7 +1028,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     bool sol_found_1, sol_found_2;
 
     bool stage_1 = false; 
-    bool stage_2 = false;
+    bool stage_2 = true;
 
     if(index_config == -1){
         

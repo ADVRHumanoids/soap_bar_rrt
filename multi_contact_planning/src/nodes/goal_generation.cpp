@@ -35,4 +35,8 @@ XBot::Cartesian::CartesianInterfaceImpl::Ptr GoalGenerator::getCartesianInterfac
     return _ci;
 }
 
+bool GoalGenerator::sample(Eigen::VectorXd& q, double time_out, Eigen::VectorXd qinit)
+{
+    return _goal_sampler->sampleGoal(q, time_out, qinit);
+}
 //////////////////////////////////////////////////////////////////////////////

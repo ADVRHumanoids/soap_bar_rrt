@@ -108,6 +108,27 @@ bool GoalSamplerBase::sampleGoal(Eigen::VectorXd &q, const unsigned int time_out
     return true;
 }
 
+// PF ////////////////////////////////////////////////////////////////////////////////////////////////
+bool GoalSamplerBase::sampleGoal(Eigen::VectorXd &q, const unsigned int time_out_sec, Eigen::VectorXd qInit) const
+{
+    auto model = _ik_solver->getModel();
+
+    bool goal_found = false;
+
+    model->setJointPosition(qInit);
+    model->update();
+
+    goal_found = _ik_solver->solve();
+
+    if(_validity_check)
+        goal_found = goal_found && _validity_check();
+
+    model->getJointPosition(q);
+
+    return goal_found;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PositionCartesianSolver::Ptr GoalSamplerBase::getIkSolver()
 {
     return _ik_solver;

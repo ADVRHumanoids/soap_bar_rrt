@@ -24,6 +24,7 @@ public:
     double distanceGoal(const Eigen::VectorXd& q) const;
 
     bool sampleGoal(Eigen::VectorXd& q, const unsigned int time_out_sec) const;
+    bool sampleGoal(Eigen::VectorXd& q, const unsigned int time_out_sec, Eigen::VectorXd qInit) const; // PF
 
     
     PositionCartesianSolver::Ptr getIkSolver();

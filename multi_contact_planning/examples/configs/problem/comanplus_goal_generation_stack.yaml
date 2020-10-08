@@ -3,11 +3,8 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["LeftFoot", "RightFoot", "LeftHand", "RightHand", "Com"]
-#    - ["LeftFoot", "RightFoot", "Com"]
-#    - ["LeftHand", "RightHand"]
-#	- ["TorsoRPY"]
- #   - ["Postural"]
+   - ["LeftFoot", "RightFoot", "LeftHand", "RightHand", "Com"]
+#    - ["Postural"]
     
 constraints: ["JointLimits"] #, "VelocityLimits"]
 
@@ -31,7 +28,7 @@ RightFoot:
     
 Postural:
     type: "Postural"
-    lambda: 0.1
+    lambda: 0.3
     
 LeftHand:
     type: "Cartesian"
@@ -53,7 +50,7 @@ TorsoRPY:
 
 Com:
     type: "Com"
-    lambda: 1.0
+    lambda: 0.5
     indices: [0, 1, 2]
 
 Head:
