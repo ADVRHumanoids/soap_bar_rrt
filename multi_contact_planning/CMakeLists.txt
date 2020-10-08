@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(casadi REQUIRED)
 
-#find_package(centroidal_planner REQUIRED) ########################################### PF
+find_package(centroidal_planner REQUIRED) ########################################### PF
 
 find_package(Eigen3 REQUIRED)
 
@@ -150,9 +150,11 @@ include_directories( SYSTEM
     include
     ${OMPL_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
+    ${centroidal_planner_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS} # note: must be the last in the include list
     )
+
 
 
 # Main library
@@ -185,7 +187,7 @@ target_link_libraries(multi_contact_planning ###################################
     ${OMPL_LIBRARIES}
     ${cartesian_interface_LIBRARIES}
     ${catkin_LIBRARIES}
-	/home/luca/src/MultiDoF-superbuild/build/install/lib/libCpl.so
+    ${centroidal_planner_LIBRARIES}
     yaml-cpp
     matlogger2::matlogger2
     PRIVATE
@@ -230,19 +232,25 @@ target_link_libraries(self_collision_robot ${OMPL_LIBRARIES}
     yaml-cpp
     dl
     multi_contact_planning ########################################### PF
+    ${centroidal_planner_LIBRARIES}
     ${XBotInterface_LIBRARIES}
     ${catkin_LIBRARIES}
     matlogger2::matlogger2)
+
+
 
 # goal_generation node
 add_executable(goal_generation_test
         src/test_nodes/goal_generation_test.cpp
     )
 
+add_dependencies(goal_generation_test multi_contact_planning)
+
 target_link_libraries(goal_generation_test ${OMPL_LIBRARIES}
     yaml-cpp
     dl
     multi_contact_planning ########################################### PF
+    ${centroidal_planner_LIBRARIES}
     ${cartesian_interface_LIBRARIES}
     ${XBotInterface_LIBRARIES}
     ${catkin_LIBRARIES}
