@@ -83,6 +83,7 @@ class Planner {
 
 		bool similarityTest(Configuration qNew);
 		bool similarityTest(Configuration qNew, Stance sigmaNew);
+		bool similarityTest(Stance sigmaNew);
 
 		void updateEndEffectorsList(Configuration qNew, Stance sigmaNew);
 
@@ -102,6 +103,10 @@ class Planner {
 		void run2ndStage(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
 		bool retrieveSolution1stStage(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
 		bool retrieveSolution2ndStage(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);	
+
+		void run();
+		bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
+				
 };
 
 #endif

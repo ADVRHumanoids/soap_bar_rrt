@@ -3,7 +3,8 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-   - ["LeftFoot", "RightFoot", "LeftHand", "RightHand", "Com"]
+    - ["LeftFoot", "RightFoot", "LeftHand", "RightHand"]
+#   - ["LeftFoot", "RightFoot", "LeftHand", "RightHand", "Com"]
 #    - ["Postural"]
     
 constraints: ["JointLimits"] #, "VelocityLimits"]

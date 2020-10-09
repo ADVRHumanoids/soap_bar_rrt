@@ -767,10 +767,10 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
         res.sampled_goal.header.stamp = ros::Time::now();
     }
     
-    /*
-    if(_manifold) 
-        _manifold->project(q);  // what s this???
-    */    
+    
+    //if(_manifold) 
+        //_manifold->project(q);  // what s this???
+        
     
     _goal_model->setJointPosition(q);
     _goal_model->update();
@@ -1022,13 +1022,88 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     allowedEEs.push_back(R_HAND);  
 
     // plan a solution    
+
+    std::vector<Stance> sigmaList;
+    std::vector<Configuration> qList;
+    bool sol_found;
+
+    bool runPlanner = false; 
+    
+    if(index_config == -1){
+        
+        if(runPlanner){
+            // create/initialize the planner
+            Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
+            std::cout << "planner created!" << std::endl;
+
+            // run planner
+            float t_elapsed = 0.0;
+            auto t_start_chrono = std::chrono::steady_clock::now();
+            planner->run();
+            std::cout << "Planning completed!" << std::endl;
+            auto t_curr_chrono = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono).count();
+            t_elapsed = (float)t_curr_chrono / 1000.0;
+            std::cout << "Planning Time:: " << t_elapsed << std::endl;  
+                
+            // retrieve solution
+            sigmaList.clear();
+            qList.clear();
+            sol_found = planner->retrieveSolution(sigmaList, qList);
+            if(sol_found) std::cout << "Solution FOUND!" << std::endl;
+            else std::cout << "Solution NOT FOUND!" << std::endl;
+            std::cout << "sigmaList.size() = " << sigmaList.size() << std::endl;
+            std::cout << "qList.size() = " << qList.size() << std::endl;
+            writeOnFileConfigs(qList, "qList");
+            writeOnFileStances(sigmaList, "sigmaList");
+        }
+        else{
+            sigmaList.clear();
+            qList.clear();    
+            readFromFileConfigs(qList, "qList");
+            readFromFileStances(sigmaList, "sigmaList");
+            sol_found = true;      
+        }
+
+        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+        _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
+        _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
+        _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
+    
+    } 
+
+    // this is for DEBUGGING
+    if(index_config == -1 && sol_found){
+        for(int i = 0; i < qList.size(); i++){
+            Configuration q = qList.at(i);
+            Eigen::VectorXd c(n_dof);
+            c.segment(0,3) = q.getFBPosition();
+            c.segment(3,3) = q.getFBOrientation();
+            c.tail(n_dof-6) = q.getJointValues();
+            plan.push_back(c);
+        }    
+        index_config++; 
+    }
+
+    if(plan.size() > 0){
+        _goal_model->setJointPosition(plan[index_config]);
+        _goal_model->update();    
+          
+        index_config++;
+                
+        std::cout << "index_config = " << index_config << std::endl;
+        std::cout << "plan.size() = " << plan.size() << std::endl;
+
+        if(index_config == plan.size()) index_config = 0; 
+    }
        
+
+    /*   
     std::vector<Stance> sigmaList_1, sigmaList_2;
     std::vector<Configuration> qList_1, qList_2;
     bool sol_found_1, sol_found_2;
 
-    bool stage_1 = false; 
-    bool stage_2 = true;
+    bool stage_1 = true; 
+    bool stage_2 = false;
 
     if(index_config == -1){
         
@@ -1131,7 +1206,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
 
         if(index_config == plan.size()) index_config = 0; 
     }
-         
+    */  
     
     
     return true; // if solution found
