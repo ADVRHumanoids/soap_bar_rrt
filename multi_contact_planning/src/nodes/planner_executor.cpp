@@ -209,10 +209,14 @@ void PlannerExecutor::init_load_model()
     ////////////////////////////////////////////////////////////////////////////////////////// PF
     n_dof = _model->getJointNum();
 
-    Eigen::VectorXd qInit(n_dof);
-
-    qInit << 0.0883568, -0.126304, 0.639739, 1.10568, -4.72852, -1.10301, 0.0258766, -0.989014, 0.0479682, 0.0473017, -0.621278, -0.0289819, 0.0358694, -0.963558, 0.0608695, 0, -0.599092, -0.0373323, 0.0504259, 0.0425578, -2.16338, 1.03381, 1.70575, -0.611303, 2.34071, -0.972389, 0.272461, -0.322765, -2.36409, 0.584142, -1.21375, 0.540567, -0.155282, 1.9109;
-
+    //Eigen::VectorXd qInit(n_dof);
+    //qInit << 0.0883568, -0.126304, 0.639739, 1.10568, -4.72852, -1.10301, 0.0258766, -0.989014, 0.0479682, 0.0473017, -0.621278, -0.0289819, 0.0358694, -0.963558, 0.0608695, 0, -0.599092, -0.0373323, 0.0504259, 0.0425578, -2.16338, 1.03381, 1.70575, -0.611303, 2.34071, -0.972389, 0.272461, -0.322765, -2.36409, 0.584142, -1.21375, 0.540567, -0.155282, 1.9109;
+    
+    qInit.resize(n_dof);
+    qInit << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
+    qGoal.resize(n_dof);
+    qGoal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
+    
     _model->setJointPosition(qInit);
     _model->update();
 
@@ -521,11 +525,6 @@ void PlannerExecutor::init_goal_generator()
         auto ci = CartesianInterfaceImpl::MakeInstance("OpenSot",
                                                        ik_prob, ci_ctx);
 
-        /////////////////////////////////////////////////////////////////////////////
-        //auto task_0 = ci->getTask("Com");
-
-        /////////////////////////////////////////////////////////////////////////////
-
         _goal_generator = std::make_shared<GoalGenerator>(ci, _vc_context);
 
         int max_iterations;
@@ -559,141 +558,39 @@ void PlannerExecutor::init_interpolator()
     ///TODO: qdot, qddot limits? 
 }
 
-/* 
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
-    auto ci = _goal_generator->getCartesianInterface(); 
+    auto ci = _goal_generator->getCartesianInterface();
 
-    std::vector<std::string> active_tasks_all;
-    active_tasks_all.push_back("Com");
-    active_tasks_all.push_back("TCP_L");
-    active_tasks_all.push_back("TCP_R");
-    active_tasks_all.push_back("l_sole");
-    active_tasks_all.push_back("r_sole");
+    std::vector<std::string> all_tasks;
+    all_tasks.push_back("Com");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
 
-    for(int i = 0; i < active_tasks_all.size(); i++){
-        ci->setActivationState(active_tasks_all.at(i), ActivationState::Disabled);
-        //ci->getTask(active_tasks_all.at(i))->setLambda(0.1);   
-    }
-   
-    Eigen::Affine3d T_ref;
-    for(int i = 0; i < active_tasks.size(); i++){
-        ci->setActivationState(active_tasks.at(i), ActivationState::Enabled);
-        //ci->getTask(active_tasks.at(i))->setLambda(1.0);   
-        T_ref = ref_tasks.at(i);
-        ci->setPoseReference(active_tasks.at(i), T_ref);
-    }
+
+    ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+    for(int i = 1; i < all_tasks.size(); i++){
+        int index = -1;
+        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
   
-    XBot::JointNameMap jmap;
-    _goal_model->eigenToMap(q_ref, jmap);
-    //ci->setReferencePosture(jmap);
-
-    for (auto i : active_tasks)
-    {
-        if (i == "Com") continue;
-        else if (i == "TCP_R") _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
-        else if (i == "TCP_L") _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
-        else if (i == "l_sole") _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
-        else if (i == "r_sole") _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
-    }
-}
-*/
- 
-/* 
-void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
-    std::cout << "SETTING REFERENCES" << std::endl;
-
-    auto ci = _goal_generator->getCartesianInterface();
-
-    std::vector<std::string> active_tasks_all;
-    active_tasks_all.push_back("Com");
-    active_tasks_all.push_back("TCP_L");
-    active_tasks_all.push_back("TCP_R");
-    active_tasks_all.push_back("l_sole");
-    active_tasks_all.push_back("r_sole");
-
-    for(int i = 0; i < active_tasks_all.size(); i++){
-        int index = -1;
-        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == active_tasks_all[i]) index = j;
-    
-        if(index == -1) ci->setActivationState(active_tasks_all[i], ActivationState::Disabled);
+        if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
         else{
-            ci->setActivationState(active_tasks_all[i], ActivationState::Enabled);
-            ci->setPoseReference(active_tasks_all[i], ref_tasks[index]);
+            ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            ci->setPoseReference(all_tasks[i], ref_tasks[index]);
         }
-    }   
-    
-    
-    //_vc_context.planning_scene->acm.clear(); // this does not work
-    _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
-    _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
-    _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", false);    
-    _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", false);    
-    for (auto i : active_tasks) {
-        if (i == "Com") continue;
-        else if (i == "TCP_R") _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
-        else if (i == "TCP_L") _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
-        else if (i == "l_sole") _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
-        else if (i == "r_sole") _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
-    } 
-   
+    }
 
+    /*
+    // postural
+    Eigen::VectorXd qhome;
+    _model->getRobotState("home", qhome);
     XBot::JointNameMap jmap;
-    _goal_model->eigenToMap(q_ref, jmap);
+    _goal_model->eigenToMap(qhome, jmap);
     ci->setReferencePosture(jmap);
-}
-*/
-
-void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
-    std::cout << "SETTING REFERENCES" << std::endl;
-
-    auto ci = _goal_generator->getCartesianInterface();
-
-    std::vector<std::string> active_tasks_all;
-    active_tasks_all.push_back("Com");
-    active_tasks_all.push_back("TCP_L");
-    active_tasks_all.push_back("TCP_R");
-    active_tasks_all.push_back("l_sole");
-    active_tasks_all.push_back("r_sole");
-
-    for(int i = 0; i < active_tasks_all.size(); i++){
-        ci->setPoseReference(active_tasks_all[i], ref_tasks[i]);
-    }
-
-    /*
-    for(int i = 0; i < active_tasks_all.size(); i++){
-        int index = -1;
-        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == active_tasks_all[i]) index = j;
-    
-        //if(index == -1) ci->getTask(active_tasks_all.at(i))->setWeight(0.01*Eigen::MatrixXd::Identity(ci->getTask(active_tasks_all.at(i))->getWeight().rows(), ci->getTask(active_tasks_all.at(i))->getWeight().cols()));  
-        if(index == -1) ci->setActivationState(active_tasks_all[i], ActivationState::Disabled);
-        else{
-            //ci->getTask(active_tasks_all.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(active_tasks_all.at(i))->getWeight().rows(), ci->getTask(active_tasks_all.at(i))->getWeight().cols()));
-            ci->setActivationState(active_tasks_all[i], ActivationState::Enabled);
-            ci->setPoseReference(active_tasks_all[i], ref_tasks[index]);
-        }
-    }   
     */
-
-    /*
-    //_vc_context.planning_scene->acm.clear(); // this does not work
-    _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", false);   
-    _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", false);     
-    _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", false);    
-    _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", false);    
-    for (auto i : active_tasks) {
-        if (i == "Com") continue;
-        else if (i == "TCP_R") _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
-        else if (i == "TCP_L") _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
-        else if (i == "l_sole") _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
-        else if (i == "r_sole") _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
-    } 
-    */
-
-    XBot::JointNameMap jmap;
-    _goal_model->eigenToMap(q_ref, jmap);
-    //ci->setReferencePosture(jmap);
 }
 
 
@@ -709,7 +606,6 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::vector<Eigen::Affine3d> ref_tasks;
     Eigen::VectorXd q_ref;
 
-    active_tasks.push_back("Com");
     active_tasks.push_back("TCP_L");
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
@@ -721,28 +617,27 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_ref;
 
-    //COM 
-    pos_ref << 0.113322, -0.312488, 0.484222;
-    T_ref.translation() = pos_ref;
-    T_ref.linear() = rot_ref;
-    ref_tasks.push_back(T_ref);
     //LH 
-    pos_ref << 0.7, 0.4, 0.0; //1.0, 0.2, 0.5;//
+    //pos_ref << 1.0, 0.2, 1.4;
+    pos_ref << 0.7, 0.4, 0.0; // init     
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RH
-    pos_ref << 0.7, -0.6, 0.0;
+    //pos_ref << 1.0, -0.4, 1.4;
+    pos_ref << 0.7, -0.6, 0.0; // init 
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //LF
-    pos_ref << -0.5, 0.0, 0.0;  
+    //pos_ref << 0.0, 0.0, 0.0;
+    pos_ref << -0.5, 0.0, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RF
-    pos_ref << -0.5, -0.2, 0.0; 
+    //pos_ref << 0.0, -0.2, 0.0;
+    pos_ref << -0.5, -0.2, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
@@ -1023,11 +918,12 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
 
     // plan a solution    
 
+     
     std::vector<Stance> sigmaList;
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = false; 
+    bool runPlanner = true; 
     
     if(index_config == -1){
         
@@ -1039,7 +935,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             // run planner
             float t_elapsed = 0.0;
             auto t_start_chrono = std::chrono::steady_clock::now();
-            planner->run();
+            //planner->run();
+            planner->runSingleStage();
             std::cout << "Planning completed!" << std::endl;
             auto t_curr_chrono = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono).count();
             t_elapsed = (float)t_curr_chrono / 1000.0;
@@ -1095,14 +992,14 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
 
         if(index_config == plan.size()) index_config = 0; 
     }
-       
+     
 
-    /*   
+    /*    
     std::vector<Stance> sigmaList_1, sigmaList_2;
     std::vector<Configuration> qList_1, qList_2;
     bool sol_found_1, sol_found_2;
 
-    bool stage_1 = true; 
+    bool stage_1 = false; 
     bool stage_2 = false;
 
     if(index_config == -1){
@@ -1206,7 +1103,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
 
         if(index_config == plan.size()) index_config = 0; 
     }
-    */  
+    */ 
     
     
     return true; // if solution found

@@ -22,3 +22,7 @@ Eigen::Vector3d Contact::getForce(){
 Eigen::Vector3d Contact::getNormal(){
 	return normal;
 }
+
+void Contact::setForce(Eigen::Vector3d _force){
+	force = _force;
+}

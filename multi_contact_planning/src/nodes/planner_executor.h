@@ -107,6 +107,9 @@ private:
     std::vector<Eigen::VectorXd> plan;
 
     int n_dof;
+    Eigen::VectorXd qInit;
+    Eigen::VectorXd qGoal;
+
     /////////////////////////////////////////// PF
     
     typedef std::shared_ptr<Planning::PlanningSceneWrapper> PlanningScenePtr;
