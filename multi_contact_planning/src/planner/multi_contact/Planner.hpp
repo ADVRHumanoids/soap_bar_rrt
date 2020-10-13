@@ -66,8 +66,7 @@ class Planner {
 		Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
 		bool similarityTest(Stance sigmaNew);
 		double computeHrange(Configuration q);
-
-		
+		double computeHtorso(Configuration q);		
 
 	public:
 

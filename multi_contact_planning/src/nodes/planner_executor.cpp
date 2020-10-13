@@ -869,7 +869,6 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
         if(runPlanner){
             // create/initialize the planner
             Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
-            //Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
             std::cout << "planner created!" << std::endl;
 
             // run planner

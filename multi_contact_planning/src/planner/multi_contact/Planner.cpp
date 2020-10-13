@@ -406,6 +406,13 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
         }
     }
 
+    // postural
+    //Eigen::VectorXd qhome;
+    //planner_model->getRobotState("home", qhome);
+	//XBot::JointNameMap jmap;
+    //planner_model->eigenToMap(qhome, jmap);
+    //ci->setReferencePosture(jmap);
+    
    	// search IK solution
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c;
@@ -753,7 +760,7 @@ void Planner::run(){
 							for(int i = 0; i < sigmaNew.getSize(); i++) sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
 
 							double eCoMnorm = (rCoMdes - rCoM).norm();
-							bool resIK_CoM;
+							bool resIK_CoM = false;
 							if(eCoMnorm < 1e-03) resIK_CoM = true;
 							else resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
 							
@@ -774,6 +781,7 @@ void Planner::run(){
 					double dMin = 10000.0;
 					for(int i = 0; i < qListVertex.size(); i++){
 						double d = computeHrange(qListVertex.at(i));
+						//double d = computeHtorso(qListVertex.at(i));
 						if(d < dMin){
 							dMin = d;
 							iNew = i;
@@ -833,4 +841,14 @@ double Planner::computeHrange(Configuration q){
 	} 
 
 	return 1.0/ (2.0*(double)n);
+}
+
+double Planner::computeHtorso(Configuration q){
+	Eigen::Vector3d eTorsoCur = q.getFBOrientation();
+	Eigen::VectorXd qhome;
+    planner_model->getRobotState("home", qhome);
+	Eigen::Vector3d eTorsoDes = qhome.segment(3,3);
+	
+	Eigen::Vector3d d = eTorsoCur - eTorsoDes;
+	return fabs(d(0)) + fabs(d(1)) + fabs(d(2));	
 }
