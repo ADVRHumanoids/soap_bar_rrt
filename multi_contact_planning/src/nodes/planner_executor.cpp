@@ -209,9 +209,6 @@ void PlannerExecutor::init_load_model()
     ////////////////////////////////////////////////////////////////////////////////////////// PF
     n_dof = _model->getJointNum();
 
-    //q_init.resize(n_dof);
-    //q_init << 0.0883568, -0.126304, 0.639739, 1.10568, -4.72852, -1.10301, 0.0258766, -0.989014, 0.0479682, 0.0473017, -0.621278, -0.0289819, 0.0358694, -0.963558, 0.0608695, 0, -0.599092, -0.0373323, 0.0504259, 0.0425578, -2.16338, 1.03381, 1.70575, -0.611303, 2.34071, -0.972389, 0.272461, -0.322765, -2.36409, 0.584142, -1.21375, 0.540567, -0.155282, 1.9109;
-    
     q_init.resize(n_dof);
     q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
     q_goal.resize(n_dof);
@@ -410,16 +407,8 @@ void PlannerExecutor::init_load_validity_checker()
     ///////////////////////////////////////////////////////////////////////
     _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("LFootmot", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("LLowLeg", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("LWrMot2", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("LWrMot3", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("RFootmot", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("RLowLeg", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("RWrMot2", "<octomap>", true);
-    //_vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);
     ///////////////////////////////////////////////////////////////////////
    
 
@@ -562,6 +551,9 @@ void PlannerExecutor::init_interpolator()
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
     std::cout << "SETTING REFERENCES" << std::endl;
 
+    // NOTE: this is OK if used here (i.e., the non active contacts must remain fixed at the initial configuration)
+    // but it does not work in the planner (see computeIKSolution in Planner.cpp for comparison)
+
     auto ci = _goal_generator->getCartesianInterface();
 
     std::vector<std::string> all_tasks;
@@ -665,7 +657,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     
     
     //if(_manifold) 
-        //_manifold->project(q);  // what s this???
+        //_manifold->project(q);  // not needed in this planner 
         
     
     _goal_model->setJointPosition(q);
@@ -883,8 +875,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             // run planner
             float t_elapsed = 0.0;
             auto t_start_chrono = std::chrono::steady_clock::now();
-            //planner->run();
-            planner->runSingleStage();
+            planner->run();
             std::cout << "Planning completed!" << std::endl;
             auto t_curr_chrono = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono).count();
             t_elapsed = (float)t_curr_chrono / 1000.0;
@@ -940,119 +931,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
 
         if(index_config == plan.size()) index_config = 0; 
     }
-     
-
-    /*    
-    std::vector<Stance> sigmaList_1, sigmaList_2;
-    std::vector<Configuration> qList_1, qList_2;
-    bool sol_found_1, sol_found_2;
-
-    bool stage_1 = false; 
-    bool stage_2 = false;
-
-    if(index_config == -1){
         
-        // create/initialize the planner
-        Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
-        std::cout << "planner created!" << std::endl;
-
-        if(stage_1){
-            // run 1st stage
-            float t_elapsed_1 = 0.0;
-            auto t_start_chrono_1 = std::chrono::steady_clock::now();
-            planner->run1stStage();
-            std::cout << "1st stage completed!" << std::endl;
-            auto t_curr_chrono_1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono_1).count();
-            t_elapsed_1 = (float)t_curr_chrono_1 / 1000.0;
-            std::cout << "Planning Time 1st Stage:: " << t_elapsed_1 << std::endl;  
-                
-            // retrieve 1st stage solution
-            sigmaList_1.clear();
-            qList_1.clear();
-            sol_found_1 = planner->retrieveSolution1stStage(sigmaList_1, qList_1);
-            if(sol_found_1) std::cout << "1st Stage Solution FOUND!" << std::endl;
-            else std::cout << "1st Stage Solution NOT FOUND!" << std::endl;
-            std::cout << "sigmaList_1.size() = " << sigmaList_1.size() << std::endl;
-            std::cout << "qList_1.size() = " << qList_1.size() << std::endl;
-            std::cout << "tree.size() = " << planner->getTreeSize() << std::endl;
-            writeOnFileConfigs(qList_1, "qList_1");
-            writeOnFileStances(sigmaList_1, "sigmaList_1");
-        }
-        else{
-            sigmaList_1.clear();
-            qList_1.clear();    
-            readFromFileConfigs(qList_1, "qList_1");
-            readFromFileStances(sigmaList_1, "sigmaList_1");
-            sol_found_1 = true;      
-        }
-        
-        if(sol_found_1){
-
-            if(stage_2){
-                // run 2nd stage
-                float t_elapsed_2 = 0.0;
-                auto t_start_chrono_2 = std::chrono::steady_clock::now();
-                planner->run2ndStage(sigmaList_1, qList_1);
-                std::cout << "2nd stage completed!" << std::endl;
-                auto t_curr_chrono_2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono_2).count();
-                t_elapsed_2 = (float)t_curr_chrono_2 / 1000.0;
-                std::cout << "Planning Time 2nd Stage:: " << t_elapsed_2 << std::endl;  
-                
-                // retrieve 2nd stage solution
-                sigmaList_2.clear();
-                qList_2.clear();
-                sol_found_2 = planner->retrieveSolution2ndStage(sigmaList_2, qList_2);
-                if(sol_found_2) std::cout << "2nd Stage Solution FOUND!" << std::endl;
-                else std::cout << "2nd Stage Solution NOT FOUND!" << std::endl;
-                std::cout << "sigmaList_2.size() = " << sigmaList_2.size() << std::endl;
-                std::cout << "qList_2.size() = " << qList_2.size() << std::endl;
-                writeOnFileConfigs(qList_2, "qList_2");
-                writeOnFileStances(sigmaList_2, "sigmaList_2");   
-            }
-            else{
-                sigmaList_2.clear();
-                qList_2.clear();    
-                readFromFileConfigs(qList_2, "qList_2");
-                readFromFileStances(sigmaList_2, "sigmaList_2");
-                sol_found_2 = true;            
-            }
-
-        }
-
-        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
-        _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
-        _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
-        _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
-    
-    } 
-
-    
-    // this is for DEBUGGING
-    if(index_config == -1 && sol_found_2){
-        for(int i = 0; i < qList_2.size(); i++){
-            Configuration q = qList_2.at(i);
-            Eigen::VectorXd c(n_dof);
-            c.segment(0,3) = q.getFBPosition();
-            c.segment(3,3) = q.getFBOrientation();
-            c.tail(n_dof-6) = q.getJointValues();
-            plan.push_back(c);
-        }    
-        index_config++; 
-    }
-
-    if(plan.size() > 0){
-        _goal_model->setJointPosition(plan[index_config]);
-        _goal_model->update();    
-          
-        index_config++;
-                
-        std::cout << "index_config = " << index_config << std::endl;
-        std::cout << "plan.size() = " << plan.size() << std::endl;
-
-        if(index_config == plan.size()) index_config = 0; 
-    }
-    */ 
-    
     
     return true; // if solution found
          
