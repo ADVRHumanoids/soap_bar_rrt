@@ -107,8 +107,8 @@ private:
     std::vector<Eigen::VectorXd> plan;
 
     int n_dof;
-    Eigen::VectorXd qInit;
-    Eigen::VectorXd qGoal;
+    Eigen::VectorXd q_init;
+    Eigen::VectorXd q_goal;
 
     /////////////////////////////////////////// PF
     

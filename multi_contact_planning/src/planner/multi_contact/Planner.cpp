@@ -99,8 +99,9 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 	pointCloud = _pointCloud;
 	pointNormals = _pointNormals;
 
-	// set number of dof of the robot of interest
+	// set number of dof of the robot of interest and joint limits
 	n_dof = planner_model->getJointNum();
+	planner_model->getJointLimits(qmin, qmax);
 
 	// set initial configuration
 	qInit = _qInit;	
@@ -111,10 +112,12 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 	Eigen::MatrixXd nCInit;
 	rCInit.resize(_activeEEsInit.size(), 3);
 	nCInit.resize(_activeEEsInit.size(), 3);
+	std::cout << "INIT POSES" << std::endl;
 	for(int i = 0; i < _activeEEsInit.size(); i++){
 		Eigen::Affine3d T_i = computeForwardKinematics(qInit, _activeEEsInit.at(i));
 		rCInit.row(i) = T_i.translation().transpose();
-		nCInit.row(i) = getNormalAtPoint(rCInit.row(i)).transpose();						
+		nCInit.row(i) = getNormalAtPoint(rCInit.row(i)).transpose();				
+		std::cout << "EE = " << _activeEEsInit.at(i) << " pos = " << T_i.translation().transpose() << std::endl;		
 	}
 	Eigen::MatrixXd FCInit;
 	FCInit.resize(_activeEEsInit.size(), 3);	
@@ -142,10 +145,12 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 	Eigen::MatrixXd nCGoal;
 	rCGoal.resize(_activeEEsGoal.size(), 3);
 	nCGoal.resize(_activeEEsGoal.size(), 3);
+	std::cout << "GOAL POSES" << std::endl;
 	for(int i = 0; i < _activeEEsGoal.size(); i++){
 		Eigen::Affine3d T_i = computeForwardKinematics(qGoal, _activeEEsGoal.at(i));
 		rCGoal.row(i) = T_i.translation().transpose();
-		nCGoal.row(i) = getNormalAtPoint(rCGoal.row(i)).transpose();						
+		nCGoal.row(i) = getNormalAtPoint(rCGoal.row(i)).transpose();					
+		std::cout << "EE = " << _activeEEsInit.at(i) << " pos = " << T_i.translation().transpose() << std::endl;	
 	}
 	Eigen::MatrixXd FCGoal;
 	FCGoal.resize(_activeEEsGoal.size(), 3);	
@@ -580,8 +585,20 @@ std::string Planner::getTaskStringName(EndEffector ee){
 
 	return ee_str;
 }
-			
 
+EndEffector Planner::getTaskEndEffectorName(std::string ee_str){
+	EndEffector ee;
+
+	if(ee_str.compare("TCP_L") == 0) ee = L_HAND;
+	else if(ee_str.compare("TCP_R") == 0) ee = R_HAND;
+	else if(ee_str.compare("l_sole") == 0) ee = L_FOOT;
+	else if(ee_str.compare("r_sole") == 0) ee = R_FOOT;
+	else if(ee_str.compare("Head") == 0) ee = HEAD;
+	else ee = COM;
+
+	return ee;
+}
+			
 bool Planner::computeIKSolutionWithoutCoM(Stance sigma, Configuration &q, Configuration q_ref){
 
 	//std::cout << "**************** GS INVOCATION WITHOUT COM *******************" << std::endl;
@@ -779,6 +796,65 @@ bool Planner::computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Confi
     Eigen::VectorXd c;
     if(!goal_generator->sample(c, time_budget)) return false;
     //if(!goal_generator->sample(c, time_budget, c_init)) return false;
+    else{
+        q.setFBPosition(c.segment(0,3));
+        q.setFBOrientation(c.segment(3,3));
+        q.setJointValues(c.tail(n_dof-6));
+        return true;
+    }
+
+}
+
+bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev){
+	
+	// build references
+	std::vector<std::string> active_tasks;
+	std::vector<Eigen::Affine3d> ref_tasks;
+	if(refCoM){
+		active_tasks.push_back("Com");
+		Eigen::Affine3d T_CoM_ref;
+	    T_CoM_ref.translation() = rCoM;
+	    T_CoM_ref.linear() = Eigen::Matrix3d::Identity();
+	    ref_tasks.push_back(T_CoM_ref);
+	}
+	for(int i = 0; i < sigma.getSize(); i++){
+    	EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+    	active_tasks.push_back(getTaskStringName(ee));
+		ref_tasks.push_back(sigma.retrieveContactPose(ee));
+	}
+
+	// set references
+    std::vector<std::string> all_tasks;
+    all_tasks.push_back("Com");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
+
+    int i_init = 0;
+    if(!refCoM){
+    	ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+    	i_init = 1;
+    }
+
+    for(int i = i_init; i < all_tasks.size(); i++){
+        int index = -1;
+        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
+    
+        if(index == -1){
+        	ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+        	ci->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
+        }
+    	else{
+            ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            ci->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+        }
+    }
+
+   	// search IK solution
+    double time_budget = GOAL_SAMPLER_TIME_BUDGET_COM;
+    Eigen::VectorXd c;
+    if(!goal_generator->sample(c, time_budget)) return false;
     else{
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
@@ -1540,7 +1616,8 @@ void Planner::runSingleStage(){
 				for(int k = 0; k < NUM_CONF_PER_VERTEX; k++){
 
 					// COMPUTE IK SOLUTION (NOT BALANCED)					
-					bool resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
+					//bool resIK = computeIKSolutionWithoutCoM(sigmaNew, qNew, qNear);
+					bool resIK = computeIKSolution(sigmaNew, false, Eigen::Vector3d(0.0,0.0,0.0), qNew, qNear);
 					if(resIK) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
 					else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
 
@@ -1567,7 +1644,8 @@ void Planner::runSingleStage(){
 							double eCoMnorm = (rCoMdes - rCoM).norm();
 							bool resIK_CoM;
 							if(eCoMnorm < 1e-03) resIK_CoM = true;
-							else resIK_CoM = computeIKSolutionWithCoM(sigmaNew, rCoM, qNew, qNear);
+							else resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
+							//else resIK_CoM = computeIKSolutionWithCoM(sigmaNew, rCoM, qNew, qNear);
 
 							if(resIK_CoM){
 								qListVertex.push_back(qNew);			
@@ -1582,16 +1660,36 @@ void Planner::runSingleStage(){
 
 				int iNew;
 				if(qListVertex.size() > 0){
-					iNew = integerDistribution(integerGenerator) % qListVertex.size();
+					//iNew = integerDistribution(integerGenerator) % qListVertex.size();
+					double dMin = 10000.0;
+					for(int i = 0; i < qListVertex.size(); i++){
+						double d = computeHrange(qListVertex.at(i));
+						if(d < dMin){
+							dMin = d;
+							iNew = i;
+						}
+					}	
+
 					qNew = qListVertex.at(iNew);
 					sigmaNew = sigmaListVertex.at(iNew);
 
-					vNew = new Vertex(sigmaNew, qNew, iNear);  
+					vNew = new Vertex(sigmaNew, qNew, iNear);
+
+					///////////////////////////////////////////////////////////////////
+					solutionFound = isGoalStance(vNew);
+					if(solutionFound) vNew = new Vertex(sigmaGoal, qGoal, iNear);
+					///////////////////////////////////////////////////////////////////
+
 					tree->addVertex(vNew);
 
-					foutLogMCP << "--------------- VERTEX ADDED ---------------" << std::endl;
+					foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
+
+					foutLogMCP << "L_HAND = " << computeForwardKinematics(qNew, L_HAND).translation().transpose() << std::endl;
+					foutLogMCP << "R_HAND = " << computeForwardKinematics(qNew, R_HAND).translation().transpose() << std::endl;
+					foutLogMCP << "L_FOOT = " << computeForwardKinematics(qNew, L_FOOT).translation().transpose() << std::endl;
+					foutLogMCP << "R_FOOT = " << computeForwardKinematics(qNew, R_FOOT).translation().transpose() << std::endl;
 								
-					solutionFound = isGoalStance(vNew);		
+					//solutionFound = isGoalStance(vNew);		
 				} 	
 						
 			}
@@ -1991,4 +2089,20 @@ void Planner::run2ndStage(std::vector<Stance> sigmaList, std::vector<Configurati
 
 int Planner::getTreeSize(){
 	return tree->getSize();
+}
+
+
+double Planner::computeHrange(Configuration q){
+	Eigen::VectorXd c = q.getJointValues();
+	int n = n_dof-6;
+	Eigen::VectorXd cMin = qmin.tail(n);
+	Eigen::VectorXd cMax = qmax.tail(n);
+	Eigen::VectorXd cBar = 0.5*(cMin + cMax);
+
+	double sum = 0.0;
+	for(int i = 0; i < n; i++){
+		sum += std::pow((c(i) - cBar(i)) / (cMax(i) - cMin(i)), 2.0);
+	} 
+
+	return 1.0/ (2.0*(double)n);
 }

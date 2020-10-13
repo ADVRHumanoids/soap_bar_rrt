@@ -50,6 +50,7 @@ class Planner {
         std::vector<Configuration> qList2ndStage;
 
         int n_dof;
+        Eigen::VectorXd qmin, qmax;
 
         int sol_len;
 
@@ -87,6 +88,10 @@ class Planner {
 		bool similarityTest(Stance sigmaNew);
 
 		void updateEndEffectorsList(Configuration qNew, Stance sigmaNew);
+		double computeHrange(Configuration q);
+
+		EndEffector getTaskEndEffectorName(std::string ee_str);
+		bool computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev);
 
 		
 

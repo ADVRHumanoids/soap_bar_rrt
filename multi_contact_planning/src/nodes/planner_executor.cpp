@@ -209,21 +209,21 @@ void PlannerExecutor::init_load_model()
     ////////////////////////////////////////////////////////////////////////////////////////// PF
     n_dof = _model->getJointNum();
 
-    //Eigen::VectorXd qInit(n_dof);
-    //qInit << 0.0883568, -0.126304, 0.639739, 1.10568, -4.72852, -1.10301, 0.0258766, -0.989014, 0.0479682, 0.0473017, -0.621278, -0.0289819, 0.0358694, -0.963558, 0.0608695, 0, -0.599092, -0.0373323, 0.0504259, 0.0425578, -2.16338, 1.03381, 1.70575, -0.611303, 2.34071, -0.972389, 0.272461, -0.322765, -2.36409, 0.584142, -1.21375, 0.540567, -0.155282, 1.9109;
+    //q_init.resize(n_dof);
+    //q_init << 0.0883568, -0.126304, 0.639739, 1.10568, -4.72852, -1.10301, 0.0258766, -0.989014, 0.0479682, 0.0473017, -0.621278, -0.0289819, 0.0358694, -0.963558, 0.0608695, 0, -0.599092, -0.0373323, 0.0504259, 0.0425578, -2.16338, 1.03381, 1.70575, -0.611303, 2.34071, -0.972389, 0.272461, -0.322765, -2.36409, 0.584142, -1.21375, 0.540567, -0.155282, 1.9109;
     
-    qInit.resize(n_dof);
-    qInit << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
-    qGoal.resize(n_dof);
-    qGoal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
+    q_init.resize(n_dof);
+    q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
+    q_goal.resize(n_dof);
+    q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
     
-    _model->setJointPosition(qInit);
+    _model->setJointPosition(q_init);
     _model->update();
 
-    _start_model->setJointPosition(qInit);
+    _start_model->setJointPosition(q_init);
     _start_model->update();
 
-    _goal_model->setJointPosition(qInit);
+    _goal_model->setJointPosition(q_init);
     _goal_model->update();
     //////////////////////////////////////////////////////////////////////////////////////////  
         
@@ -233,7 +233,8 @@ void PlannerExecutor::init_load_model()
     _model->getPose("l_sole", T);
 
     Eigen::Vector3d center;
-    center << 0.0, 0.0, T.translation().z();
+    //center << 0.0, 0.0, T.translation().z();
+    center << 0.0, 0.0, 0.0;
     double side_x = 2.0;
     double side_y = 2.0;
     double side_z = 3.0;
@@ -313,8 +314,8 @@ void PlannerExecutor::init_load_planner()
 
     if(_model->isFloatingBase())
     {
-        qmax.head<6>() << 1.0, 1.0, 1.0, 2*M_PI, 2*M_PI, 2*M_PI;
-        qmin.head<6>() << -qmax.head<6>();
+        //qmax.head<6>() << 1.0, 1.0, 1.0, 2*M_PI, 2*M_PI, 2*M_PI;
+        //qmin.head<6>() << -qmax.head<6>();
 
         YAML_PARSE_OPTION(_planner_config["state_space"],
                 floating_base_pos_min,
@@ -831,94 +832,40 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     auto ci = _goal_generator->getCartesianInterface();
         
     // retrieve start
-
     Configuration qInit;
-    Eigen::VectorXd qstart;
-    _start_model->getJointPosition(qstart);
-    Eigen::Vector3d pFB(qstart(0), qstart(1), qstart(2));
-    Eigen::Vector3d eFB(qstart(3), qstart(4), qstart(5));
-    Eigen::VectorXd jnt = qstart.tail(n_dof-6);
-    qInit.setFBPosition(pFB);
-    qInit.setFBOrientation(eFB);
-    qInit.setJointValues(jnt);  
-
+    qInit.setFBPosition(Eigen::Vector3d(q_init(0), q_init(1), q_init(2)));
+    qInit.setFBOrientation(Eigen::Vector3d(q_init(3), q_init(4), q_init(5)));
+    qInit.setJointValues(q_init.tail(n_dof-6));  
     std::vector<EndEffector> activeEEsInit;
-    std::vector<Eigen::Affine3d> poseActiveEEsInit;
-    Eigen::Affine3d T_init;
-        
-    activeEEsInit.clear();
-    poseActiveEEsInit.clear();
     activeEEsInit.push_back(L_HAND);
     activeEEsInit.push_back(R_HAND); 
     activeEEsInit.push_back(L_FOOT);
     activeEEsInit.push_back(R_FOOT);
-    ci->getCurrentPose("TCP_L", T_init);
-    poseActiveEEsInit.push_back(T_init);
-    ci->getCurrentPose("TCP_R", T_init);
-    poseActiveEEsInit.push_back(T_init);
-    ci->getCurrentPose("l_sole", T_init);
-    poseActiveEEsInit.push_back(T_init);
-    ci->getCurrentPose("r_sole", T_init);
-    poseActiveEEsInit.push_back(T_init);
         
-    // construct goal 
-
+    // retrieve goal 
+    Configuration qGoal;
+    qGoal.setFBPosition(Eigen::Vector3d(q_goal(0), q_goal(1), q_goal(2)));
+    qGoal.setFBOrientation(Eigen::Vector3d(q_goal(3), q_goal(4), q_goal(5)));
+    qGoal.setJointValues(q_goal.tail(n_dof-6));  
     std::vector<EndEffector> activeEEsGoal;
-    std::vector<Eigen::Affine3d> poseActiveEEsGoal;
-    Eigen::Affine3d T_goal;
-    Eigen::Matrix3d rot_goal = Eigen::Matrix3d::Identity(3,3);
-    Eigen::Vector3d pos_goal;
-        
-    activeEEsGoal.clear();
-    poseActiveEEsGoal.clear();
     activeEEsGoal.push_back(L_HAND);
     activeEEsGoal.push_back(R_HAND);
     activeEEsGoal.push_back(L_FOOT);
     activeEEsGoal.push_back(R_FOOT); 
-
-    //LH
-    pos_goal << 1.0, 0.2, 1.4;
-    //pos_goal << 0.8, 0.4, 0.0; // init 0.7   
-    T_goal.translation() = pos_goal;
-    T_goal.linear() = rot_goal;
-    poseActiveEEsGoal.push_back(T_goal);
-    //RH
-    pos_goal << 1.0, -0.4, 1.4;
-    //pos_goal << 0.7, -0.6, 0.0; // init 
-    T_goal.translation() = pos_goal;
-    T_goal.linear() = rot_goal;
-    poseActiveEEsGoal.push_back(T_goal);
-    //LF
-    pos_goal << 0.0, 0.0, 0.0;
-    //pos_goal << -0.2, 0.1, 0.0;
-    //pos_goal << -0.5, 0.0, 0.0; // init
-    T_goal.translation() = pos_goal;
-    T_goal.linear() = rot_goal;
-    poseActiveEEsGoal.push_back(T_goal);
-    //RF
-    pos_goal << 0.0, -0.2, 0.0;
-    //pos_goal << -0.5, -0.2, 0.0; // init
-    T_goal.translation() = pos_goal;
-    T_goal.linear() = rot_goal;
-    poseActiveEEsGoal.push_back(T_goal);
-            
+        
     // construct the environment description    
-
     Eigen::MatrixXd pointCloud = _pc_manager->getPointCloud();
     Eigen::MatrixXd pointNormals = _pc_manager->getNormals();
 
     // construct allowed end-effectors description
-    
     std::vector<EndEffector> allowedEEs;
-    allowedEEs.clear();
-    allowedEEs.push_back(L_FOOT);
-    allowedEEs.push_back(R_FOOT);
     allowedEEs.push_back(L_HAND);
     allowedEEs.push_back(R_HAND);  
-
+    allowedEEs.push_back(L_FOOT);
+    allowedEEs.push_back(R_FOOT);
+    
     // plan a solution    
 
-     
     std::vector<Stance> sigmaList;
     std::vector<Configuration> qList;
     bool sol_found;
@@ -929,7 +876,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
         
         if(runPlanner){
             // create/initialize the planner
-            Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
+            Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
+            //Planner* planner = new Planner(qInit, poseActiveEEsInit, activeEEsInit, poseActiveEEsGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
             std::cout << "planner created!" << std::endl;
 
             // run planner
