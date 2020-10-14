@@ -862,7 +862,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = true; 
+    bool runPlanner = false; 
     
     if(index_config == -1){
         

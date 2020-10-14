@@ -840,7 +840,7 @@ double Planner::computeHrange(Configuration q){
 		sum += std::pow((c(i) - cBar(i)) / (cMax(i) - cMin(i)), 2.0);
 	} 
 
-	return 1.0/ (2.0*(double)n);
+	return (1.0 / (2.0*(double)n)) * sum;
 }
 
 double Planner::computeHtorso(Configuration q){
