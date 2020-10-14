@@ -33,6 +33,7 @@ class Planner {
 
 		Configuration qInit; 
 		Stance sigmaInit;
+		Configuration qGoal; 
 		Stance sigmaGoal;
 		Eigen::MatrixXd pointCloud;
 		Eigen::MatrixXd pointNormals;
@@ -42,62 +43,45 @@ class Planner {
         XBot::ModelInterface::Ptr planner_model;
         GoalGenerator::Ptr goal_generator;
         XBot::Cartesian::CartesianInterfaceImpl::Ptr ci;
-
-        std::vector<Stance> sigmaList2ndStage;
-        std::vector<Configuration> qList2ndStage;
+        
+        XBot::Cartesian::Planning::ValidityCheckContext vc_context;
 
         int n_dof;
-
-        int sol_len;
+        Eigen::VectorXd qmin, qmax;
 
 		bool isGoalStance(Vertex* v);
-		Eigen::Vector3d pickRandomPoint(); 
-		Eigen::Vector3d pickRandomPointInReachableWorkspace(Configuration q); // NOT USED
-		Eigen::Vector3d pickRandomPointInReachableWorkspace(EndEffector pk, Configuration q); // NOT USED
+		Eigen::Vector3d pickRandomPoint();
+		bool nonEmptyReachableWorkspace(EndEffector pk, Configuration q);
+		Eigen::Vector3d pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index);
 		EndEffector pickRandomEndEffector();
 		Contact* pickRandomContactFromGoalStance();
 		int findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r);
-		bool isGoalContactReachable(EndEffector pk, Configuration q); // NOT USED
-		Eigen::Vector3d getNormalAtPoint(Eigen::Vector3d p);	
-		Eigen::Vector3d getNormalAtPointByIndex(int index);
-		bool computeIKSolution(Stance sigma, Eigen::Vector3d rCoM, Configuration &q, Configuration q_ref);
-		bool computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Eigen::Vector3d rCoMdes, Eigen::MatrixXd rCdes, Eigen::MatrixXd nCdes, Eigen::Vector3d &rCoM, Eigen::MatrixXd &rC, Eigen::MatrixXd &FC);
-
-		Eigen::Vector3d computeCoM(Configuration qNear);
-		Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
-		Eigen::Matrix3d generateRandomRotationAroundAxis(Eigen::Vector3d axis);
-		Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
 		std::string getTaskStringName(EndEffector ee);
-		bool nonEmptyReachableWorkspace(EndEffector pk, Configuration q);
-		Eigen::Vector3d pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand);
-		Eigen::Vector3d pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index);
-
-		Eigen::Vector3d getNormalAtContact(EndEffector ee, Eigen::Matrix3d rot);
-
-		Eigen::Vector3d generateRandomCoM(Configuration qNear);
-
-		bool computeIKSolutionWithoutCoM(Stance sigma, Configuration &q, Configuration q_ref);
-		bool computeIKSolutionWithCoM(Stance sigma, Eigen::Vector3d rCoM, Configuration &q, Configuration q_ref);
-
-		bool similarityTest(Configuration qNew);
-
-		void updateEndEffectorsList(Configuration qNew, Stance sigmaNew);
-
-		
+		EndEffector getTaskEndEffectorName(std::string ee_str);
+		bool computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev);
+		bool computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Eigen::Vector3d rCoMdes, Eigen::MatrixXd rCdes, Eigen::MatrixXd nCdes, Eigen::Vector3d &rCoM, Eigen::MatrixXd &rC, Eigen::MatrixXd &FC);
+		Eigen::Vector3d getNormalAtPoint(Eigen::Vector3d p);
+		Eigen::Vector3d getNormalAtPointByIndex(int index);
+		Eigen::Vector3d computeCoM(Configuration q);
+		Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
+		bool similarityTest(Stance sigmaNew);
+		double computeHrange(Configuration q);
+		double computeHtorso(Configuration q);		
 
 	public:
 
-        //Planner(Configuration _qInit, Eigen::MatrixXd _posActiveEEsInit, Eigen::MatrixXd _contactForcesInit, std::vector<EndEffector> _activeEEsInit, Eigen::MatrixXd _posActiveEEsGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals);
-		//Planner(Configuration _qInit, std::vector<Eigen::Affine3d> _poseActiveEEsInit, std::vector<Eigen::Vector3d> _contactForcesInit, std::vector<EndEffector> _activeEEsInit, std::vector<Eigen::Affine3d> _poseActiveEEsGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator);
-		Planner(Configuration _qInit, std::vector<Eigen::Affine3d> _poseActiveEEsInit, std::vector<EndEffector> _activeEEsInit, std::vector<Eigen::Affine3d> _poseActiveEEsGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator);
-	
-		~Planner(); 
+        Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context);
+		~Planner();
+		void run();
+		bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
 		int getTreeSize();
-
-		void run1stStage();
-		void run2ndStage(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
-		bool retrieveSolution1stStage(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
-		bool retrieveSolution2ndStage(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);	
+				
 };
 
 #endif
+
+
+
+
+
+

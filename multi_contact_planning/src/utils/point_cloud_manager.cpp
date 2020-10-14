@@ -98,6 +98,12 @@ void PointCloudManager::computeNormals (const double radius_search)
 
     // Compute normals
     ne.compute ( *_pcl_normals );
+
+    // PF: modify normals of the ground 
+    //for (int i = 0; i < _pcl_normals->width; i++){
+        //if(_pcl_pointcloud->points[i].x < 0.85 && std::sqrt(std::pow(_pcl_pointcloud->points[i].x,2) + std::pow(_pcl_pointcloud->points[i].y,2)) > 1e-04) _pcl_normals->points[i].normal_z = -_pcl_normals->points[i].normal_z;
+    //}
+    
 }
 
 Eigen::MatrixXd PointCloudManager::getNormals()

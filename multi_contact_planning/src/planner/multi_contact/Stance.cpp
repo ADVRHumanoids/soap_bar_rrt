@@ -63,10 +63,12 @@ void Stance::print(){
 		EndEffector ee = contactsList.at(i)->getEndEffectorName();
 		Eigen::Affine3d T = contactsList.at(i)->getPose();
 		Eigen::Vector3d F = contactsList.at(i)->getForce();
+		Eigen::Vector3d n = contactsList.at(i)->getNormal();
 
 		std::cout << "ee = " << ee << std::endl;
 		std::cout << "pos = " << T.translation().transpose() << std::endl;
 		std::cout << "force = " << F.transpose() << std::endl;
+		std::cout << "normal = " << n.transpose() << std::endl;
 	}
 
 } 

@@ -214,7 +214,7 @@ bool PlanningSceneWrapper::checkCollisions() const
     _monitor->getPlanningScene()->checkCollision(collision_request, collision_result, _monitor->getPlanningScene()->getCurrentState(), acm);
 
     // print colliding
-    for (auto i : collision_result.contacts) ROS_INFO("Contact between: %s and %s", i.first.first.c_str(), i.first.second.c_str());
+    //for (auto i : collision_result.contacts) ROS_INFO("Contact between: %s and %s", i.first.first.c_str(), i.first.second.c_str());
 
     return collision_result.collision;
 }

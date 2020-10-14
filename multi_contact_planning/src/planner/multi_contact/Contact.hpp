@@ -19,6 +19,8 @@ class Contact {
 		Eigen::Vector3d getForce();
 		Eigen::Vector3d getNormal();
 
+		void setForce(Eigen::Vector3d _force);
+
     private:
    
 	    EndEffector name;

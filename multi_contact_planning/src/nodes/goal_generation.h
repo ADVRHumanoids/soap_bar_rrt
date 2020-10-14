@@ -22,6 +22,7 @@ public:
 
     // PF ////////////////////////////////////////////////////////////////////////
     XBot::Cartesian::CartesianInterfaceImpl::Ptr getCartesianInterface(); 
+    bool sample(Eigen::VectorXd& q, double time_out, Eigen::VectorXd qinit);
     //////////////////////////////////////////////////////////////////////////////
 
     bool setErrorTolerance(const double error_tolerance)
