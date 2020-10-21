@@ -11,72 +11,16 @@ from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
 import matlogger2.matlogger as matlog
 from centroidal_planner.srv import setStiffnessDamping
 import yaml
+import cogimon
+import q_connector
+import loader
 
 from cartesian_interface import pyest
 from geometry_msgs.msg import *
-def make_problem_desc_ik(ctrl_points):
-
-    # write cartesio config
-    ik_cfg = dict()
-
-    ik_cfg['solver_options'] = {'regularization': 1e-4, 'back-end': 'osqp'}
-
-    ik_cfg['stack'] = [
-        ctrl_points, ['com'], ['postural']
-    ]
-
-    ik_cfg['postural'] = {
-        'name': 'postural',
-        'type': 'Postural',
-        'lambda': 0.01,
-    }
-
-    ik_cfg['com'] = {
-        'name': 'com',
-        'type': 'Com',
-        'lambda': 0.01,
-    }
-
-    for c in ctrl_points:
-
-        ik_cfg[c] = {
-            'type': 'Cartesian',
-            'distal_link': c,
-            'indices': [0, 1, 2, 3, 4, 5],
-            'lambda': .1
-        }
-
-    ik_str = yaml.dump(ik_cfg)
-
-    return ik_str
-
-
-def get_robot():
-
-    np.set_printoptions(precision=3, suppress=True)
-
-    # INIT FOR XBOTCORE
-    opt = xbot_opt.ConfigOptions()
-
-    urdf = rospy.get_param('xbotcore/robot_description')
-    srdf = rospy.get_param('xbotcore/robot_description_semantic')
-
-    opt.set_urdf(urdf)
-    opt.set_srdf(srdf)
-    opt.generate_jidmap()
-    opt.set_string_parameter('model_type', 'RBDL')
-    opt.set_bool_parameter('is_model_floating_base', True)
-    opt.set_string_parameter('framework', 'ROS')
-
-    robot = xbot.RobotInterface(opt)
-    model = xbot.ModelInterface(opt)
-
-    return robot, model
 
 def sensors_init(arm_estimation_flag, f_est) :
 
-
-    ft_map = robot.getForceTorque()
+    ft_map = cogimon.robot.getForceTorque()
 
     if (arm_estimation_flag) :
         # create force estimator
@@ -92,6 +36,7 @@ def gen_com_planner(contacts, mass, mu) :
 
     com_pl = cpl.CoMPlanner(contacts, mass)
 
+
     # WEIGHTS
     com_pl.SetMu(mu)
     com_pl.SetCoMWeight(1000000000000)  # 100000.0
@@ -105,43 +50,27 @@ if __name__ == '__main__':
     rospy.init_node('standing_up')
     roscpp_init('standing_up', [])
     # define contacts for the ForcePublisher
+    opt = xbot_opt.ConfigOptions()
 
-    #select contacts of COMAN+
-    feet_list = ['l_sole', 'r_sole']
-    hands_list = ['l_ball_tip', 'r_ball_tip']
-    ctrl_points = feet_list + hands_list
-    print ctrl_points
+    urdf = rospy.get_param('robot_description')
+    srdf = rospy.get_param('robot_description_semantic')
 
+    logged_data = []
+    log_path = '/tmp'
+    ctrl_points = {0:'l_ball_tip', 1:'r_ball_tip', 4:'l_sole', 5:'r_sole'}
+
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
+
+    stances = loader.readFromFileStances("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
+    q_list = loader.readFromFileConfigs("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
+
+    qc = q_connector.Connector(cogimon, q_list, stances)
+    qc.run()
     # logger = matlog.MatLogger2('/tmp/feet_on_wall')
     # logger.setBufferMode(matlog.BufferMode.CircularBuffer)
-    log_path = '/tmp'
-    robot, model = get_robot()
-    robot.sense()
-    model.syncFrom(robot)
+    # log_path = '/tmp'
 
-    robot.setControlMode(xbot.ControlMode.Position())
-
-    ik_dt = 0.01
-    ik_pb = make_problem_desc_ik(ctrl_points)
-    rospy.set_param('/cartesian/problem_description', ik_pb)
-    # get cartesio ros client
-    ci = pyci.CartesianInterface.MakeInstance('OpenSot',
-                                              ik_pb,
-                                              model,
-                                              ik_dt,
-                                              log_path=log_path)
-
-    soles = [ci.getTask(feet_list[0]), ci.getTask(feet_list[1])]
-    hands = [ci.getTask(hands_list[0]), ci.getTask(hands_list[1])]
-
-    com = ci.getTask('Com')
+    # cogimon.robot.sense()
+    # cogimon.model.syncFrom(cogimon.robot)
 
 
-
-
-    # print 'waiting for xbotcore_impedance...'
-    # rospy.wait_for_service('xbotcore_impedance/set_stiffness_damping')
-    # print 'done.'
-    #
-    # f_est = pyest.ForceEstimation(model, 0.05) # 0.05 treshold
-    # ft_map = sensors_init(arm_estimation_flag=True, f_est=f_est)

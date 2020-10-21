@@ -15,7 +15,7 @@
 using namespace XBot::Cartesian;
 
 void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
-    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = "/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
     
@@ -30,7 +30,7 @@ void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::
 }
 
 void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
-    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = "/home/francesco/advr/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;       
@@ -123,9 +123,9 @@ void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::s
                 n(index) = boost::lexical_cast<double>(value);
                 index++;
             }
-                
+
             Contact* c = new Contact(ee, T, F, n);
-            sigma.addContact(c);            
+            sigma.addContact(c);
         }    
         
         sigmaList.push_back(sigma);

@@ -12,7 +12,7 @@ static std::uniform_int_distribution<int> pointInWorkspaceDistribution(0, std::n
 static std::default_random_engine rotationGenerator;
 static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
-static std::ofstream foutLogMCP("/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
+static std::ofstream foutLogMCP("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/logMCP.txt", std::ofstream::trunc);
 
 Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
 
