@@ -18,8 +18,8 @@ def readFromFileStances(path):
             # 3. remove empty '' with filter
             # 4. cast to float with map
             stance.append(dict(ind=int(f.readline()), ref=dict(pose=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))),
-                                                      force=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))),
-                                                      normal=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))))))
+                                                               force=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))),
+                                                               normal=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))))))
 
         stances.append(stance)
 
@@ -44,8 +44,8 @@ def readFromFileConfigs(path):
 
 if __name__ == '__main__':
 
-    stances = readFromFileStances("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
-    q_list = readFromFileConfigs("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
+    stances = readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
+    q_list = readFromFileConfigs("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
 
     print len(stances)
     print len(q_list)

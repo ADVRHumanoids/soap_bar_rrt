@@ -61,8 +61,8 @@ if __name__ == '__main__':
 
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
 
-    stances = loader.readFromFileStances("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
-    q_list = loader.readFromFileConfigs("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
+    stances = loader.readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
+    q_list = loader.readFromFileConfigs("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
 
     qc = q_connector.Connector(cogimon, q_list, stances)
     qc.run()

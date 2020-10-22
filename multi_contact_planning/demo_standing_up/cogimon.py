@@ -58,17 +58,22 @@ class Cogimon:
         self.ps = validity_check.PlanningSceneWrapper(self.model)
         self.ps.startGetPlanningSceneServer()
 
+        self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.1)
+
         # goal sampler
-        self.gs = GoalSampler(self.model, ctrl_points.values())
+        # self.gs = GoalSampler(self.model, ctrl_points.values())
 
         # validity checker
         def is_model_state_valid():
             self.ps.update()
             self.rspub.publishTransforms('ci')
-            return not self.ps.checkCollisions()
+
+            print 'collision check: ', not self.ps.checkCollisions()
+            print 'stability check: ', self.cs.checkStability()
+            return (not self.ps.checkCollisions() and self.cs.checkStability())
 
         # set it to goal sampler
-        self.gs.set_validity_checker(is_model_state_valid)
+        # self.gs.set_validity_checker(is_model_state_valid)
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
@@ -145,7 +150,7 @@ class Cogimon:
         seg_durs = []
 
         for i in range(nknots - 1):
-            seg_durs.append(0.5)
+            seg_durs.append(0.05)
 
         seg_durs.insert(0, 0)
 

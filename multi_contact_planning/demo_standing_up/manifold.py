@@ -27,13 +27,19 @@ def make_constraint(model, ctrl_points, swing_id):
     }
 
     for c in ctrl_points.values():
-        cs_cfg[c] = {
-            'type': 'Cartesian',
-            'distal_link': c,
-            'lambda': 0.1,
-            'indices': [0,1,2]
-        }
-
+        if (c == "l_ball_tip" or c == "r_ball_tip"):
+            cs_cfg[c] = {
+                'type': 'Cartesian',
+                'distal_link': c,
+                'indices': [0, 1, 2],
+                'lambda': .1
+            }
+        else:
+            cs_cfg[c] = {
+                'type': 'Cartesian',
+                'distal_link': c,
+                'lambda': .1
+            }
     cs_cfg['postural'] = {
         'name': 'postural',
         'type': 'Postural',

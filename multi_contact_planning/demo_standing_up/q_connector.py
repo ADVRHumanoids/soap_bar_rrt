@@ -61,12 +61,19 @@ class Connector:
         }
 
         for c in self.model.ctrl_points.values():
-            ik_cfg[c] = {
-                'type': 'Cartesian',
-                'distal_link': c,
-                'indices': [0, 1, 2],
-                'lambda': .1
-            }
+            if (c == "l_ball_tip" or c == "r_ball_tip"):
+                ik_cfg[c] = {
+                    'type': 'Cartesian',
+                    'distal_link': c,
+                    'indices': [0, 1, 2],
+                    'lambda': .1
+                }
+            else:
+                ik_cfg[c] = {
+                    'type': 'Cartesian',
+                    'distal_link': c,
+                    'lambda': .1
+                }
 
         ik_str = yaml.dump(ik_cfg)
 
@@ -92,7 +99,7 @@ class Connector:
     def make_cartesian_interface(self):
         # Cartesian task to lift the swing contact
         self.ik_pb = self.make_problem_desc_ik()
-        rospy.set_param('/cartesian/problem_description', self.ik_pb)
+        # rospy.set_param('/cartesian/problem_description', self.ik_pb)
         self.log_path = '/tmp'
         # get cartesio ros client
         self.ci = pyci.CartesianInterface.MakeInstance('OpenSot',
@@ -153,24 +160,64 @@ class Connector:
             elif q[i] < self.model.qmin[i]:
                 q[i] = self.model.qmin[i]
 
+    def rotation(self, normal):
+
+        if normal == [0., 0., 1.]:
+            theta = [0, 0, 0]
+        elif normal == [-1., 0., 0.]:
+            theta = [0, -np.pi / 2, 0]
+        else:
+            raise Exception('wrong normal')
+
+        tx, ty, tz = theta
+
+        print 'theta', theta
+
+        Rx = np.array([[1, 0, 0], [0, np.cos(tx), -np.sin(tx)], [0, np.sin(tx), np.cos(tx)]])
+        Ry = np.array([[np.cos(ty), 0, np.sin(ty)], [0, 1, 0], [-np.sin(ty), 0, np.cos(ty)]])
+        Rz = np.array([[np.cos(tz), -np.sin(tz), 0], [np.sin(tz), np.cos(tz), 0], [0, 0, 1]])
+
+        return np.dot(Rz, np.dot(Rx, Ry))
+
     def run(self):
         index = 0
 
         for i in range(2, len(self.q_list), 2):
             # First planning phase to unload swing contact
             q_start = self.q_list[i]
+            self.model.model.setJointPosition(q_start)
+            self.model.model.update()
             self.q_bounder(q_start)
+            self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
+
             self.model.model.setJointPosition(q_start)
             self.model.model.update()
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
-
             self.model.model.setJointPosition(q_goal)
             self.model.model.update()
             self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
+            # set all contacts to be active for first planning phase
+            active_ind = [ind['ind'] for ind in self.stance_list[i]]
+            active_links = [self.model.ctrl_points[j] for j in active_ind]  #names
+            self.model.cs.setContactLinks(active_links)
+
+            # set rotation matrix for each contact
+            normals = [j['ref']['normal'] for j in self.stance_list[i]]
+
+            # print normals
+            [self.model.cs.setContactRotationMatrix(k,j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
+
+            # print self.model.cs.getContactLinks()
+
+            print zip(active_links,  [self.rotation(elem) for elem in normals])
+            print active_links
+            print [self.model.cs.getContactFrame(elem) for elem in active_links]
+
+            exit()
             solution = None
             print 'start first planning phase ...'
             while solution is None and index < self.MAX_RRT_ATTEMPTS:
@@ -180,6 +227,7 @@ class Connector:
                     error("Unable to find a feasible plan!")
 
                 solution, error = self.model.plan_step(q_start, q_goal, planner_type='RRTConnect', timeout=60.0)
+
             print 'done!'
             print 'start interpolation ...'
             solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
@@ -195,7 +243,7 @@ class Connector:
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
                 # self.model.model.setPositionReference(solution_interp)
                 # self.model.model.move()
-                rospy.sleep(0.00001) #self.ik_dt
+                rospy.sleep(self.ik_dt)
             print 'done!'
 
             # get active contacts from 'stance_list' to retrieve lifted contact
@@ -204,11 +252,9 @@ class Connector:
             lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
                               x not in [j['ind'] for j in self.stance_list[i + 1]]][0]
 
-            print 'lifting contact', lifted_contact, 'which corresponds to', self.model.ctrl_points[lifted_contact]
-
             self.make_cartesian_interface()
 
-            scale = 0.1
+            scale = 0.0
             lifted_contact_final_pose = self.ctrl_tasks[lifted_contact].getPoseReference()[0]
             lifted_contact_final_pose.translation = lifted_contact_final_pose.translation + scale * np.array(self.stance_list[i+2][lifted_contact]['ref']['normal'])
             self.ctrl_tasks[lifted_contact].setPoseTarget(lifted_contact_final_pose, 1.0)
@@ -217,7 +263,6 @@ class Connector:
             ci_time = 0.0
             time_from_reaching = 0.
             UNABLE_TO_SOLVE_MAX = 5.
-            CONVERGENCE_TIME = 5.
             q = np.empty(shape=[self.model.model.getJointNum(), 0])
 
             print 'starting cartesian trajectory ...'
@@ -240,28 +285,53 @@ class Connector:
             print 'done!'
 
             print 'replicating trajectory(2/4) ...'
-            for i in range(np.size(q, 1)):
-                self.model.replay_model.setJointPosition(q[:,i])
+            for j in range(np.size(q, 1)):
+                self.model.replay_model.setJointPosition(q[:,j])
                 self.model.replay_model.update()
-                self.model.model.setJointPosition(q[:,i])
+                self.model.model.setJointPosition(q[:,j])
                 self.model.model.update()
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
+
             print 'done!'
 
             # Second planning phase
-            q_start = self.model.getJointPosition()
-            q_goal = self.q_list[i+2]
+            q_start = self.model.model.getJointPosition()
+            self.q_bounder(q_start)
+            self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
+            q_goal = self.q_list[i+2]
+            self.q_bounder(q_goal)
+            self.model.model.setJointPosition(q_goal)
+            self.model.model.update()
+            self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
+
+            # set all contacts to be active for second planning phase
+            active_ind = [ind['ind'] for ind in self.stance_list[i+1]]
+            active_links = [self.model.ctrl_points[j] for j in active_ind]  #names
+            self.model.cs.setContactLinks(active_links)
+
+            # set rotation matrix for each contact
+            normals = [j['ref']['normal'] for j in self.stance_list[i+1]]
+            [self.model.cs.setContactRotationMatrix(k,j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
+
+
+            print 'check next pose', self.model.state_vc(self.q_list[i+1])
+            raw_input('click')
+
+            solution = None
+            print 'starting second planning phase ...'
             while solution is None and index < self.MAX_RRT_ATTEMPTS:
                 index = index + 1
 
                 if index == self.MAX_RRT_ATTEMPTS:
                     raise Exception("Unable to find a feasble plan!")
 
-                solution, error = self.model.plan_steps(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=15.0)
+                solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=15.0)
             solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
 
+            print 'done!'
 
+            print 'starting interpolation (3/4) ...'
             for val in range(np.size(solution_interp, 1)):
 
                 self.model.replay_model.setJointPosition(solution_interp[:,val])
@@ -273,7 +343,7 @@ class Connector:
                 # self.model.model.move()
                 rospy.sleep(self.ik_dt)
 
-
+            print 'done!'
             # Surface reacher
             self.surface_reacher(self.ctrl_tasks[lifted_contact], 20)
 
