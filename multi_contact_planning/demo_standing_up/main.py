@@ -61,11 +61,13 @@ if __name__ == '__main__':
 
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
 
-    stances = loader.readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
     q_list = loader.readFromFileConfigs("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
+    stances = loader.readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
 
-    qc = q_connector.Connector(cogimon, q_list, stances)
-    qc.run()
+    flags = loader.checkStability(cogimon, stances, q_list)
+    print flags
+    # qc = q_connector.Connector(cogimon, q_list, stances)
+    # qc.run()
     # logger = matlog.MatLogger2('/tmp/feet_on_wall')
     # logger.setBufferMode(matlog.BufferMode.CircularBuffer)
     # log_path = '/tmp'

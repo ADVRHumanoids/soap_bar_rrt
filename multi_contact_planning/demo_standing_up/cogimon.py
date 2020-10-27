@@ -58,7 +58,7 @@ class Cogimon:
         self.ps = validity_check.PlanningSceneWrapper(self.model)
         self.ps.startGetPlanningSceneServer()
 
-        self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.1)
+        self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5)
 
         # goal sampler
         # self.gs = GoalSampler(self.model, ctrl_points.values())
@@ -68,8 +68,6 @@ class Cogimon:
             self.ps.update()
             self.rspub.publishTransforms('ci')
 
-            print 'collision check: ', not self.ps.checkCollisions()
-            print 'stability check: ', self.cs.checkStability()
             return (not self.ps.checkCollisions() and self.cs.checkStability())
 
         # set it to goal sampler

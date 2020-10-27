@@ -171,8 +171,6 @@ class Connector:
 
         tx, ty, tz = theta
 
-        print 'theta', theta
-
         Rx = np.array([[1, 0, 0], [0, np.cos(tx), -np.sin(tx)], [0, np.sin(tx), np.cos(tx)]])
         Ry = np.array([[np.cos(ty), 0, np.sin(ty)], [0, 1, 0], [-np.sin(ty), 0, np.cos(ty)]])
         Rz = np.array([[np.cos(tz), -np.sin(tz), 0], [np.sin(tz), np.cos(tz), 0], [0, 0, 1]])
@@ -211,13 +209,6 @@ class Connector:
             # print normals
             [self.model.cs.setContactRotationMatrix(k,j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
 
-            # print self.model.cs.getContactLinks()
-
-            print zip(active_links,  [self.rotation(elem) for elem in normals])
-            print active_links
-            print [self.model.cs.getContactFrame(elem) for elem in active_links]
-
-            exit()
             solution = None
             print 'start first planning phase ...'
             while solution is None and index < self.MAX_RRT_ATTEMPTS:
