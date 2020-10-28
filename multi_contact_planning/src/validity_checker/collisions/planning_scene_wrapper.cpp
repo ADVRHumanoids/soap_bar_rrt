@@ -241,6 +241,27 @@ std::vector<std::string> PlanningSceneWrapper::getCollidingLinks() const
     return links;
 }
 
+std::vector<XBot::ModelChain> PlanningSceneWrapper::getCollidingChains() const 
+{
+    std::vector<std::string> colliding_links = getCollidingLinks();
+    std::vector<XBot::ModelChain> colliding_chains;
+    for (auto i:_srdf.getGroups())
+    {
+        auto link  = i.links_;
+        for (auto j : link)
+        {
+            if (std::any_of(colliding_links.begin(), colliding_links.end(), [j](std::string k){ return k == j; }))
+            {
+               colliding_chains.push_back(_model->chain(i.name_));
+               goto cnt;
+            }
+        }
+        cnt:;
+    }
+    return colliding_chains;
+}
+
+
 void PlanningSceneWrapper::applyPlanningScene(const moveit_msgs::PlanningScene & scene)
 {
     _monitor->updateFrameTransforms();

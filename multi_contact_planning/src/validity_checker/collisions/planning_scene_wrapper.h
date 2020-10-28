@@ -66,6 +66,12 @@ public:
      * @brief Get the names of the links that are involved in collisions for the current state
      */
     std::vector<std::string> getCollidingLinks() const;
+    
+    /**
+     * @brief getCollidingChains
+     * @return vector of colliding chains (computed from colliding links)
+     */
+    std::vector<XBot::ModelChain> getCollidingChains() const;
 
     void applyPlanningScene(const moveit_msgs::PlanningScene& scene);
 
@@ -88,6 +94,8 @@ private:
     ros::CallbackQueue _queue;
     ros::AsyncSpinner _async_spinner;
     ros::ServiceServer _get_ps_srv;
+    
+    srdf_advr::Model _srdf;
 
 };
 

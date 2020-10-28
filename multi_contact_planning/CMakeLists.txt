@@ -161,6 +161,7 @@ include_directories( SYSTEM
 add_library(multi_contact_planning SHARED ########################################### PF
     src/constraints/cartesian_constraint.cpp
     src/goal/goal_sampler.cpp
+    src/goal/NSPG.cpp
     src/ik/position_ik_solver.cpp
     src/planner/cartesio_ompl_planner.cpp
     src/planner/multi_contact/Configuration.cpp ########################################### PF
@@ -171,7 +172,7 @@ add_library(multi_contact_planning SHARED ######################################
     src/planner/multi_contact/Planner.cpp ########################################### PF
     src/state_wrapper.cpp
     src/utils/robot_viz.cpp
-	src/utils/point_cloud_manager.cpp ########################################### LR
+    src/utils/point_cloud_manager.cpp ########################################### LR
     src/validity_checker/validity_checker_context.cpp
     src/validity_checker/stability/cartesian_utils.cpp
     src/validity_checker/stability/convex_hull_utils.cpp
