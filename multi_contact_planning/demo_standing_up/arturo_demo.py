@@ -33,8 +33,8 @@ def rotation(normal):
 if __name__ == '__main__':
     np.set_printoptions(precision=3, suppress=True)
 
-    rospy.init_node('standing_up')
-    roscpp_init('standing_up', [])
+    rospy.init_node('arturo_demo')
+    roscpp_init('arturo_demo', [])
     # define contacts for the ForcePublisher
     opt = xbot_opt.ConfigOptions()
 
@@ -45,13 +45,14 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = {0:'l_ball_tip', 1:'r_ball_tip', 4:'l_sole', 5:'r_sole'}
 
-    opt = co.ConfigOptions()
     opt.set_urdf(urdf)
     opt.set_srdf(srdf)
     opt.generate_jidmap()
     opt.set_bool_parameter('is_model_floating_base', True)
     opt.set_string_parameter('model_type', 'RBDL')
     model = xbot.ModelInterface(opt)
+
+    rspub = pyci.RobotStatePublisher(model)
 
     cs = validity_check.CentroidalStatics(model, ctrl_points.values(), 0.5)
 
@@ -65,8 +66,11 @@ if __name__ == '__main__':
     q = [0.215468,  0.024185,  0.604939,  -3.26928,   2.06762,   3.53752, -0.169465, -0.327048, -0.448386,  0.165109, -0.872613,  0.158564, -0.115044, -0.169023,
          -0.456836,0, -0.872665,  0.189219,  0.523599, -0.578716,    -3.352,   2.53043,  -1.99563, -0.164846,  -1.36072, -0.533852,    1.2108,   1.29795,  -2.81614,
          0.260597, -0.268294,  0.337086,  0.016952,  -1.69843]
+
     model.setJointPosition(q)
     model.update()
+    rspub.publishTransforms('')
+
 
     # forces_list = [[49.1115, -35.6032, 223.419, 0, 0, 0], [53.278, 37.0859, 213.826, 0, 0, 0], [-31.8832, 32.0597, 92.9953, 0, 0, 0], [70.5062, -33.5424, 156.46, 0, 0, 0]]
     forces_list =[[110.118, 51.5602, 361.646, 0, 0, 0], [-20.9768, -19.6738  ,65.0001, 0, 0, 0], [-89.1409 ,-31.8864,  260.054, 0, 0, 0]]
@@ -74,3 +78,6 @@ if __name__ == '__main__':
     cs.setForces(forces)
 
     print cs.checkStability()
+
+    while True:
+        pass
