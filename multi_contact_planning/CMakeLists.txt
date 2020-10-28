@@ -29,7 +29,7 @@ find_package(casadi REQUIRED)
 
 find_package(centroidal_planner REQUIRED) ########################################### PF
 
-find_package(Eigen3 3.3 REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 find_package(ompl 1.4.0 REQUIRED)
 
