@@ -69,7 +69,12 @@ if __name__ == '__main__':
 
     model.setJointPosition(q)
     model.update()
-    rspub.publishTransforms('')
+
+    initial_time = rospy.get_time()
+    seconds = initial_time
+    while seconds < initial_time + 0.5:
+        seconds = rospy.get_time()
+        rspub.publishTransforms('ci')
 
 
     # forces_list = [[49.1115, -35.6032, 223.419, 0, 0, 0], [53.278, 37.0859, 213.826, 0, 0, 0], [-31.8832, 32.0597, 92.9953, 0, 0, 0], [70.5062, -33.5424, 156.46, 0, 0, 0]]
@@ -78,6 +83,3 @@ if __name__ == '__main__':
     cs.setForces(forces)
 
     print cs.checkStability()
-
-    while True:
-        pass
