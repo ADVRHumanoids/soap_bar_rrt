@@ -9,6 +9,7 @@ from cartesian_interface.pyci_all import *
 import numpy as np
 import yaml
 import rospy
+from sensor_msgs.msg import JointState
 from goal_sampler import GoalSampler
 import manifold
 from cartesio_planning import validity_check
@@ -70,12 +71,18 @@ if __name__ == '__main__':
     model.setJointPosition(q)
     model.update()
 
+    pub_joints = rospy.Publisher('joint_position', JointState, queue_size=10)
+    joints = JointState()
+    joints.header.stamp = rospy.Time.now()
+    joints.name = model.getEnabledJointNames()
+    joints.position = q
+
+
     initial_time = rospy.get_time()
     seconds = initial_time
-    while seconds < initial_time + 0.5:
-        seconds = rospy.get_time()
+    while not rospy.is_shutdown():
         rspub.publishTransforms('ci')
-
+        pub_joints.publish(joints)
 
     # forces_list = [[49.1115, -35.6032, 223.419, 0, 0, 0], [53.278, 37.0859, 213.826, 0, 0, 0], [-31.8832, 32.0597, 92.9953, 0, 0, 0], [70.5062, -33.5424, 156.46, 0, 0, 0]]
     forces_list =[[110.118, 51.5602, 361.646, 0, 0, 0], [-20.9768, -19.6738  ,65.0001, 0, 0, 0], [-89.1409 ,-31.8864,  260.054, 0, 0, 0]]
