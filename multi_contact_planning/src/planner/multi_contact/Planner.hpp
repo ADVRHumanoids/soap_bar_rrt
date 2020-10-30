@@ -48,6 +48,8 @@ class Planner {
 
         int n_dof;
         Eigen::VectorXd qmin, qmax;
+        double robot_mass;
+    
 
 		bool isGoalStance(Vertex* v);
 		Eigen::Vector3d pickRandomPoint();
@@ -66,7 +68,8 @@ class Planner {
 		Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
 		bool similarityTest(Stance sigmaNew);
 		double computeHrange(Configuration q);
-		double computeHtorso(Configuration q);		
+		double computeHtorso(Configuration q);	
+		double computeHdistance(Configuration qA, Configuration qB);	
 
 	public:
 

@@ -210,7 +210,8 @@ void PlannerExecutor::init_load_model()
     n_dof = _model->getJointNum();
 
     q_init.resize(n_dof);
-    q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
+    //q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
+    q_init << 0.0817944, -0.0459652, 0.562943, 3.22873, 1.29048, 3.13332, 0.287751, -1.22788, 0.335744, 0.0259489, -0.633213, -0.194167, -0.983884, -1.21671, -1.10644, 0.4062, -0.865606, 0.249889, 0.118649, 0.0118292, -3.32887, 2.05704, -1.67603, -1.81254, 0.959125, 1.478, 0.241725, -3.2857, -0.251944, -1.40935, -1.43088, -1.5163, -1.09998, -0.0285249;
     q_goal.resize(n_dof);
     q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
     
@@ -401,14 +402,19 @@ void PlannerExecutor::init_load_validity_checker()
 
     _vc_context.planning_scene->startMonitor();
 
-    _vc_context.planning_scene->startMonitor();
-
+    
    
     ///////////////////////////////////////////////////////////////////////
     _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);
+
+    // PF: adding non-collidable links
+    _vc_context.planning_scene->acm.setEntry("LWrMot2", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("LWrMot3", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("RWrMot2", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);
     ///////////////////////////////////////////////////////////////////////
    
 
@@ -563,7 +569,19 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
 
-
+    for(int i = 0; i < all_tasks.size(); i++){
+        int index = -1;
+        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
+  
+        if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+        //if(index == -1) ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        else{
+            ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            ci->setPoseReference(all_tasks[i], ref_tasks[index]);
+        }
+    }
+    
+    /*
     ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
     for(int i = 1; i < all_tasks.size(); i++){
         int index = -1;
@@ -575,6 +593,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
             ci->setPoseReference(all_tasks[i], ref_tasks[index]);
         }
     }
+    */
 
     /*
     // postural
@@ -592,13 +611,13 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 {
 
     std::cout << "CALL TO THE GOAL SAMPLER" << std::endl; 
-
      
     /////////////////////////////////////////////////////////////////////////////////////////////////
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
     Eigen::VectorXd q_ref;
 
+    active_tasks.push_back("Com");
     active_tasks.push_back("TCP_L");
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
@@ -610,27 +629,40 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_ref;
 
+    
+    //COM
+    pos_ref << 0.0684087, 0.035729, 0.433894;
+    T_ref.translation() = pos_ref;
+    T_ref.linear() = rot_ref;
+    ref_tasks.push_back(T_ref);
+        
     //LH 
     //pos_ref << 1.0, 0.2, 1.4;
-    pos_ref << 0.7, 0.4, 0.0; // init     
+    //pos_ref << 0.7, 0.4, 0.0; // init     
+    pos_ref << 0.7, 0.399999, 3.8166e-07;
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
+    
     //RH
     //pos_ref << 1.0, -0.4, 1.4;
-    pos_ref << 0.7, -0.6, 0.0; // init 
+    //pos_ref << 0.7, -0.6, 0.0; // init
+    pos_ref << 0.5709, -0.4705, 0.0868;  
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
+    
     //LF
     //pos_ref << 0.0, 0.0, 0.0;
-    pos_ref << -0.5, 0.0, 0.0; // init
+    //pos_ref << -0.5, 0.2, 0.0; // init
+    pos_ref << -0.499997, 0.199998, -3.27432e-06;
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RF
     //pos_ref << 0.0, -0.2, 0.0;
-    pos_ref << -0.5, -0.2, 0.0; // init
+    //pos_ref << -0.5, -0.4, 0.0; // init
+    pos_ref << -0.499999, -0.400005, -6.52284e-08;
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
@@ -663,8 +695,31 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     _goal_model->setJointPosition(q);
     _goal_model->update();
 
+
+        auto ci = _goal_generator->getCartesianInterface();
+
+        Eigen::Affine3d T_COM;
+        std::string link_COM = "Com";        
+        ci->getCurrentPose(link_COM, T_COM);
+        Eigen::Vector3d rCoM = T_COM.translation();
+        std::cout << index_config << " rCoM = " << rCoM.transpose() << std::endl;
+        Eigen::Affine3d T_EE;
+        ci->getCurrentPose("TCP_L", T_EE);
+        std::cout << index_config << " TCP_L = " << T_EE.translation().transpose() << std::endl;
+        ci->getCurrentPose("TCP_R", T_EE);
+        std::cout << index_config << " TCP_R = " << T_EE.translation().transpose() << std::endl;
+        ci->getCurrentPose("l_sole", T_EE);
+        std::cout << index_config << " l_sole = " << T_EE.translation().transpose() << std::endl;
+        ci->getCurrentPose("r_sole", T_EE);
+        std::cout << index_config << " r_sole = " << T_EE.translation().transpose() << std::endl;
+
+
     for(int z = 0; z < q.rows(); z++) std::cout << q(z) << ", ";
     std::cout << " " << std::endl;
+
+    
+    std::cout << "robot mass = " << _model->getMass() << std::endl;
+    
 
     return true;
 }
@@ -862,8 +917,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = false; 
-    
+    bool runPlanner = false;   
+
     if(index_config == -1){
         
         if(runPlanner){
@@ -899,11 +954,12 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             sol_found = true;      
         }
 
+        /*
         _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
         _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
         _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
         _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
-    
+        */
     } 
 
     // this is for DEBUGGING
@@ -922,11 +978,29 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     if(plan.size() > 0){
         _goal_model->setJointPosition(plan[index_config]);
         _goal_model->update();    
-          
+
+        Eigen::Affine3d T_COM;
+        std::string link_COM = "Com";        
+        ci->getCurrentPose(link_COM, T_COM);
+        Eigen::Vector3d rCoM = T_COM.translation();
+        std::cout << index_config << " rCoM = " << rCoM.transpose() << std::endl;
+        Eigen::Affine3d T_EE;
+        ci->getCurrentPose("TCP_L", T_EE);
+        std::cout << index_config << " TCP_L = " << T_EE.translation().transpose() << std::endl;
+        ci->getCurrentPose("TCP_R", T_EE);
+        std::cout << index_config << " TCP_R = " << T_EE.translation().transpose() << std::endl;
+        ci->getCurrentPose("l_sole", T_EE);
+        std::cout << index_config << " l_sole = " << T_EE.translation().transpose() << std::endl;
+        ci->getCurrentPose("r_sole", T_EE);
+        std::cout << index_config << " r_sole = " << T_EE.translation().transpose() << std::endl;
+        
+        _goal_model->getPose("TCP_L", T_EE);
+        std::cout << index_config << " TCP_L _goal_model = " << T_EE.translation().transpose() << std::endl;
+                  
         index_config++;
                 
-        std::cout << "index_config = " << index_config << std::endl;
-        std::cout << "plan.size() = " << plan.size() << std::endl;
+        //std::cout << "index_config = " << index_config << std::endl;
+        //std::cout << "plan.size() = " << plan.size() << std::endl;
 
         if(index_config == plan.size()) index_config = 0; 
     }

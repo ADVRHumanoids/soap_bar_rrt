@@ -20,6 +20,8 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 	planner_model = _planner_model;
 	goal_generator = _goal_generator;
 	ci = _goal_generator->getCartesianInterface();
+	robot_mass = planner_model->getMass();
+    
 	
 	// set the environment representation
 	pointCloud = _pointCloud;
@@ -38,6 +40,7 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 	Eigen::MatrixXd nCInit;
 	rCInit.resize(_activeEEsInit.size(), 3);
 	nCInit.resize(_activeEEsInit.size(), 3);
+	std::cout << "rCoMInit = " << rCoMInit.transpose() << std::endl;
 	std::cout << "INIT POSES" << std::endl;
 	for(int i = 0; i < _activeEEsInit.size(); i++){
 		Eigen::Affine3d T_i = computeForwardKinematics(qInit, _activeEEsInit.at(i));
@@ -386,11 +389,16 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
 
-    int i_init = 0;
+    int i_init;
     if(!refCoM){
     	ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
     	i_init = 1;
     }
+    else{
+    	ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled);
+    	i_init = 0;
+    }
+    	
 
     for(int i = i_init; i < all_tasks.size(); i++){
         int index = -1;
@@ -459,8 +467,7 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
 
 	std::cout << "**************** CPL INVOCATION *******************" << std::endl;
 
-	double robot_mass = ROBOT_MASS;
-    double g = GRAVITY;
+	double g = GRAVITY;
     double mu = MU_FRICTION;
 	double W_CoM = COM_WEIGHT_CPL;
 
@@ -539,6 +546,10 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
 			
 	for(int j = 0; j < 3; j++) if(abs(F_sumError(j)) > 1e-4 || abs(Torque_sumError(j)) > 1e-4) return false;
 
+	//foutLogMCP << "rCoM cpl = " << rCoM.transpose() << std::endl; 
+	//foutLogMCP << "rC cpl = " << rC << std::endl; 
+	//foutLogMCP << "FC cpl = " << FC << std::endl; 
+	
 	return true;
 }
 
@@ -755,6 +766,9 @@ void Planner::run(){
 						if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
 						else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;
 
+						foutLogMCP << "rCoMCand = " << rCoMdes.transpose() << std::endl; 
+						foutLogMCP << "rCoMNew = " << rCoM.transpose() << std::endl; 
+						
 						// COMPUTE IK SOLUTION (BALANCED)
 						if(resCPL){
 							for(int i = 0; i < sigmaNew.getSize(); i++) sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
@@ -851,4 +865,15 @@ double Planner::computeHtorso(Configuration q){
 	
 	Eigen::Vector3d d = eTorsoCur - eTorsoDes;
 	return fabs(d(0)) + fabs(d(1)) + fabs(d(2));	
+}
+
+double Planner::computeHdistance(Configuration qA, Configuration qB){
+	int n = n_dof-6;
+	Eigen::VectorXd cA = qA.getJointValues();
+	Eigen::VectorXd cB = qB.getJointValues();
+	Eigen::VectorXd d(n);
+	
+	for(int i = 0; i < n; i++) d(i) = angleSignedDistance(cA(i), cB(i));
+
+	return d.norm();	
 }
