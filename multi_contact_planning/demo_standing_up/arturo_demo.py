@@ -61,7 +61,7 @@ if __name__ == '__main__':
     # active_links = ['l_ball_tip', 'r_ball_tip', 'l_sole', 'r_sole']
     active_links = ['l_ball_tip', 'l_sole', 'r_sole']
     cs.setContactLinks(active_links)
-    normals = [[0., 0., 1.], [0., 0., 1.], [0., 0., 1.], [0., 0., 1.]]
+    normals = [[0., 0., 1.], [0., 0., 1.], [0., 0., 1.]]#, [0., 0., 1.]]
     [cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
     # q = [0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034,1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411,1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237,-0.0789541, -0.195656,1.75265e-05]
     q = [0.215468,  0.024185,  0.604939,  -3.26928,   2.06762,   3.53752, -0.169465, -0.327048, -0.448386,  0.165109, -0.872613,  0.158564, -0.115044, -0.169023,
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     model.setJointPosition(q)
     model.update()
 
-    pub_joints = rospy.Publisher('joint_position', JointState, queue_size=10)
+    pub_joints = rospy.Publisher('joint_states', JointState, queue_size=10)
     joints = JointState()
     joints.header.stamp = rospy.Time.now()
     joints.name = model.getEnabledJointNames()
@@ -80,9 +80,11 @@ if __name__ == '__main__':
 
     initial_time = rospy.get_time()
     seconds = initial_time
+    r = rospy.Rate(100)  # 100hz
     while not rospy.is_shutdown():
         rspub.publishTransforms('ci')
         pub_joints.publish(joints)
+        r.sleep()
 
     # forces_list = [[49.1115, -35.6032, 223.419, 0, 0, 0], [53.278, 37.0859, 213.826, 0, 0, 0], [-31.8832, 32.0597, 92.9953, 0, 0, 0], [70.5062, -33.5424, 156.46, 0, 0, 0]]
     forces_list =[[110.118, 51.5602, 361.646, 0, 0, 0], [-20.9768, -19.6738  ,65.0001, 0, 0, 0], [-89.1409 ,-31.8864,  260.054, 0, 0, 0]]
