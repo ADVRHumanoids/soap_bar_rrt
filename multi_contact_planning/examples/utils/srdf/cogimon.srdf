@@ -20,18 +20,51 @@
   </group>
   <group name="left_leg">
     <chain base_link="Waist" tip_link="LFoot"/>
+    <link name="LHipMot"/>
+    <link name="LThighUpLeg"/>
+    <link name="LThighLowLeg"/>
+    <link name="LLowLeg"/>
+    <link name="LFootmot"/>
+    <link name="LFoot"/>
   </group>
   <group name="right_leg">
     <chain base_link="Waist" tip_link="RFoot"/>
+    <link name="RHipMot"/>
+    <link name="RThighUpLeg"/>
+    <link name="RThighLowLeg"/>
+    <link name="RLowLeg"/>
+    <link name="RFootmot"/>
+    <link name="RFoot"/>
   </group>
   <group name="torso">
     <chain base_link="Waist" tip_link="DWYTorso"/>
   </group>
   <group name="left_arm">
     <chain base_link="DWYTorso" tip_link="LWrMot3"/>
+    <link name="DWYTorso"/>
+    <link name="LShp"/>
+    <link name="LShr"/>
+    <link name="LShy"/>
+    <link name="LElb"/>
+    <link name="LForearm"/>
+    <link name="LWrMot2"/>
+    <link name="LWrMot3"/>
+    <link name="l_wrist"/>
+    <link name="LBall"/>
+    
   </group>
   <group name="right_arm">
     <chain base_link="DWYTorso" tip_link="RWrMot3"/>
+    <link name="DWYTorso"/>
+    <link name="RShp"/>
+    <link name="RShr"/>
+    <link name="RShy"/>
+    <link name="RElb"/>
+    <link name="RForearm"/>
+    <link name="RWrMot2"/>
+    <link name="RWrMot3"/>
+    <link name="r_wrist"/>
+    <link name="RBall"/>
   </group>
   <group name="chains">
     <group name="left_leg"/>

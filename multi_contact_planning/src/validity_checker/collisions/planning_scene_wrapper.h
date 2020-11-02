@@ -96,7 +96,7 @@ private:
     ros::ServiceServer _get_ps_srv;
     
     srdf_advr::Model _srdf;
-
+    
 };
 
 } } }

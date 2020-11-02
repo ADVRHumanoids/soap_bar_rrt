@@ -177,6 +177,7 @@ add_library(multi_contact_planning SHARED ######################################
     src/validity_checker/stability/cartesian_utils.cpp
     src/validity_checker/stability/convex_hull_utils.cpp
     src/validity_checker/stability/stability_detection.cpp
+    src/validity_checker/stability/centroidal_statics.cpp
     src/validity_checker/collisions/planning_scene_wrapper.cpp
     src/validity_checker/validity_checker_factory.cpp
     src/validity_checker/validity_predicate_aggregate.cpp

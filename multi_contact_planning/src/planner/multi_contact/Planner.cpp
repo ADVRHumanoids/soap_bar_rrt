@@ -12,14 +12,17 @@ static std::uniform_int_distribution<int> pointInWorkspaceDistribution(0, std::n
 static std::default_random_engine rotationGenerator;
 static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
-static std::ofstream foutLogMCP("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/logMCP.txt", std::ofstream::trunc);
+static std::ofstream foutLogMCP("/home/luca/src/MulitDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
 
-Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
+// Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
+Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, XBot::Cartesian::Planning::NSPG::Ptr _NSPG, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
 
 	// set model, goal generator and cartesian interface
 	planner_model = _planner_model;
-	goal_generator = _goal_generator;
-	ci = _goal_generator->getCartesianInterface();
+// 	goal_generator = _goal_generator;
+        NSPG = _NSPG;
+        ci = NSPG->getIKSolver()->getCI();
+// 	ci = _goal_generator->getCartesianInterface();
 	
 	// set the environment representation
 	pointCloud = _pointCloud;
@@ -386,10 +389,14 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
 
-    int i_init = 0;
+    int i_init;
     if(!refCoM){
     	ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
     	i_init = 1;
+    }
+    else{
+        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled);
+        i_init = 0;
     }
 
     for(int i = i_init; i < all_tasks.size(); i++){
@@ -413,11 +420,22 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     //planner_model->eigenToMap(qhome, jmap);
     //ci->setReferencePosture(jmap);
     
+    Eigen::VectorXd cPrev(n_dof);
+    Eigen::Vector3d posFB = qPrev.getFBPosition();
+    Eigen::Vector3d rotFB = qPrev.getFBOrientation();
+    cPrev.segment(0,3) = posFB;
+    cPrev.segment(3,3) = rotFB;
+    cPrev.tail(n_dof-6) = qPrev.getJointValues();
+    planner_model->setJointPosition(cPrev);
+    planner_model->update();
    	// search IK solution
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
-    Eigen::VectorXd c;
-    if(!goal_generator->sample(c, time_budget)) return false;
+    Eigen::VectorXd c(n_dof);
+    
+//     if(!goal_generator->sample(c, time_budget)) return false;
+    if(!NSPG->sample(time_budget)) return false;
     else{
+        NSPG->getIKSolver()->getModel()->getJointPosition(c);
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
         q.setJointValues(c.tail(n_dof-6));
@@ -459,7 +477,7 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
 
 	std::cout << "**************** CPL INVOCATION *******************" << std::endl;
 
-	double robot_mass = ROBOT_MASS;
+	double robot_mass = planner_model->getMass();
     double g = GRAVITY;
     double mu = MU_FRICTION;
 	double W_CoM = COM_WEIGHT_CPL;

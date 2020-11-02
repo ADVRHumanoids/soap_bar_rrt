@@ -15,7 +15,7 @@
 using namespace XBot::Cartesian;
 
 void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
-    std::string filePrefix = "/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/";
+    std::string filePrefix = "/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
     
@@ -30,7 +30,7 @@ void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::
 }
 
 void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
-    std::string filePrefix = "/home/francesco/advr/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = "/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;       
@@ -55,7 +55,7 @@ void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std
 }
 
 void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName){
-    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = "/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
     
@@ -78,7 +78,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
 }
 
 void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
-    std::string filePrefix = "/home/paolo/catkin_ws/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = "/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;       
@@ -172,6 +172,7 @@ void PlannerExecutor::init_load_model()
     _start_model = XBot::ModelInterface::getModel(cfg);
     _goal_model = XBot::ModelInterface::getModel(cfg);
 
+
     Eigen::VectorXd qhome;
     _model->getRobotState("home", qhome);
 
@@ -210,7 +211,8 @@ void PlannerExecutor::init_load_model()
     n_dof = _model->getJointNum();
 
     q_init.resize(n_dof);
-    q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
+//     q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
+    q_init << 0.0817944, -0.0459652, 0.562943, 3.22873, 1.29048, 3.13332, 0.287751, -1.22788, 0.335744, 0.0259489, -0.633213, -0.194167, -0.983884, -1.21671, -1.10644, 0.4062, -0.865606, 0.249889, 0.118649, 0.0118292, -3.32887, 2.05704, -1.67603, -1.81254, 0.959125, 1.478, 0.241725, -3.2857, -0.251944, -1.40935, -1.43088, -1.5163, -1.09998, -0.0285249;
     q_goal.resize(n_dof);
     q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
     
@@ -409,6 +411,10 @@ void PlannerExecutor::init_load_validity_checker()
     _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("LWrMot2", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("LWrMot3", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("RWrMot2", "<octomap>", true);
+    _vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);  
     ///////////////////////////////////////////////////////////////////////
    
 
@@ -514,6 +520,11 @@ void PlannerExecutor::init_goal_generator()
 
         auto ci = CartesianInterfaceImpl::MakeInstance("OpenSot",
                                                        ik_prob, ci_ctx);
+        
+        auto ik_solver_NSPG = std::make_shared<Planning::PositionCartesianSolver>(ci);
+
+        
+        _NSPG = std::make_shared<Planning::NSPG>(ik_solver_NSPG, _vc_context);
 
         _goal_generator = std::make_shared<GoalGenerator>(ci, _vc_context);
 
@@ -554,7 +565,8 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     // NOTE: this is OK if used here (i.e., the non active contacts must remain fixed at the initial configuration)
     // but it does not work in the planner (see computeIKSolution in Planner.cpp for comparison)
 
-    auto ci = _goal_generator->getCartesianInterface();
+//     auto ci = _goal_generator->getCartesianInterface();
+    auto ik = _NSPG->getIKSolver();
 
     std::vector<std::string> all_tasks;
     all_tasks.push_back("Com");
@@ -564,15 +576,15 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     all_tasks.push_back("r_sole");
 
 
-    ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-    for(int i = 1; i < all_tasks.size(); i++){
+//     ik->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+    for(int i = 0; i < all_tasks.size(); i++){
         int index = -1;
         for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
   
-        if(index == -1) ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+        if(index == -1) ik->getCI()->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols()));
         else{
-            ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
-            ci->setPoseReference(all_tasks[i], ref_tasks[index]);
+            ik->getCI()->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols()));
+            ik->getCI()->setPoseReference(all_tasks[i], ref_tasks[index]);
         }
     }
 
@@ -599,6 +611,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::vector<Eigen::Affine3d> ref_tasks;
     Eigen::VectorXd q_ref;
 
+    active_tasks.push_back("Com");
     active_tasks.push_back("TCP_L");
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
@@ -610,9 +623,14 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_ref;
 
+    // COM
+    pos_ref << 0.0684087, 0.035729, 0.433894;
+    T_ref.translation() = pos_ref;
+    T_ref.linear() = rot_ref;
+    ref_tasks.push_back(T_ref);
     //LH 
     //pos_ref << 1.0, 0.2, 1.4;
-    pos_ref << 0.7, 0.4, 0.0; // init     
+    pos_ref << 0.7, 0.4, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
@@ -624,37 +642,47 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     ref_tasks.push_back(T_ref);
     //LF
     //pos_ref << 0.0, 0.0, 0.0;
-    pos_ref << -0.5, 0.0, 0.0; // init
+    pos_ref << -0.5, 0.2, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RF
     //pos_ref << 0.0, -0.2, 0.0;
-    pos_ref << -0.5, -0.2, 0.0; // init
+    pos_ref << -0.5, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     
 
     setReferences( active_tasks, ref_tasks, q_ref );
-     
-  
-    Eigen::VectorXd q;
-    if(!_goal_generator->sample(q, req.time)){
-        res.status.val = res.status.TIMEOUT;
-        res.status.msg.data = "TIMEOUT";
-    }
-    else
-    {
-        res.status.val = res.status.EXACT_SOLUTION;
-        res.status.msg.data = "EXACT_SOLUTION";
-
-        res.sampled_goal.name = _goal_model->getEnabledJointNames();
-        res.sampled_goal.position.resize(q.size());
-        Eigen::VectorXd::Map(&res.sampled_goal.position[0], q.size()) = q;
-        res.sampled_goal.header.stamp = ros::Time::now();
-    }
     
+    _NSPG->getIKSolver()->solve();
+      
+    Eigen::VectorXd q;
+    _NSPG->getIKSolver()->getModel()->getJointPosition(q);
+    _model->setJointPosition(q); 
+//     if(!_goal_generator->sample(q, req.time)){
+//         res.status.val = res.status.TIMEOUT;
+//         res.status.msg.data = "TIMEOUT";
+//     }
+//     else
+//     {
+//         res.status.val = res.status.EXACT_SOLUTION;
+//         res.status.msg.data = "EXACT_SOLUTION";
+// 
+//         res.sampled_goal.name = _goal_model->getEnabledJointNames();
+//         res.sampled_goal.position.resize(q.size());
+//         Eigen::VectorXd::Map(&res.sampled_goal.position[0], q.size()) = q;
+//         res.sampled_goal.header.stamp = ros::Time::now();
+//     }
+//     
+    if(!_vc_context.vc_aggregate.checkAll())
+    {
+        if(_NSPG->sample(req.time))
+            _NSPG->getIKSolver()->getModel()->getJointPosition(q);
+        else
+        std::runtime_error("no solution found!");
+    }
     
     //if(_manifold) 
         //_manifold->project(q);  // not needed in this planner 
@@ -868,7 +896,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
         
         if(runPlanner){
             // create/initialize the planner
-            Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _goal_generator, _vc_context);
+            Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context);
             std::cout << "planner created!" << std::endl;
 
             // run planner
@@ -899,10 +927,10 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             sol_found = true;      
         }
 
-        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
+/*        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
         _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
         _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
-        _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);    
+        _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true); */ 
     
     } 
 

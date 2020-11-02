@@ -8,6 +8,7 @@
 #include <XBotInterface/ModelInterface.h>
 #include "validity_checker/validity_checker_context.h"
 #include "utils/robot_viz.h"
+#include <cartesian_interface/utils/RobotStatePublisher.h>
 
 namespace XBot { namespace Cartesian { namespace Planning {
     
@@ -22,7 +23,7 @@ namespace XBot { namespace Cartesian { namespace Planning {
                
         void setIKSolver(PositionCartesianSolver::Ptr new_ik_solver);
         
-        void getIKSolver(PositionCartesianSolver::Ptr &ik_solver) const;
+        PositionCartesianSolver::Ptr getIKSolver() const;
         
         XBot::JointNameMap generateRandomVelocities(std::vector<XBot::ModelChain> colliding_chains);
         
@@ -35,9 +36,5 @@ namespace XBot { namespace Cartesian { namespace Planning {
         PositionCartesianSolver::Ptr _ik_solver;
         
         Planning::ValidityCheckContext _vc_context;
-        
-        Planning::RobotViz::Ptr _robot_viz;
-        
-        XBot::ModelInterface::Ptr _viz_model;
     };
 }}}

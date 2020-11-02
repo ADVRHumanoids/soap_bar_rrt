@@ -75,6 +75,9 @@ PlanningSceneWrapper::PlanningSceneWrapper(ModelInterface::ConstPtr model):
 
     // planning scene monitor automatically updates planning scene from topics
     _monitor = std::make_shared<planning_scene_monitor::PlanningSceneMonitor>(rml);
+    
+    
+    _srdf = model->getSrdf();
 
 }
 
@@ -91,7 +94,7 @@ void PlanningSceneWrapper::startMonitor()
 
     // this starts monitored planning scene publisher
     _monitor->startPublishingPlanningScene(planning_scene_monitor::PlanningSceneMonitor::UPDATE_SCENE);
-
+    
     acm = _monitor->getPlanningScene()->getAllowedCollisionMatrix();
 
 }
@@ -244,6 +247,22 @@ std::vector<std::string> PlanningSceneWrapper::getCollidingLinks() const
 std::vector<XBot::ModelChain> PlanningSceneWrapper::getCollidingChains() const 
 {
     std::vector<std::string> colliding_links = getCollidingLinks();
+    std::vector<std::string> links;
+    collision_detection::AllowedCollision::Type type;
+    std::vector<std::string>::iterator it;
+    
+    acm.getAllEntryNames(links);
+    
+    for (auto i : links)
+    {
+        if (acm.getEntry(i, "<octomap>", type) == true && type == collision_detection::AllowedCollision::ALWAYS)
+        {
+            it = std::find(colliding_links.begin(), colliding_links.end(), i);
+            if (it != colliding_links.end())
+                colliding_links.erase(it);
+        }
+    }
+    
     std::vector<XBot::ModelChain> colliding_chains;
     for (auto i:_srdf.getGroups())
     {

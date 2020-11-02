@@ -4,7 +4,8 @@ solver_options:
 
 stack:
     - ["LeftFoot", "RightFoot", "LeftHand", "RightHand", "Com"]
-#    - ["Postural"]
+    #- ["RHandOrientation", "LHandOrientation"]
+    - ["Postural"]
     
 constraints: ["JointLimits"] #, "VelocityLimits"]
 
@@ -28,7 +29,7 @@ RightFoot:
     
 Postural:
     type: "Postural"
-    lambda: 0.3
+    lambda: 0.1
     
 LeftHand:
     type: "Cartesian"
@@ -51,9 +52,13 @@ TorsoRPY:
 Com:
     type: "Com"
     lambda: 1.0
-    indices: [0, 1, 2]
 
 Head:
     type: "Cartesian"
     distal_link: "Head"
     lambda: 1.0
+    
+RHandOrientation:
+    type: "Subtask"
+    task: "RightHand"
+    indices: [3, 4]

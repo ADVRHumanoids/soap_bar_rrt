@@ -71,7 +71,7 @@
     <!--node pkg="rosbag" type="play" name="bag_player" args="-l /home/paolo/catkin_ws/external/src/multi_contact_planning/point_cloud.bag"/-->
 
     <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
-        <param name="resolution" value="0.05" />
+        <param name="resolution" value="0.025" />
         <param name="frame_id" type="string" value="world" />
         <param name="sensor_model/max_range" value="5.0" />
         <remap from="cloud_in" to="/point_cloud" />

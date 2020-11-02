@@ -22,6 +22,7 @@
 #include "multi_contact_planning/CartesioPlanner.h"
 
 #include "nodes/goal_generation.h"
+// #include "goal/NSPG.h"
 
 #include "utils/point_cloud_manager.h" //LR
 
@@ -151,7 +152,7 @@ private:
 
     ros::NodeHandle _nh, _nhpr, _n;
     YAML::Node _planner_config;
-    XBot::ModelInterface::Ptr _model;
+    XBot::ModelInterface::Ptr _model;;
     Planning::OmplPlanner::Ptr _planner;
     Planning::CartesianConstraint::Ptr _manifold;
     Planning::ValidityCheckContext _vc_context;
@@ -180,7 +181,8 @@ private:
     bool _callbackDone;
     Eigen::MatrixXd _pointCloud;
     std::shared_ptr<XBot::Planning::PointCloudManager> _pc_manager;
-
+    
+    Planning::NSPG::Ptr _NSPG;
 
 };
 

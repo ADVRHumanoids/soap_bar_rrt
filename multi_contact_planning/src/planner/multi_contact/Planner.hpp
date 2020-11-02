@@ -22,6 +22,7 @@
 
 #include <XBotInterface/ModelInterface.h>
 #include "nodes/goal_generation.h"
+#include "goal/NSPG.h"
 #include <cartesian_interface/CartesianInterfaceImpl.h>
 
 #include <fstream>
@@ -42,6 +43,8 @@ class Planner {
 
         XBot::ModelInterface::Ptr planner_model;
         GoalGenerator::Ptr goal_generator;
+        XBot::Cartesian::Planning::NSPG::Ptr NSPG;
+        
         XBot::Cartesian::CartesianInterfaceImpl::Ptr ci;
         
         XBot::Cartesian::Planning::ValidityCheckContext vc_context;
@@ -70,7 +73,13 @@ class Planner {
 
 	public:
 
-        Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context);
+        Planner(Configuration _qInit, 
+                std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, 
+                std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, 
+                Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, 
+                XBot::ModelInterface::Ptr _planner_model, 
+                XBot::Cartesian::Planning::NSPG::Ptr _NSPG,
+                XBot::Cartesian::Planning::ValidityCheckContext _vc_context);
 		~Planner();
 		void run();
 		bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
