@@ -516,7 +516,9 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
 	cpl->SetCoMRef(rCoMdes);
 	cpl->SetCoMWeight(W_CoM);
         
-    sol = cpl->Solve();
+    int sol_status = cpl->Solve(sol);
+    if(sol_status != 0)
+        return false;
     
 	rCoM = sol.com_sol;
 
