@@ -180,7 +180,7 @@ class Connector:
     def run(self):
         index = 0
 
-        for i in range(2, len(self.q_list), 2):
+        for i in range(0, len(self.q_list), 2):
             # First planning phase to unload swing contact
             q_start = self.q_list[i]
             self.model.model.setJointPosition(q_start)

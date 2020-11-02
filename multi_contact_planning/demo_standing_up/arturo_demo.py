@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     rspub = pyci.RobotStatePublisher(model)
 
-    cs = validity_check.CentroidalStatics(model, ctrl_points.values(), 0.5)
+    cs = validity_check.CentroidalStatics(model, ctrl_points.values())
 
     # centroidal statics
     # active_links = ['l_ball_tip', 'r_ball_tip', 'l_sole', 'r_sole']

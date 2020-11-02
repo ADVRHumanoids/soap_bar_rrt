@@ -58,7 +58,7 @@ class Cogimon:
         self.ps = validity_check.PlanningSceneWrapper(self.model)
         self.ps.startGetPlanningSceneServer()
 
-        self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5)
+        self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5*np.sqrt(2))
 
         # goal sampler
         # self.gs = GoalSampler(self.model, ctrl_points.values())
@@ -68,7 +68,7 @@ class Cogimon:
             self.ps.update()
             self.rspub.publishTransforms('ci')
 
-            return (not self.ps.checkCollisions() and self.cs.checkStability())
+            return (not self.ps.checkCollisions() and self.cs.checkStability(1e-2))
 
         # set it to goal sampler
         # self.gs.set_validity_checker(is_model_state_valid)
@@ -95,7 +95,7 @@ class Cogimon:
 
     def plan_step(self,
                   qstart, qgoal, swing_id=-1,
-                  planner_type='RRTConnect', timeout=15.0, threshold = 0.01):
+                  planner_type='RRTConnect', timeout=30.0, threshold = 0.01):
 
 
         # manifold

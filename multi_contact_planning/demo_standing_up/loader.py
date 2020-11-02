@@ -66,33 +66,36 @@ def checkStability(model, stances, qlist):
         active_ind = [ind['ind'] for ind in stance]
         active_links = [model.ctrl_points[j] for j in active_ind]
         model.cs.setContactLinks(active_links)
+        get_contact_links = model.cs.getContactLinks()
 
         normals = [j['ref']['normal'] for j in stance]
         [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
 
         # print 'active links are \n', model.cs.getContactLinks()
         # print 'rotation matrices are: \n', [rotation(elem) for elem in normals]
-        # print 'rotation matrices are: \n', [model.cs.getContactFrame(j) for j in active_links]
-        # print 'configuration \n', q
+        print 'rotation matrices are: \n', [model.cs.getContactFrame(j) for j in active_links]
+        print 'configuration \n', q
         model.model.setJointPosition(q)
         model.model.update()
         model.rspub.publishTransforms('/ci')
 
-        print 'poses: \n', [model.model.getPose(i) for i in active_links]
+        # print 'poses: \n', [model.model.getPose(i) for i in active_links]
 
         forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
 
         model.cs.setForces(forces)
-        print 'com: \n', model.model.getCOM()
+        # print 'com: \n', model.model.getCOM()
         print active_links
         print 'contact:\n', [j['ref']['pose'] for j in stance]
+        print 'forces:\n', [j['ref']['force'] for j in stance]
+        print 'normals:\n', [j['ref']['normal'] for j in stance]
         # print 'forces computed \n', model.cs.getForces()
 
-        print 'cop',  sum([np.array(j['ref']['pose'])*j['ref']['force'][2]/686.7003 for j in stance])
+        # print 'cop',  sum([np.array(j['ref']['pose'])*j['ref']['force'][2]/686.7003 for j in stance])
 
+        check.append(model.cs.checkStability())
         get_forces = model.cs.getForces()
-
-        check.append(model.cs.checkStability(1e-6))
+        x=1
         # print 'forces computed \n', model.cs.getForces()
 
     return check

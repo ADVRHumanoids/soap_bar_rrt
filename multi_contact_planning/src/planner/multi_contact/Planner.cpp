@@ -12,7 +12,7 @@ static std::uniform_int_distribution<int> pointInWorkspaceDistribution(0, std::n
 static std::default_random_engine rotationGenerator;
 static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
-static std::ofstream foutLogMCP("/home/luca/src/MulitDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
+static std::ofstream foutLogMCP("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
 
 // Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
 Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, XBot::Cartesian::Planning::NSPG::Ptr _NSPG, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
@@ -377,9 +377,13 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
 	}
 	for(int i = 0; i < sigma.getSize(); i++){
     	EndEffector ee = sigma.getContact(i)->getEndEffectorName();
-    	active_tasks.push_back(getTaskStringName(ee));
-		ref_tasks.push_back(sigma.retrieveContactPose(ee));
+            active_tasks.push_back(getTaskStringName(ee));
+            ref_tasks.push_back(sigma.retrieveContactPose(ee));
+            
+            foutLogMCP << "EE(stance) = " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).translation().transpose() << std::endl;
 	}
+	
+	
 
 	// set references
     std::vector<std::string> all_tasks;
@@ -426,13 +430,15 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     cPrev.segment(0,3) = posFB;
     cPrev.segment(3,3) = rotFB;
     cPrev.tail(n_dof-6) = qPrev.getJointValues();
-    planner_model->setJointPosition(cPrev);
-    planner_model->update();
-   	// search IK solution
+    NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
+    NSPG->getIKSolver()->getModel()->update();
+
+    // search IK solution
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
     
-//     if(!goal_generator->sample(c, time_budget)) return false;
+    NSPG->getIKSolver()->solve();
+
     if(!NSPG->sample(time_budget)) return false;
     else{
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
@@ -440,7 +446,11 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
         q.setFBOrientation(c.segment(3,3));
         q.setJointValues(c.tail(n_dof-6));
         return true;
-    }
+    }        
+    
+    
+//     if(!goal_generator->sample(c, time_budget)) return false;
+    
 
 }
 
@@ -542,9 +552,9 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
 		foutLogMCP << "-F.dot(n) = " << -F.dot(n) << std::endl;		
 		foutLogMCP << "(F-(n.dot(F))*n).norm() - mu*(F.dot(n)) = " << (F-(n.dot(F))*n).norm() - mu*(F.dot(n)) << std::endl;		
 		
-		for(int j = 0; j < 3; j++) if(abs(rError(j)) > 1e-4 || abs(nError(j)) > 1e-4) return false;
-		if( -F.dot(n) > 1e-4 ) return false; 
-		if( (F-(n.dot(F))*n).norm() - mu*(F.dot(n)) > 1e-4 ) return false;
+// 		for(int j = 0; j < 3; j++) if(abs(rError(j)) > 1e-4 || abs(nError(j)) > 1e-4) return false;
+// 		if( -F.dot(n) > 1e-4 ) return false; 
+// 		if( (F-(n.dot(F))*n).norm() - mu*(F.dot(n)) > 1e-4 ) return false;
 	
 		rC.row(i) = r.transpose();
 		FC.row(i) = F.transpose();   
@@ -557,7 +567,7 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
 	foutLogMCP << "F_sumError = " << F_sumError.transpose() << std::endl; 
 	foutLogMCP << "Torque_sumError = " << Torque_sumError.transpose() << std::endl; 
 			
-	for(int j = 0; j < 3; j++) if(abs(F_sumError(j)) > 1e-4 || abs(Torque_sumError(j)) > 1e-4) return false;
+// 	for(int j = 0; j < 3; j++) if(abs(F_sumError(j)) > 1e-4 || abs(Torque_sumError(j)) > 1e-4) return false;
 
 	return true;
 }
@@ -779,11 +789,11 @@ void Planner::run(){
 						if(resCPL){
 							for(int i = 0; i < sigmaNew.getSize(); i++) sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
 
-							double eCoMnorm = (rCoMdes - rCoM).norm();
-							bool resIK_CoM = false;
-							if(eCoMnorm < 1e-03) resIK_CoM = true;
-							else resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
-							
+							//double eCoMnorm = (rCoMdes - rCoM).norm();
+							//bool resIK_CoM = false;
+							//if(eCoMnorm < 1e-03) resIK_CoM = true;
+							//else resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
+                                                        bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);							
 							if(resIK_CoM){
 								qListVertex.push_back(qNew);			
 								sigmaListVertex.push_back(sigmaNew);					
