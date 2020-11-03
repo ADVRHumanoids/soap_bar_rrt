@@ -119,7 +119,7 @@ class Connector:
         detect_bool = 0
         wrench = self.ft_map[task.getName()].getWrench()
         # wrench[direction] = 0 # FOR SIMULATION
-        direction = [i for i, e in enumerate(self.stance_list[task]['ref']['normal']) if e != 0]
+        direction = [i for i, e in enumerate(self.stance_list[task.getName()]['ref']['normal']) if e != 0]
         if (wrench[direction] >= magnitude):
             detect_bool = 1
 
@@ -226,7 +226,6 @@ class Connector:
 
             print 'replicating trajectory (1/4) ...'
             for val in range(np.size(solution_interp, 1)):
-
                 self.model.replay_model.setJointPosition(solution_interp[:,val])
                 self.model.replay_model.update()
                 self.model.model.setJointPosition(solution_interp[:,val])
@@ -243,9 +242,13 @@ class Connector:
             lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
                               x not in [j['ind'] for j in self.stance_list[i + 1]]][0]
 
+            # self.model.model.setJointPosition(self.q_list[i + 1])
+            # self.model.model.update()
+            # self.model.rspub.publishTransforms('ci')
+            # raw_input('')
             self.make_cartesian_interface()
 
-            scale = 0.0
+            scale = 0.1
             lifted_contact_final_pose = self.ctrl_tasks[lifted_contact].getPoseReference()[0]
             lifted_contact_final_pose.translation = lifted_contact_final_pose.translation + scale * np.array(self.stance_list[i+2][lifted_contact]['ref']['normal'])
             self.ctrl_tasks[lifted_contact].setPoseTarget(lifted_contact_final_pose, 1.0)
@@ -285,8 +288,14 @@ class Connector:
 
             print 'done!'
 
+            print 'pose before second planning check: ', self.model.state_vc(q[-1])
+
             # Second planning phase
-            q_start = self.model.model.getJointPosition()
+            # TODO: planner also for contact lifting
+            if self.model.state_vc(q[-1]):
+                q_start = self.model.model.getJointPosition()
+            else:
+                q_start = self.q_list[i+1]
             self.q_bounder(q_start)
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
@@ -304,10 +313,6 @@ class Connector:
             # set rotation matrix for each contact
             normals = [j['ref']['normal'] for j in self.stance_list[i+1]]
             [self.model.cs.setContactRotationMatrix(k,j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
-
-
-            print 'check next pose', self.model.state_vc(self.q_list[i+1])
-            raw_input('click')
 
             solution = None
             print 'starting second planning phase ...'

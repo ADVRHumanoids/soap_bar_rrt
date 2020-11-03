@@ -65,6 +65,8 @@ if __name__ == '__main__':
     stances = loader.readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
     # flags = loader.checkStability(cogimon, stances, q_list)
+    # print flags
+    # raw_input('diocane')
     qc = q_connector.Connector(cogimon, q_list, stances)
     qc.run()
     # logger = matlog.MatLogger2('/tmp/feet_on_wall')

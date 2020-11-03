@@ -57,6 +57,7 @@ class Cogimon:
         # planning scene defines valid regions of the state space
         self.ps = validity_check.PlanningSceneWrapper(self.model)
         self.ps.startGetPlanningSceneServer()
+        self.ps.startMonitor()
 
         # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
         self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5*np.sqrt(2))
@@ -69,7 +70,8 @@ class Cogimon:
             self.ps.update()
             self.rspub.publishTransforms('ci')
 
-            return (not self.ps.checkCollisions() and self.cs.checkStability(1e-2))
+            # return not self.ps.checkCollisions() and self.cs.checkStability(5*1e-2)
+            return not self.ps.checkCollisions()
 
         # set it to goal sampler
         # self.gs.set_validity_checker(is_model_state_valid)
@@ -96,7 +98,7 @@ class Cogimon:
 
     def plan_step(self,
                   qstart, qgoal, swing_id=-1,
-                  planner_type='RRTConnect', timeout=30.0, threshold = 0.01):
+                  planner_type='RRTConnect', timeout=15.0, threshold = 0.01):
 
 
         # manifold
