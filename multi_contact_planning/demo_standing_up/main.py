@@ -64,7 +64,7 @@ if __name__ == '__main__':
     q_list = loader.readFromFileConfigs("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
     stances = loader.readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
-    flags = loader.checkStability(cogimon, stances, q_list)
+    # flags = loader.checkStability(cogimon, stances, q_list)
     qc = q_connector.Connector(cogimon, q_list, stances)
     qc.run()
     # logger = matlog.MatLogger2('/tmp/feet_on_wall')

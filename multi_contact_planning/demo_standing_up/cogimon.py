@@ -58,6 +58,7 @@ class Cogimon:
         self.ps = validity_check.PlanningSceneWrapper(self.model)
         self.ps.startGetPlanningSceneServer()
 
+        # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
         self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5*np.sqrt(2))
 
         # goal sampler
