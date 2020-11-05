@@ -10,8 +10,8 @@
     <joint name="l_wrist_joint"/>
   </group>
   <group name="force_torque_sensors">
-    <joint name="l_arm_ft_joint"/>
-    <joint name="r_arm_ft_joint"/>
+    <!-- <joint name="l_arm_ft_joint" />
+        <joint name="r_arm_ft_joint" />-->
     <joint name="l_leg_ft_joint"/>
     <joint name="r_leg_ft_joint"/>
   </group>

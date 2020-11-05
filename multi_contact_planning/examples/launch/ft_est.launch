@@ -1,0 +1,27 @@
+<launch>
+
+     <!--<node pkg="cartesian_interface" 
+          type="force_estimation_node" 
+          name="force_estimator"
+          output="screen">
+          
+          
+        <remap from="~torque_offset" to="cartesian/torque_offset"/>
+          
+        <param name="is_model_floating_base" value="true"/>
+        <param name="model_type" value="RBDL"/>
+        
+        <param name="links" type="yaml" value="[l_ball_tip, r_ball_tip]"/>
+        <param name="chains" type="yaml" value="[left_arm, right_arm]"/>
+
+        <param name="arm1_8/dofs"  type="yaml" value="[0, 1, 2]"/>
+        <param name="arm2_8/dofs"  type="yaml" value="[0, 1, 2]"/>
+        
+    </node>-->
+
+    <node pkg="tf" type="static_transform_publisher" name="world_connecter"
+        args="0 0 0 0 0 0 world ci/world 30"/>
+    
+
+
+</launch>
