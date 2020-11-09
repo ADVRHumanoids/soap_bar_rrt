@@ -5,11 +5,14 @@ from cartesian_interface.pyci_all import *
 import loader
 from gazebo_msgs.srv import GetLinkState
 from gazebo_msgs.srv import SetLinkState
+from gazebo_msgs.srv import SetModelState
 from gazebo_msgs.msg import LinkState
 from gazebo_msgs.msg import LinkStates
+from gazebo_msgs.msg import ModelState
 from xbot_interface import xbot_interface as xbot
 from xbot_interface import config_options as co
 import yaml
+import numpy as np
 
 class GazeboRobotHandler:
 
@@ -40,6 +43,14 @@ class GazeboRobotHandler:
         try:
             set_link_state = rospy.ServiceProxy('/gazebo/set_link_state', SetLinkState)
             return set_link_state(link_state)
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
+
+    def __set_model_state_client(self, model_state):
+        rospy.wait_for_service('/gazebo/set_model_state')
+        try:
+            set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+            return set_model_state(model_state)
         except rospy.ServiceException as e:
             print("Service call failed: %s"%e)
 
@@ -91,9 +102,24 @@ class GazeboRobotHandler:
 
             self.__set_link_state_client(link_state)
 
+    def set_robot_position(self, pose):
 
 
-    def set_robot_pose(self, target_posture):
+        model_state = ModelState()
+        model_state.model_name = 'cogimon'
+        model_state.reference_frame = 'world'
+        model_state.pose.position.x = pose['position'][0]
+        model_state.pose.position.y = pose['position'][1]
+        model_state.pose.position.z = pose['position'][2]
+
+        model_state.pose.orientation.x = pose['orientation'][0]
+        model_state.pose.orientation.y = pose['orientation'][1]
+        model_state.pose.orientation.z = pose['orientation'][2]
+        model_state.pose.orientation.w = pose['orientation'][3]
+
+        self.__set_model_state_client(model_state)
+
+    def set_robot_posture(self, target_posture):
 
         # define contacts for the ForcePublisher
         opt = xbot_opt.ConfigOptions()
@@ -150,13 +176,18 @@ if __name__ == '__main__':
     q_list = loader.readFromFileConfigs("/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
 
     # SET A GIVEN POSE
-    # gzh.set_robot_pose(np.array(q_list[0])[6:])
+    gzh.set_robot_posture(np.array(q_list[0])[6:])
+    #
+    initial_pos = dict()
+    initial_pos['position'] = [0.0, 0.0, 0.6]
+    initial_pos['orientation'] = [-0.03, -0.8, -0.03, -0.6]
 
+    gzh.set_robot_position(initial_pos)
     # SAVE THE CURRENT POSTURE OF THE ROBOT
     # gzh.save_robot_pose()
 
     # LOAD A POSTURE THE ROBOT
-    gzh.load_robot_pose('/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/demo_standing_up/postures.yaml')
+    # gzh.load_robot_pose('/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/demo_standing_up/postures.yaml')
 
 
 

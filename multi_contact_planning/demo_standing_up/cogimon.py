@@ -27,11 +27,17 @@ class Cogimon:
         opt.generate_jidmap()
         opt.set_bool_parameter('is_model_floating_base', True)
         opt.set_string_parameter('model_type', 'RBDL')
+        opt.set_string_parameter('framework', 'ROS')
         self.model = xbot.ModelInterface(opt)
-        # self.robot = xbot.RobotInterface(opt)
+        self.robot = xbot.RobotInterface(opt)
         self.replay_model = xbot.ModelInterface(opt)
         self.id_model = xbot.ModelInterface(opt)
         self.logged_data = logged_data
+
+        # update from robot
+        self.robot.sense()
+        self.model.syncFrom(self.robot)
+        self.model.update()
 
         # name of control frames
         self.ctrl_points = ctrl_points
@@ -64,6 +70,14 @@ class Cogimon:
 
         # goal sampler
         # self.gs = GoalSampler(self.model, ctrl_points.values())
+        self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
+
+        self.ft_map = self.sensors_init(arm_estimation_flag=True)
+
+        self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
+        self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
+        # self.ft_map['l_ball_tip'] = self.ft_map.pop('l_arm_ft')
+        # self.ft_map['r_ball_tip'] = self.ft_map.pop('r_arm_ft')
 
         # validity checker
         def is_model_state_valid():
@@ -95,6 +109,22 @@ class Cogimon:
             return is_model_state_valid()
 
         self.state_vc = is_state_valid
+
+        # publish robot
+        self.rspub.publishTransforms('ci')
+
+    def sensors_init(self, arm_estimation_flag):
+
+        ft_map = self.robot.getForceTorque()
+
+        if (arm_estimation_flag):
+            # create force estimator
+            indices_wrench = [0, 1, 2]
+            ft_map['l_ball_tip'] = self.f_est.addLink('l_ball_tip', indices_wrench, ['left_arm'])
+            ft_map['r_ball_tip'] = self.f_est.addLink('r_ball_tip', indices_wrench, ['right_arm'])
+            self.f_est.update()
+
+        return ft_map
 
     def plan_step(self,
                   qstart, qgoal, swing_id=-1,
