@@ -78,17 +78,14 @@ class Cogimon:
         self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
         # self.ft_map['l_ball_tip'] = self.ft_map.pop('l_arm_ft')
         # self.ft_map['r_ball_tip'] = self.ft_map.pop('r_arm_ft')
-
+        
         # validity checker
         def is_model_state_valid():
             self.ps.update()
             self.rspub.publishTransforms('ci')
 
-            # return not self.ps.checkCollisions() and self.cs.checkStability(5*1e-2)
-            return not self.ps.checkCollisions()
-
-        # set it to goal sampler
-        # self.gs.set_validity_checker(is_model_state_valid)
+            return not self.ps.checkCollisions() and self.cs.checkStability(5*1e-2)
+            # return not self.ps.checkCollisions()
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()

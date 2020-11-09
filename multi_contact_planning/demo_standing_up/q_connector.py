@@ -5,6 +5,12 @@ import yaml
 import numpy as np
 from cartesian_interface import pyest
 import manifold
+import cartesio_planning.planning as planning
+import cartesio_planning.validity_check as vc
+from cartesio_planning import NSPG
+from cartesio_planning.msg import SetContactFrames
+
+import eigenpy
 
 class Connector:
 
@@ -22,6 +28,19 @@ class Connector:
         self.ik_dt = 0.001
         self.manifold = manifold
 
+        self.contacts_pub = rospy.Publisher('contacts', SetContactFrames, queue_size=10, latch=True)
+
+    def make_vc_context(self):
+        _planner_config = dict()
+        _planner_config['state_validity_check'] = ['collisions', 'centroidal_statics']
+        _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'false'}
+        _planner_config['centroidal_statics'] = {'type': 'CentroidalStatics',
+                                                 'eps': 1e-2, 'friction_coefficient': 0.71,
+                                                 'links' : ['l_sole', 'r_sole', 'l_ball_tip','r_ball_tip']}
+
+        vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
+
+        return vc_context
 
     def sensors_init(self, arm_estimation_flag):
 
@@ -47,6 +66,10 @@ class Connector:
         ik_cfg['stack'] = [
             self.model.ctrl_points.values(), ['com'], ['postural']
         ]
+
+        ik_cfg['constraints'] = ['JointLimits']
+
+        ik_cfg['JointLimits'] = {'type': 'JointLimits'}
 
         ik_cfg['postural'] = {
             'name': 'postural',
@@ -103,10 +126,10 @@ class Connector:
         self.log_path = '/tmp'
         # get cartesio ros client
         self.ci = pyci.CartesianInterface.MakeInstance('OpenSot',
-                                                  self.ik_pb,
-                                                  self.model.model,
-                                                  self.ik_dt,
-                                                  log_path=self.log_path)
+                                                       self.ik_pb,
+                                                       self.model.model,
+                                                       self.ik_dt,
+                                                       log_path=self.log_path)
 
         self.ctrl_tasks = []
         for k in self.model.ctrl_points.values():
@@ -274,10 +297,10 @@ class Connector:
             lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
                               x not in [j['ind'] for j in self.stance_list[i + 1]]][0]
 
-            # self.model.model.setJointPosition(self.q_list[i + 1])
-            # self.model.model.update()
-            # self.model.rspub.publishTransforms('ci')
-            # raw_input('')
+            self.model.model.setJointPosition(self.q_list[i + 1])
+            self.model.model.update()
+            self.model.rspub.publishTransforms('ci')
+
             self.make_cartesian_interface()
 
             scale = 0.1
@@ -320,14 +343,68 @@ class Connector:
 
             print 'done!'
 
-            print 'pose before second planning check: ', self.model.state_vc(q[-1])
-
-            # Second planning phase
             # TODO: planner also for contact lifting
-            if self.model.state_vc(q[-1]):
+            if self.model.state_vc(q[:, -1]):
                 q_start = self.model.model.getJointPosition()
             else:
-                q_start = self.q_list[i+1]
+                # initialize NSPG
+                ik_solver = planning.PositionCartesianSolver(self.ci)
+                vc_context = self.make_vc_context()
+                self.NSPG = NSPG.NSPG(ik_solver, vc_context)
+
+                # update contact list and rotation matrices through '/contact' topic
+                active_ind = [ind['ind'] for ind in self.stance_list[i+1]]
+                active_links = [self.model.ctrl_points[j] for j in active_ind]
+
+                normals = [j['ref']['normal'] for j in self.stance_list[i+1]]
+
+                contacts = SetContactFrames()
+                contacts.action = SetContactFrames.SET
+                contacts.frames_in_contact = active_links
+                contacts.rotations = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+                contacts.friction_coefficient = 0.5 * np.sqrt(2)
+
+                self.contacts_pub.publish(contacts)
+
+                # sample
+                if not self.NSPG.sample(5.0):
+                    print('Error: Unable to find a collision free and stable pose!')
+
+                # if NSPG finds a feasible pose, start planning
+                q_goal = self.NSPG.getModel().getJointPosition()
+                self.q_bounder(q_goal)
+                self.model.model.setJointPosition(q_goal)
+                self.model.model.update()
+                self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
+
+                q_start = self.q_list[i + 1]
+                self.q_bounder(q_start)
+                self.model.model.setJointPosition(q_start)
+                self.model.model.update()
+                self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
+
+                solution = None
+                while solution is None and index < self.MAX_RRT_ATTEMPTS:
+                    index = index + 1
+
+                    if index == self.MAX_RRT_ATTEMPTS:
+                        error("Unable to find a feasible plan!")
+
+                    solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=60.0)
+
+                solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
+
+                for val in range(np.size(solution_interp, 1)):
+                    self.model.replay_model.setJointPosition(solution_interp[:,val])
+                    self.model.replay_model.update()
+                    self.model.model.setJointPosition(solution_interp[:,val])
+                    self.model.model.update()
+                    self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
+                    rospy.sleep(self.ik_dt)
+                raw_input('click to close')
+                exit()
+
+            # Second planning phase
             self.q_bounder(q_start)
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
@@ -339,12 +416,12 @@ class Connector:
 
             # set all contacts to be active for second planning phase
             active_ind = [ind['ind'] for ind in self.stance_list[i+1]]
-            active_links = [self.model.ctrl_points[j] for j in active_ind]  #names
+            active_links = [self.model.ctrl_points[j] for j in active_ind]  # names
             self.model.cs.setContactLinks(active_links)
 
             # set rotation matrix for each contact
             normals = [j['ref']['normal'] for j in self.stance_list[i+1]]
-            [self.model.cs.setContactRotationMatrix(k,j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
+            [self.model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
 
             solution = None
             print 'starting second planning phase ...'
@@ -354,7 +431,7 @@ class Connector:
                 if index == self.MAX_RRT_ATTEMPTS:
                     raise Exception("Unable to find a feasble plan!")
 
-                solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=15.0)
+                solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=60.0)
             solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
 
             print 'done!'
@@ -362,7 +439,7 @@ class Connector:
             print 'starting interpolation (3/4) ...'
             for val in range(np.size(solution_interp, 1)):
 
-                self.model.replay_model.setJointPosition(solution_interp[:,val])
+                self.model.replay_model.setJointPosition(solution_interp[:, val])
                 self.model.replay_model.update()
                 self.model.model.setJointPosition(solution_interp[:, val])
                 self.model.model.update()
