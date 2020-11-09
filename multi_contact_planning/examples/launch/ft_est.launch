@@ -19,9 +19,11 @@
         
     </node>-->
 
-    <node pkg="tf" type="static_transform_publisher" name="world_connecter"
+    <node pkg="tf" type="static_transform_publisher" name="world_connecter_ci"
         args="0 0 0 0 0 0 world ci/world 30"/>
     
+    <node pkg="tf" type="static_transform_publisher" name="world_connecter_gazebo"
+        args="0 0 0 0 0 0 world world_gazebo 30"/>
 
 
 </launch>
