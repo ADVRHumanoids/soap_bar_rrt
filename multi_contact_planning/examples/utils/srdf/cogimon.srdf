@@ -5,19 +5,23 @@
   <group name="base">
     <link name="Waist"/>
   </group>
+  
   <group name="hands">
     <joint name="r_wrist_joint"/>
     <joint name="l_wrist_joint"/>
   </group>
+  
   <group name="force_torque_sensors">
     <!-- <joint name="l_arm_ft_joint" />
         <joint name="r_arm_ft_joint" />-->
     <joint name="l_leg_ft_joint"/>
     <joint name="r_leg_ft_joint"/>
   </group>
+  
   <group name="imu_sensors">
     <link name="imu_link"/>
   </group>
+  
   <group name="left_leg">
     <chain base_link="Waist" tip_link="LFoot"/>
     <link name="LHipMot"/>
@@ -27,6 +31,7 @@
     <link name="LFootmot"/>
     <link name="LFoot"/>
   </group>
+  
   <group name="right_leg">
     <chain base_link="Waist" tip_link="RFoot"/>
     <link name="RHipMot"/>
@@ -36,9 +41,11 @@
     <link name="RFootmot"/>
     <link name="RFoot"/>
   </group>
+  
   <group name="torso">
     <chain base_link="Waist" tip_link="DWYTorso"/>
   </group>
+  
   <group name="left_arm">
     <chain base_link="DWYTorso" tip_link="LWrMot3"/>
     <link name="DWYTorso"/>
@@ -51,8 +58,8 @@
     <link name="LWrMot3"/>
     <link name="l_wrist"/>
     <link name="LBall"/>
-    
   </group>
+  
   <group name="right_arm">
     <chain base_link="DWYTorso" tip_link="RWrMot3"/>
     <link name="DWYTorso"/>
@@ -66,6 +73,11 @@
     <link name="r_wrist"/>
     <link name="RBall"/>
   </group>
+  
+  <group name="head">
+      <link name="Head"/>
+  </group>
+  
   <group name="chains">
     <group name="left_leg"/>
     <group name="right_leg"/>
