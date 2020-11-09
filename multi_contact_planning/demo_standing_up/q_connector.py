@@ -241,16 +241,19 @@ class Connector:
             self.model.model.setJointPosition(q_start)
             self.model.model.update()
             self.q_bounder(q_start)
+            self.model.ps.update()
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             self.model.model.setJointPosition(q_start)
             self.model.model.update()
+            self.model.ps.update()
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
             self.model.model.setJointPosition(q_goal)
             self.model.model.update()
+            self.model.ps.update()
             self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             # set all contacts to be active for first planning phase
@@ -285,6 +288,7 @@ class Connector:
                 self.model.replay_model.update()
                 self.model.model.setJointPosition(solution_interp[:,val])
                 self.model.model.update()
+                self.model.ps.update()
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
                 # self.model.model.setPositionReference(solution_interp)
                 # self.model.model.move()
@@ -339,6 +343,7 @@ class Connector:
                 self.model.replay_model.update()
                 self.model.model.setJointPosition(q[:,j])
                 self.model.model.update()
+                self.model.ps.update()
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             print 'done!'
@@ -375,12 +380,14 @@ class Connector:
                 self.q_bounder(q_goal)
                 self.model.model.setJointPosition(q_goal)
                 self.model.model.update()
+                self.model.ps.update()
                 self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
                 q_start = self.q_list[i + 1]
                 self.q_bounder(q_start)
                 self.model.model.setJointPosition(q_start)
                 self.model.model.update()
+                self.model.ps.update()
                 self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
                 solution = None
@@ -399,6 +406,7 @@ class Connector:
                     self.model.replay_model.update()
                     self.model.model.setJointPosition(solution_interp[:,val])
                     self.model.model.update()
+                    self.model.ps.update()
                     self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
                     rospy.sleep(self.ik_dt)
                 raw_input('click to close')
@@ -406,12 +414,14 @@ class Connector:
 
             # Second planning phase
             self.q_bounder(q_start)
+            self.model.ps.update()
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             q_goal = self.q_list[i+2]
             self.q_bounder(q_goal)
             self.model.model.setJointPosition(q_goal)
             self.model.model.update()
+            self.model.ps.update()
             self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             # set all contacts to be active for second planning phase
@@ -443,6 +453,7 @@ class Connector:
                 self.model.replay_model.update()
                 self.model.model.setJointPosition(solution_interp[:, val])
                 self.model.model.update()
+                self.model.ps.update()
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
                 # self.model.model.setPositionReference(solution_interp)
                 # self.model.model.move()
