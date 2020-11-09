@@ -1,6 +1,5 @@
 import cartesio_planning.validity_check
 import numpy as np
-# "/home/francesco/advr-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt"
 
 def readFromFileStances(path):
     f = open(path, "r")
@@ -8,6 +7,7 @@ def readFromFileStances(path):
     stances = []
     while True:
         sigma_size = f.readline()
+        print sigma_size
 
         if sigma_size == '':
             break

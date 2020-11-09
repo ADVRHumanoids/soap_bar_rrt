@@ -62,19 +62,13 @@ class Cogimon:
         # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
         self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5*np.sqrt(2))
 
-        # goal sampler
-        # self.gs = GoalSampler(self.model, ctrl_points.values())
-
         # validity checker
         def is_model_state_valid():
             self.ps.update()
             self.rspub.publishTransforms('ci')
 
-            # return not self.ps.checkCollisions() and self.cs.checkStability(5*1e-2)
-            return not self.ps.checkCollisions()
-
-        # set it to goal sampler
-        # self.gs.set_validity_checker(is_model_state_valid)
+            return not self.ps.checkCollisions() and self.cs.checkStability(5*1e-2)
+            # return not self.ps.checkCollisions()
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
