@@ -14,6 +14,7 @@ import yaml
 import cogimon
 import q_connector
 import loader
+import os
 
 from cartesian_interface import pyest
 from geometry_msgs.msg import *
@@ -61,8 +62,10 @@ if __name__ == '__main__':
 
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
 
-    q_list = loader.readFromFileConfigs("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
-    stances = loader.readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
+    user = os.getenv('ROBOTOLOGY_ROOT')
+
+    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
+    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
     # flags = loader.checkStability(cogimon, stances, q_list)
     # print flags
