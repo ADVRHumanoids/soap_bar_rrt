@@ -9,7 +9,6 @@ import cartesio_planning.planning as planning
 import cartesio_planning.validity_check as vc
 from cartesio_planning import NSPG
 from cartesio_planning.msg import SetContactFrames
-
 import eigenpy
 
 class Connector:
@@ -267,31 +266,38 @@ class Connector:
             # print normals
             [self.model.cs.setContactRotationMatrix(k,j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
 
-            solution = None
-            print 'start first planning phase ...'
-            while solution is None and index < self.MAX_RRT_ATTEMPTS:
-                index = index + 1
+            # solution = None
+            # print 'start first planning phase ...'
+            # while solution is None and index < self.MAX_RRT_ATTEMPTS:
+            #     index = index + 1
+            #
+            #     if index == self.MAX_RRT_ATTEMPTS:
+            #         error("Unable to find a feasible plan!")
+            #
+            #     solution, error = self.model.plan_step(q_start, q_goal, planner_type='RRTConnect', timeout=60.0)
+            #
+            # print 'done!'
+            # print 'start interpolation ...'
+            # solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
+            # print 'done!'
+            #
+            # np.savetxt('solution.csv', solution_interp, delimiter=',')
 
-                if index == self.MAX_RRT_ATTEMPTS:
-                    error("Unable to find a feasible plan!")
-
-                solution, error = self.model.plan_step(q_start, q_goal, planner_type='RRTConnect', timeout=60.0)
-
-            print 'done!'
-            print 'start interpolation ...'
-            solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
-            print 'done!'
+            solution_interp = np.loadtxt('solution.csv', delimiter=',')
 
             print 'replicating trajectory (1/4) ...'
             for val in range(np.size(solution_interp, 1)):
-                self.model.replay_model.setJointPosition(solution_interp[:,val])
+                self.model.replay_model.setJointPosition(solution_interp[:, val])
                 self.model.replay_model.update()
-                self.model.model.setJointPosition(solution_interp[:,val])
+                self.model.model.setJointPosition(solution_interp[:, val])
                 self.model.model.update()
                 self.model.ps.update()
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
-                # self.model.model.setPositionReference(solution_interp)
-                # self.model.model.move()
+
+                # sending trajectories to robot
+                self.model.robot.setPositionReference(solution_interp[6:, val])
+                self.model.robot.move()
+
                 rospy.sleep(self.ik_dt)
             print 'done!'
 
@@ -301,9 +307,9 @@ class Connector:
             lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
                               x not in [j['ind'] for j in self.stance_list[i + 1]]][0]
 
-            self.model.model.setJointPosition(self.q_list[i + 1])
-            self.model.model.update()
-            self.model.rspub.publishTransforms('ci')
+            # self.model.model.setJointPosition(self.q_list[i + 1])
+            # self.model.model.update()
+            # self.model.rspub.publishTransforms('ci')
 
             self.make_cartesian_interface()
 
@@ -350,7 +356,15 @@ class Connector:
 
             # TODO: planner also for contact lifting
             if self.model.state_vc(q[:, -1]):
+                for j in range(np.size(q, 1)):
+                    # sending trajectories to robot
+                    self.model.robot.setPositionReference(solution_interp[6:, val])
+                    self.model.robot.move()
+
+                self.model.robot.sense()
+                self.model.model.syncFrom(self.model.robot)
                 q_start = self.model.model.getJointPosition()
+
             else:
                 # initialize NSPG
                 ik_solver = planning.PositionCartesianSolver(self.ci)
@@ -372,8 +386,9 @@ class Connector:
                 self.contacts_pub.publish(contacts)
 
                 # sample
-                if not self.NSPG.sample(5.0):
+                if not self.NSPG.sample(10.0):
                     print('Error: Unable to find a collision free and stable pose!')
+                    exit()
 
                 # if NSPG finds a feasible pose, start planning
                 q_goal = self.NSPG.getModel().getJointPosition()
@@ -408,9 +423,17 @@ class Connector:
                     self.model.model.update()
                     self.model.ps.update()
                     self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
+
+                    # sending trajectories to robot
+                    self.model.robot.setPositionReference(solution_interp[6:, val])
+                    self.model.robot.move()
+
                     rospy.sleep(self.ik_dt)
-                raw_input('click to close')
-                exit()
+
+                self.model.robot.sense()
+                self.model.model.syncFrom(self.model.robot)
+
+                q_start = self.model.model.getJointPosition()
 
             # Second planning phase
             self.q_bounder(q_start)
@@ -425,12 +448,12 @@ class Connector:
             self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             # set all contacts to be active for second planning phase
-            active_ind = [ind['ind'] for ind in self.stance_list[i+1]]
+            active_ind = [ind['ind'] for ind in self.stance_list[i+2]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]  # names
             self.model.cs.setContactLinks(active_links)
 
             # set rotation matrix for each contact
-            normals = [j['ref']['normal'] for j in self.stance_list[i+1]]
+            normals = [j['ref']['normal'] for j in self.stance_list[i+2]]
             [self.model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
 
             solution = None
@@ -439,7 +462,7 @@ class Connector:
                 index = index + 1
 
                 if index == self.MAX_RRT_ATTEMPTS:
-                    raise Exception("Unable to find a feasble plan!")
+                    raise Exception("Unable to find a feasible plan!")
 
                 solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=60.0)
             solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
@@ -455,11 +478,17 @@ class Connector:
                 self.model.model.update()
                 self.model.ps.update()
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
-                # self.model.model.setPositionReference(solution_interp)
-                # self.model.model.move()
+
+                # send trajectory to robot
+                self.model.robot.setPositionReference(solution_interp[6:, val])
+                self.model.robot.move()
+
+
                 rospy.sleep(self.ik_dt)
 
             print 'done!'
+
+            exit()
             # Surface reacher
             self.surface_reacher(lifted_contact, i+2, 20)
 

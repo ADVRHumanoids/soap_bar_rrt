@@ -15,6 +15,7 @@ import cogimon
 import q_connector
 import loader
 import os
+import gazebo_robot_handler as grh
 
 from cartesian_interface import pyest
 from geometry_msgs.msg import *
@@ -63,10 +64,17 @@ if __name__ == '__main__':
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-
     q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
     stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
+    gzhandler = grh.GazeboRobotHandler()
+    gzhandler.set_robot_posture(np.array(q_list[0])[6:])
+    #
+    initial_pos = dict()
+    initial_pos['position'] = [0.0, 0.0, 0.57]
+    initial_pos['orientation'] = [-0.03, -0.8, -0.03, -0.6]
+
+    gzhandler.set_robot_position(initial_pos)
     # flags = loader.checkStability(cogimon, stances, q_list)
     # print flags
     # raw_input('diocane')

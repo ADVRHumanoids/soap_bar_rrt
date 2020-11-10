@@ -1,10 +1,24 @@
 <launch>
 
+	<node pkg="tf" type="static_transform_publisher" name="world_connecter_ci"
+        args="0 0 0 0 0 0 world ci/world 30"/>
 
     <param name="robot_description"
         textfile="$(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/utils/urdf/cogimon.urdf"/>
 
     <param name="robot_description_semantic"
         textfile="$(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/utils/srdf/cogimon.srdf"/>
+
+    <node name="mesh_viz_floor" pkg="mesh_viz" type="mesh_viz_node" output="screen">
+        <param name="mesh_path" value="$(find cartesio_planning)/utils/simple_box.stl" />
+        <param name="scale_x" type="double" value="1.0"/>
+        <param name="scale_y" type="double" value="3.0"/>
+        <param name="scale_z" type="double" value="3.0"/>
+        <rosparam param="position"> [1.5, 0.0, 0.0] </rosparam>
+        <rosparam param="orientation"> [0.0, 0.0, 0.0, 1.0] </rosparam>
+        <param name="frame_id" value="world"/>
+        <param name="name_id" value="floor"/>
+        <remap from="mesh_viz_floor/floor" to="planner/collision_objects"/>
+    </node>
 
 </launch>
