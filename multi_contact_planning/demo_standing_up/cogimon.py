@@ -62,6 +62,8 @@ class Cogimon:
 
         # planning scene defines valid regions of the state space
         self.ps = validity_check.PlanningSceneWrapper(self.model)
+        self.ps.addBox("wall", [1.0, 3.0, 3.0], Affine3([1.6, 0.0, 1.5]))
+        self.ps.addBox("ground", [3.0, 3.0, 1.0], Affine3([0.0, 0.0, -0.6]))
         self.ps.startGetPlanningSceneServer()
         self.ps.startMonitor()
 

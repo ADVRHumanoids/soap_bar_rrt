@@ -32,7 +32,7 @@ class Connector:
     def make_vc_context(self):
         _planner_config = dict()
         _planner_config['state_validity_check'] = ['collisions', 'centroidal_statics']
-        _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'false'}
+        _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'true'}
         _planner_config['centroidal_statics'] = {'type': 'CentroidalStatics',
                                                  'eps': 1e-2, 'friction_coefficient': 0.71,
                                                  'links' : ['l_sole', 'r_sole', 'l_ball_tip','r_ball_tip']}
