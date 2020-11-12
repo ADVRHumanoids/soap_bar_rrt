@@ -285,6 +285,9 @@ class Connector:
 
             solution_interp = np.loadtxt('solution.csv', delimiter=',')
 
+            print (np.size(solution_interp,1))
+            print (np.size(solution_interp,0))
+
             print 'replicating trajectory (1/4) ...'
             for val in range(np.size(solution_interp, 1)):
                 self.model.replay_model.setJointPosition(solution_interp[:, val])
@@ -301,11 +304,17 @@ class Connector:
                 rospy.sleep(self.ik_dt)
             print 'done!'
 
+            # sync model and robot
+            self.model.robot.sense()
+            self.model.model.syncFrom(self.model.robot)
+
             # get active contacts from 'stance_list' to retrieve lifted contact
             # hypo: there must be a lifted contact
             active_list = []
             lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
                               x not in [j['ind'] for j in self.stance_list[i + 1]]][0]
+
+            lifted_contact_ind = self.model.ctrl_points.keys().index(lifted_contact)
 
             # self.model.model.setJointPosition(self.q_list[i + 1])
             # self.model.model.update()
@@ -314,9 +323,9 @@ class Connector:
             self.make_cartesian_interface()
 
             scale = 0.1
-            lifted_contact_final_pose = self.ctrl_tasks[lifted_contact].getPoseReference()[0]
-            lifted_contact_final_pose.translation = lifted_contact_final_pose.translation + scale * np.array(self.stance_list[i+2][lifted_contact]['ref']['normal'])
-            self.ctrl_tasks[lifted_contact].setPoseTarget(lifted_contact_final_pose, 1.0)
+            lifted_contact_final_pose = self.ctrl_tasks[lifted_contact_ind].getPoseReference()[0]
+            lifted_contact_final_pose.translation = lifted_contact_final_pose.translation + scale * np.array(self.stance_list[i+2][lifted_contact_ind]['ref']['normal'])
+            self.ctrl_tasks[lifted_contact_ind].setPoseTarget(lifted_contact_final_pose, 1.0)
 
             # Cartesian part
             ci_time = 0.0
@@ -325,7 +334,7 @@ class Connector:
             q = np.empty(shape=[self.model.model.getJointNum(), 0])
 
             print 'starting cartesian trajectory ...'
-            while self.ctrl_tasks[lifted_contact].getTaskState() == pyci.State.Reaching:
+            while self.ctrl_tasks[lifted_contact_ind].getTaskState() == pyci.State.Reaching:
                 q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
 
                 if not self.ci_solve_integrate(ci_time):
@@ -345,21 +354,26 @@ class Connector:
 
             print 'replicating trajectory(2/4) ...'
             for j in range(np.size(q, 1)):
-                self.model.replay_model.setJointPosition(q[:,j])
+                self.model.replay_model.setJointPosition(q[:, j])
                 self.model.replay_model.update()
-                self.model.model.setJointPosition(q[:,j])
+                self.model.model.setJointPosition(q[:, j])
                 self.model.model.update()
                 self.model.ps.update()
                 self.model.sol_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
             print 'done!'
 
-            # TODO: planner also for contact lifting
+            # Check whether the final pose of the cartesian trajectory is in collision.
+            # is so, the NSPG finds a new collision-free and stable robot configuration and
+            # a planner finds a feasible trajectory to connect q_list[i+1] and the configuration
+            # coming from the NSPG
             if self.model.state_vc(q[:, -1]):
+                raw_input('click')
                 for j in range(np.size(q, 1)):
                     # sending trajectories to robot
-                    self.model.robot.setPositionReference(solution_interp[6:, val])
+                    self.model.robot.setPositionReference(q[6:, j])
                     self.model.robot.move()
+                    rospy.sleep(self.ik_dt)
 
                 self.model.robot.sense()
                 self.model.model.syncFrom(self.model.robot)
@@ -436,6 +450,7 @@ class Connector:
                 q_start = self.model.model.getJointPosition()
 
             # Second planning phase
+            q_start = self.q_list[i+1]  # comment when using the cartesian part!!!!!
             self.q_bounder(q_start)
             self.model.ps.update()
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())

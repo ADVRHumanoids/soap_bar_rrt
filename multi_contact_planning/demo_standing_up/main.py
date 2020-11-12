@@ -17,6 +17,8 @@ import loader
 import os
 import gazebo_robot_handler as grh
 
+import collections
+
 from cartesian_interface import pyest
 from geometry_msgs.msg import *
 
@@ -59,7 +61,8 @@ if __name__ == '__main__':
 
     logged_data = []
     log_path = '/tmp'
-    ctrl_points = {0:'l_ball_tip', 1:'r_ball_tip', 4:'l_sole', 5:'r_sole'}
+    ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'),(1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
+    # ctrl_points = {0: 'l_ball_tip', 1: 'r_ball_tip', 4: 'l_sole', 5: 'r_sole'}
 
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
 
@@ -71,9 +74,8 @@ if __name__ == '__main__':
     gzhandler.set_robot_posture(np.array(q_list[0])[6:])
     #
     initial_pos = dict()
-    initial_pos['position'] = [0.0, 0.0, 0.57]
+    initial_pos['position'] = [-0.0519934, -0.00367742, 0.63]
     initial_pos['orientation'] = [-0.03, -0.8, -0.03, -0.6]
-
     gzhandler.set_robot_position(initial_pos)
     # flags = loader.checkStability(cogimon, stances, q_list)
     # print flags

@@ -30,6 +30,7 @@ class Cogimon:
         opt.set_string_parameter('framework', 'ROS')
         self.model = xbot.ModelInterface(opt)
         self.robot = xbot.RobotInterface(opt)
+        self.robot.setControlMode(xbot.ControlMode.Position())
         self.replay_model = xbot.ModelInterface(opt)
         self.id_model = xbot.ModelInterface(opt)
         self.logged_data = logged_data
@@ -62,8 +63,8 @@ class Cogimon:
 
         # planning scene defines valid regions of the state space
         self.ps = validity_check.PlanningSceneWrapper(self.model)
-        self.ps.addBox("wall", "ci/world" [1.0, 3.0, 3.0], Affine3([1.6, 0.0, 1.5]))
-        self.ps.addBox("ground", "ci/world" [3.0, 3.0, 1.0], Affine3([0.0, 0.0, -0.6]))
+        self.ps.addBox("wall", "ci/world", [1.0, 3.0, 3.0], Affine3([1.6, 0.0, 1.5]))
+        self.ps.addBox("ground", "ci/world", [3.0, 3.0, 1.0], Affine3([0.0, 0.0, -0.6]))
         self.ps.startGetPlanningSceneServer()
         self.ps.startMonitor()
 
