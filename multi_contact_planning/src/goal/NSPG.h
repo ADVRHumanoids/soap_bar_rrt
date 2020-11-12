@@ -36,5 +36,7 @@ namespace XBot { namespace Cartesian { namespace Planning {
         PositionCartesianSolver::Ptr _ik_solver;
         
         Planning::ValidityCheckContext _vc_context;
+        
+        std::shared_ptr<XBot::Cartesian::Utils::RobotStatePublisher> _rspub;
     };
 }}}

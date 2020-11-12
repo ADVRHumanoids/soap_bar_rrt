@@ -1,8 +1,5 @@
 <launch>
 
-	<node pkg="tf" type="static_transform_publisher" name="world_connecter_ci"
-        args="0 0 0 0 0 0 world ci/world 30"/>
-
     <param name="robot_description"
         textfile="$(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/utils/urdf/cogimon.urdf"/>
 
