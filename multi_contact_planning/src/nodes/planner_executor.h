@@ -143,6 +143,9 @@ private:
                                       moveit_msgs::ApplyPlanningScene::Response& res);
     bool goal_sampler_service(multi_contact_planning::CartesioGoal::Request& req,
                               multi_contact_planning::CartesioGoal::Response& res);
+    
+    Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
+
 
 
     Planning::CartesianConstraint::Ptr make_manifold(std::string problem_description_string);

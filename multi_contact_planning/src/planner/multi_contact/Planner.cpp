@@ -58,7 +58,7 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 	for(int i = 0; i < _activeEEsInit.size(); i++){
 		Eigen::Affine3d T_i; 
 		T_i.translation() = rCInit.row(i).transpose();
-		T_i.linear() = Eigen::Matrix3d::Identity();
+		T_i.linear() = generateRotationAroundAxis(_activeEEsInit[i], nCInit.row(i).transpose());
 		Eigen::Vector3d F_i = FCInit.row(i).transpose();
 		Eigen::Vector3d n_i = nCInit.row(i).transpose();
 		Contact* c = new Contact(_activeEEsInit.at(i), T_i, F_i, n_i);
@@ -91,7 +91,7 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 	for(int i = 0; i < _activeEEsGoal.size(); i++){
 		Eigen::Affine3d T_i; 
 		T_i.translation() = rCGoal.row(i).transpose();
-		T_i.linear() = Eigen::Matrix3d::Identity();
+		T_i.linear() = generateRotationAroundAxis(_activeEEsGoal[i], nCGoal.row(i).transpose());
 		Eigen::Vector3d F_i = FCGoal.row(i).transpose();
 		Eigen::Vector3d n_i = nCGoal.row(i).transpose();
 		Contact* c = new Contact(_activeEEsGoal.at(i), T_i, F_i, n_i);
@@ -380,11 +380,9 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
             active_tasks.push_back(getTaskStringName(ee));
             ref_tasks.push_back(sigma.retrieveContactPose(ee));
             
-            foutLogMCP << "EE(stance) = " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).translation().transpose() << std::endl;
+            foutLogMCP << "EE(stance) =\n " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).matrix() << std::endl;
 	}
 	
-	
-
 	// set references
     std::vector<std::string> all_tasks;
     all_tasks.push_back("Com");
@@ -404,16 +402,26 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     }
 
     for(int i = i_init; i < all_tasks.size(); i++){
-        int index = -1;
-        for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
-    
-        if(index == -1){
-        	ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
-        	ci->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
+        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
+        
+        if(it == active_tasks.end()){
+            Eigen::MatrixXd wM = 0.1 * Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
+            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
+                wM.block<3,3>(3,3) *= 0.0001;
+            ci->getTask(all_tasks.at(i))->setWeight(wM);
+            ci->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
+            foutLogMCP << "EE inactive = " << all_tasks.at(i) << " pos =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).translation().transpose() << std::endl;
+            foutLogMCP << "EE inactive = " << all_tasks.at(i) << " rot =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).linear() << std::endl;
         }
     	else{
-            ci->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+            Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
+            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
+                wM.block<3,3>(3,3) *= 0.001;
+            ci->getTask(all_tasks.at(i))->setWeight(wM);
+            int index = it - active_tasks.begin();
             ci->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+            foutLogMCP << "EE active = " << all_tasks.at(i) << " pos =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).translation().transpose() << std::endl;
+            foutLogMCP << "EE active = " << all_tasks.at(i) << " rot =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).linear() << std::endl;
         }
     }
 
@@ -613,21 +621,22 @@ Eigen::Vector3d Planner::computeCoM(Configuration q){
 	return rCoM;
 }
 
-Eigen::Affine3d Planner::computeForwardKinematics(Configuration q, EndEffector ee){
-	Eigen::VectorXd c(n_dof);
-	Eigen::Vector3d posFB = q.getFBPosition();
-	Eigen::Vector3d rotFB = q.getFBOrientation();
-	c.segment(0,3) = posFB;
-	c.segment(3,3) = rotFB;
-	c.tail(n_dof-6) = q.getJointValues();
-	planner_model->setJointPosition(c);
-	planner_model->update();
+Eigen::Affine3d Planner::computeForwardKinematics(Configuration q, EndEffector ee)
+{
+    Eigen::VectorXd c(n_dof);
+    Eigen::Vector3d posFB = q.getFBPosition();
+    Eigen::Vector3d rotFB = q.getFBOrientation();
+    c.segment(0,3) = posFB;
+    c.segment(3,3) = rotFB;
+    c.tail(n_dof-6) = q.getJointValues();
+    planner_model->setJointPosition(c);
+    planner_model->update();
 
-	Eigen::Affine3d T;
-	std::string link = getTaskStringName(ee);        
+    Eigen::Affine3d T;
+    std::string link = getTaskStringName(ee);        
     ci->getCurrentPose(link, T);
     
-	return T;
+    return T;
 }
 
 bool Planner::similarityTest(Stance sigmaNew){
@@ -730,7 +739,8 @@ void Planner::run(){
 				activeEEsDes.push_back(pk);
 				int pointIndex;  
 				T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);	
-				T_k.linear() = Eigen::Matrix3d::Identity(3,3);
+// 				T_k.linear() = Eigen::Matrix3d::Identity(3,3);
+                                T_k.linear() = generateRotationAroundAxis(pk, getNormalAtPointByIndex(pointIndex));
 				n_k = getNormalAtPointByIndex(pointIndex);							
 			}	
 
@@ -793,7 +803,9 @@ void Planner::run(){
 							//bool resIK_CoM = false;
 							//if(eCoMnorm < 1e-03) resIK_CoM = true;
 							//else resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
-                                                        bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);							
+                                                        bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);	
+                                                        if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
+                                                        else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
 							if(resIK_CoM){
 								qListVertex.push_back(qNew);			
 								sigmaListVertex.push_back(sigmaNew);					
@@ -881,4 +893,39 @@ double Planner::computeHtorso(Configuration q){
 	
 	Eigen::Vector3d d = eTorsoCur - eTorsoDes;
 	return fabs(d(0)) + fabs(d(1)) + fabs(d(2));	
+}
+
+Eigen::Matrix3d Planner::generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis){
+        Eigen::Matrix3d rot;
+
+        bool vertical = false;
+        Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0); 
+    if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
+
+    if(pk == L_HAND || pk == R_HAND){
+        if(vertical){
+                rot << -1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0,
+                        0.0, 0.0, -1.0;
+        }
+        else{
+                rot <<  0.0, 0.0, 1.0,
+                        0.0, 1.0, 0.0,
+                        1.0, 0.0, 0.0;
+        }               
+    }
+        else{
+        if(vertical){
+                rot <<  1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0,
+                        0.0, 0.0, 1.0;
+        }
+        else{
+                rot <<  0.0, 0.0, -1.0,
+                                        0.0, 1.0, 0.0,
+                                        1.0, 0.0, 0.0;
+        }               
+    }
+
+        return rot;    
 }
