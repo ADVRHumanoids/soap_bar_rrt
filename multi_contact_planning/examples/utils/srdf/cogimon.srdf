@@ -44,6 +44,11 @@
   
   <group name="torso">
     <chain base_link="Waist" tip_link="DWYTorso"/>
+    <link name="Waist"/>
+    <link name="imu_link"/>
+    <link name="DWYTorso"/>
+    <link name="DWLExt"/>
+    <link name="DWL"/>
   </group>
   
   <group name="left_arm">
