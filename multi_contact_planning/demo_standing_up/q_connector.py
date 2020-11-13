@@ -287,9 +287,6 @@ class Connector:
 
             solution_interp = np.loadtxt('solution.csv', delimiter=',')
 
-            print (np.size(solution_interp,1))
-            print (np.size(solution_interp,0))
-
             print 'replicating trajectory (1/4) ...'
             for val in range(np.size(solution_interp, 1)):
                 self.model.replay_model.setJointPosition(solution_interp[:, val])
