@@ -35,7 +35,7 @@ class Connector:
         _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'true'}
         _planner_config['centroidal_statics'] = {'type': 'CentroidalStatics',
                                                  'eps': 1e-2, 'friction_coefficient': 0.71,
-                                                 'links' : ['l_sole', 'r_sole', 'l_ball_tip','r_ball_tip']}
+                                                 'links': ['l_sole', 'r_sole', 'l_ball_tip','r_ball_tip']}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
 
@@ -60,7 +60,7 @@ class Connector:
         # write cartesio config
         ik_cfg = dict()
 
-        ik_cfg['solver_options'] = {'regularization': 1e-4, 'back-end': 'osqp'}
+        ik_cfg['solver_options'] = {'regularization': 10, 'back-end': 'qpoases'}
 
         ik_cfg['stack'] = [
             self.model.ctrl_points.values(), ['com'], ['postural']
@@ -73,7 +73,8 @@ class Connector:
         ik_cfg['postural'] = {
             'name': 'postural',
             'type': 'Postural',
-            'lambda': 0.01,
+            'lambda': 0.1,
+            'weight': 10.0
         }
 
         ik_cfg['com'] = {
@@ -87,14 +88,14 @@ class Connector:
                 ik_cfg[c] = {
                     'type': 'Cartesian',
                     'distal_link': c,
-                    'indices': [0, 1, 2],
-                    'lambda': .1
+                    # 'indices': [0, 1, 2],
+                    'lambda': 0.1
                 }
             else:
                 ik_cfg[c] = {
                     'type': 'Cartesian',
                     'distal_link': c,
-                    'lambda': .1
+                    'lambda': 0.1
                 }
 
         ik_str = yaml.dump(ik_cfg)
@@ -135,6 +136,7 @@ class Connector:
             self.ctrl_tasks.append(self.ci.getTask(k))
 
         self.com = self.ci.getTask('com')
+        self.postural = self.ci.getTask('postural')
 
     def impact_detector(self, lifted_contact, turn, magnitude):
 
@@ -310,26 +312,34 @@ class Connector:
 
             # get active contacts from 'stance_list' to retrieve lifted contact
             # hypo: there must be a lifted contact
-            active_list = []
             lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
                               x not in [j['ind'] for j in self.stance_list[i + 1]]][0]
 
             lifted_contact_ind = self.model.ctrl_points.keys().index(lifted_contact)
 
-            # self.model.model.setJointPosition(self.q_list[i + 1])
-            # self.model.model.update()
-            # self.model.rspub.publishTransforms('ci')
-
             self.make_cartesian_interface()
+            self.ik_solver = planning.PositionCartesianSolver(self.ci)
+            self.vc_context = self.make_vc_context()
+            self.NSPG = NSPG.NSPG(self.ik_solver, self.vc_context)
 
-            scale = 0.1
+            scale = 0.03
             lifted_contact_final_pose = self.ctrl_tasks[lifted_contact_ind].getPoseReference()[0]
-            lifted_contact_final_pose.translation = lifted_contact_final_pose.translation + scale * np.array(self.stance_list[i+2][lifted_contact_ind]['ref']['normal'])
+            lifted_contact_final_pose.translation = lifted_contact_final_pose.translation + scale * np.array(self.stance_list[i][lifted_contact_ind]['ref']['normal'])
             self.ctrl_tasks[lifted_contact_ind].setPoseTarget(lifted_contact_final_pose, 1.0)
+
+            # w = np.eye(6)*1
+            # w[3, 3] = 0.001
+            # w[4, 4] = 0.001
+            # w[5, 5] = 0.001
+            # self.ctrl_tasks[self.model.ctrl_points.keys().index(0)].setWeight(w)
+            # self.ctrl_tasks[self.model.ctrl_points.keys().index(1)].setWeight(w)
+            # self.ctrl_tasks[self.model.ctrl_points.keys().index(4)].setWeight(np.eye(6))
+            # self.ctrl_tasks[self.model.ctrl_points.keys().index(5)].setWeight(np.eye(6))
+            #
+            self.postural.setReferencePosture(self.model.model.eigenToMap(self.q_list[i+1]))
 
             # Cartesian part
             ci_time = 0.0
-            time_from_reaching = 0.
             UNABLE_TO_SOLVE_MAX = 5.
             q = np.empty(shape=[self.model.model.getJointNum(), 0])
 
@@ -368,7 +378,6 @@ class Connector:
             # a planner finds a feasible trajectory to connect q_list[i+1] and the configuration
             # coming from the NSPG
             if self.model.state_vc(q[:, -1]):
-                raw_input('click')
                 for j in range(np.size(q, 1)):
                     # sending trajectories to robot
                     self.model.robot.setPositionReference(q[6:, j])
@@ -377,14 +386,8 @@ class Connector:
 
                 self.model.robot.sense()
                 self.model.model.syncFrom(self.model.robot)
-                q_start = self.model.model.getJointPosition()
 
             else:
-                # initialize NSPG
-                ik_solver = planning.PositionCartesianSolver(self.ci)
-                vc_context = self.make_vc_context()
-                self.NSPG = NSPG.NSPG(ik_solver, vc_context)
-
                 # update contact list and rotation matrices through '/contact' topic
                 active_ind = [ind['ind'] for ind in self.stance_list[i+1]]
                 active_links = [self.model.ctrl_points[j] for j in active_ind]
@@ -447,15 +450,74 @@ class Connector:
                 self.model.robot.sense()
                 self.model.model.syncFrom(self.model.robot)
 
-                q_start = self.model.model.getJointPosition()
 
             # Second planning phase
-            q_start = self.q_list[i+1]  # comment when using the cartesian part!!!!!
+            q_start = self.model.model.getJointPosition()
             self.q_bounder(q_start)
             self.model.ps.update()
             self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
 
-            q_goal = self.q_list[i+2]
+            # compute a feasible pose with the lifted_contact 10 cm distant from the surface
+            lifted_contact_final_pose.translation = np.array(self.stance_list[i+2][-1]['ref']['pose']) +\
+                                                    scale * np.array(self.stance_list[i+2][-1]['ref']['normal'])
+
+            self.ctrl_tasks[lifted_contact_ind].setPoseReference(lifted_contact_final_pose)
+            self.ctrl_tasks[lifted_contact_ind].setPoseTarget(lifted_contact_final_pose, 1)
+            self.postural.setReferencePosture(self.model.model.eigenToMap(self.q_list[i+2]))
+
+            self.model.model.setJointPosition(self.q_list[i+2])
+            self.model.model.update()
+            # self.ik_solver.solve()
+            ci_time = 0.0
+            time_from_reaching = 0.
+            UNABLE_TO_SOLVE_MAX = 5.
+            q1 = np.empty(shape=[self.model.model.getJointNum(), 0])
+
+            print 'starting cartesian trajectory ...'
+            while self.ctrl_tasks[lifted_contact_ind].getTaskState() == pyci.State.Reaching:
+                q1 = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
+
+                if not self.ci_solve_integrate(ci_time):
+                    print('Unable to solve!!!')
+                    unable_to_solve += 1
+                    print(unable_to_solve)
+                    # break
+                    if unable_to_solve >= UNABLE_TO_SOLVE_MAX:
+                        print("Maximum number of unable_to_solve reached: ")
+                        print(unable_to_solve)
+                        return q1, False
+                else:
+                    unable_to_solve = 0
+
+                ci_time += self.ik_dt
+            print 'done!'
+
+            self.model.model.setJointPosition(q1[:, -1])
+            self.model.model.update()
+            self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
+
+            if not self.model.state_vc(self.model.model.getJointPosition()):
+                # update contact list and rotation matrices through '/contact' topic
+                active_ind = [ind['ind'] for ind in self.stance_list[i + 1]]
+                active_links = [self.model.ctrl_points[j] for j in active_ind]
+
+                normals = [j['ref']['normal'] for j in self.stance_list[i + 1]]
+
+                contacts = SetContactFrames()
+                contacts.action = SetContactFrames.SET
+                contacts.frames_in_contact = active_links
+                contacts.rotations = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+                contacts.friction_coefficient = 0.5 * np.sqrt(2)
+
+                self.contacts_pub.publish(contacts)
+
+                if not self.NSPG.sample(60.0):
+                    print('Error: Unable to find a collision free and stable pose!')
+                    self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
+                    exit()
+
+            np.savetxt('q_goal.csv', np.array(self.model.model.getJointPosition()), delimiter=',')
+            q_goal = self.model.model.getJointPosition()
             self.q_bounder(q_goal)
             self.model.model.setJointPosition(q_goal)
             self.model.model.update()
@@ -479,7 +541,7 @@ class Connector:
                 if index == self.MAX_RRT_ATTEMPTS:
                     raise Exception("Unable to find a feasible plan!")
 
-                solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=60.0)
+                solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect', timeout=60.0, threshold = 1e-3)
             solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
 
             print 'done!'
