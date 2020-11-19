@@ -8,7 +8,8 @@ Panels:
         - /MarkerArray2
         - /MarkerArray2/Namespaces1
         - /PlanningScene1/Scene Geometry1
-      Splitter Ratio: 0.5
+        - /TF1/Frames1
+      Splitter Ratio: 0.742677808
     Tree Height: 775
   - Class: rviz/Selection
     Name: Selection
@@ -29,6 +30,8 @@ Panels:
     Name: Time
     SyncMode: 0
     SyncSource: ""
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -53,18 +56,312 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
-      Enabled: false
+      Enabled: true
       Links:
         All Links Enabled: true
+        DWL:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        DWLExt:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        DWYTorso:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
+        Head:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        HeadHokuyo:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        HokuyoLaser:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        LBall:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LElb:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LFoot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LFootmot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LForearm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LHipMot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LLowLeg:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LShp:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LShr:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LShy:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LThighLowLeg:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LThighUpLeg:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LWrMot2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        LWrMot3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         Link Tree Style: Links in Alphabetic Order
+        RBall:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RElb:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RFoot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RFootmot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RForearm:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RHipMot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RLowLeg:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RShp:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RShr:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RShy:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RThighLowLeg:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RThighUpLeg:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RWrMot2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RWrMot3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        TCP_L:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        TCP_R:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        Waist:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        imu_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_ankle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_arm_ft:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_ball_tip:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_foot_lower_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_foot_lower_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_foot_upper_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_foot_upper_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_heel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_leg_ft:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_sole:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_toe:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_wrist:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_ankle:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_arm_ft:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_ball_tip:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_foot_lower_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_foot_lower_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_foot_upper_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_foot_upper_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_heel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_leg_ft:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_sole:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_toe:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_wrist:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        torso:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: planner
       Update Interval: 0
-      Value: false
+      Value: true
       Visual Enabled: true
     - Class: rviz/InteractiveMarkers
       Enable Transparency: true
@@ -417,8 +714,472 @@ Visualization Manager:
       Marker Topic: /planner/convex_hull
       Name: Marker
       Namespaces:
-        convex_hull: true
+        {}
       Queue Size: 100
+      Value: true
+    - Class: rviz/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        ci/world:
+          Value: false
+        planner/DWL:
+          Value: false
+        planner/DWLExt:
+          Value: false
+        planner/DWYTorso:
+          Value: false
+        planner/Head:
+          Value: false
+        planner/HeadHokuyo:
+          Value: false
+        planner/HokuyoLaser:
+          Value: false
+        planner/LBall:
+          Value: false
+        planner/LElb:
+          Value: false
+        planner/LFoot:
+          Value: false
+        planner/LFootmot:
+          Value: false
+        planner/LForearm:
+          Value: false
+        planner/LHipMot:
+          Value: false
+        planner/LLowLeg:
+          Value: false
+        planner/LShp:
+          Value: false
+        planner/LShr:
+          Value: false
+        planner/LShy:
+          Value: false
+        planner/LThighLowLeg:
+          Value: false
+        planner/LThighUpLeg:
+          Value: false
+        planner/LWrMot2:
+          Value: false
+        planner/LWrMot3:
+          Value: false
+        planner/RBall:
+          Value: false
+        planner/RElb:
+          Value: false
+        planner/RFoot:
+          Value: false
+        planner/RFootmot:
+          Value: false
+        planner/RForearm:
+          Value: false
+        planner/RHipMot:
+          Value: false
+        planner/RLowLeg:
+          Value: false
+        planner/RShp:
+          Value: false
+        planner/RShr:
+          Value: false
+        planner/RShy:
+          Value: false
+        planner/RThighLowLeg:
+          Value: false
+        planner/RThighUpLeg:
+          Value: false
+        planner/RWrMot2:
+          Value: false
+        planner/RWrMot3:
+          Value: false
+        planner/TCP_L:
+          Value: false
+        planner/TCP_R:
+          Value: false
+        planner/Waist:
+          Value: false
+        planner/base_link:
+          Value: false
+        planner/goal/world:
+          Value: false
+        planner/goal_sampler/DWL:
+          Value: false
+        planner/goal_sampler/DWLExt:
+          Value: false
+        planner/goal_sampler/DWYTorso:
+          Value: false
+        planner/goal_sampler/Head:
+          Value: false
+        planner/goal_sampler/HeadHokuyo:
+          Value: false
+        planner/goal_sampler/HokuyoLaser:
+          Value: false
+        planner/goal_sampler/LBall:
+          Value: false
+        planner/goal_sampler/LElb:
+          Value: false
+        planner/goal_sampler/LFoot:
+          Value: false
+        planner/goal_sampler/LFootmot:
+          Value: false
+        planner/goal_sampler/LForearm:
+          Value: false
+        planner/goal_sampler/LHipMot:
+          Value: false
+        planner/goal_sampler/LLowLeg:
+          Value: false
+        planner/goal_sampler/LShp:
+          Value: false
+        planner/goal_sampler/LShr:
+          Value: false
+        planner/goal_sampler/LShy:
+          Value: false
+        planner/goal_sampler/LThighLowLeg:
+          Value: false
+        planner/goal_sampler/LThighUpLeg:
+          Value: false
+        planner/goal_sampler/LWrMot2:
+          Value: false
+        planner/goal_sampler/LWrMot3:
+          Value: false
+        planner/goal_sampler/RBall:
+          Value: false
+        planner/goal_sampler/RElb:
+          Value: false
+        planner/goal_sampler/RFoot:
+          Value: false
+        planner/goal_sampler/RFootmot:
+          Value: false
+        planner/goal_sampler/RForearm:
+          Value: false
+        planner/goal_sampler/RHipMot:
+          Value: false
+        planner/goal_sampler/RLowLeg:
+          Value: false
+        planner/goal_sampler/RShp:
+          Value: false
+        planner/goal_sampler/RShr:
+          Value: false
+        planner/goal_sampler/RShy:
+          Value: false
+        planner/goal_sampler/RThighLowLeg:
+          Value: false
+        planner/goal_sampler/RThighUpLeg:
+          Value: false
+        planner/goal_sampler/RWrMot2:
+          Value: false
+        planner/goal_sampler/RWrMot3:
+          Value: false
+        planner/goal_sampler/TCP_L:
+          Value: true
+        planner/goal_sampler/TCP_R:
+          Value: true
+        planner/goal_sampler/Waist:
+          Value: false
+        planner/goal_sampler/base_link:
+          Value: false
+        planner/goal_sampler/com:
+          Value: false
+        planner/goal_sampler/imu_link:
+          Value: false
+        planner/goal_sampler/l_ankle:
+          Value: false
+        planner/goal_sampler/l_arm_ft:
+          Value: false
+        planner/goal_sampler/l_ball_tip:
+          Value: false
+        planner/goal_sampler/l_foot_lower_left_link:
+          Value: false
+        planner/goal_sampler/l_foot_lower_right_link:
+          Value: false
+        planner/goal_sampler/l_foot_upper_left_link:
+          Value: false
+        planner/goal_sampler/l_foot_upper_right_link:
+          Value: false
+        planner/goal_sampler/l_heel:
+          Value: false
+        planner/goal_sampler/l_leg_ft:
+          Value: false
+        planner/goal_sampler/l_sole:
+          Value: false
+        planner/goal_sampler/l_toe:
+          Value: false
+        planner/goal_sampler/l_wrist:
+          Value: false
+        planner/goal_sampler/r_ankle:
+          Value: false
+        planner/goal_sampler/r_arm_ft:
+          Value: false
+        planner/goal_sampler/r_ball_tip:
+          Value: false
+        planner/goal_sampler/r_foot_lower_left_link:
+          Value: false
+        planner/goal_sampler/r_foot_lower_right_link:
+          Value: false
+        planner/goal_sampler/r_foot_upper_left_link:
+          Value: false
+        planner/goal_sampler/r_foot_upper_right_link:
+          Value: false
+        planner/goal_sampler/r_heel:
+          Value: false
+        planner/goal_sampler/r_leg_ft:
+          Value: false
+        planner/goal_sampler/r_sole:
+          Value: false
+        planner/goal_sampler/r_toe:
+          Value: false
+        planner/goal_sampler/r_wrist:
+          Value: false
+        planner/goal_sampler/torso:
+          Value: false
+        planner/goal_sampler/world:
+          Value: false
+        planner/imu_link:
+          Value: false
+        planner/l_ankle:
+          Value: false
+        planner/l_arm_ft:
+          Value: false
+        planner/l_ball_tip:
+          Value: false
+        planner/l_foot_lower_left_link:
+          Value: false
+        planner/l_foot_lower_right_link:
+          Value: false
+        planner/l_foot_upper_left_link:
+          Value: false
+        planner/l_foot_upper_right_link:
+          Value: false
+        planner/l_heel:
+          Value: false
+        planner/l_leg_ft:
+          Value: false
+        planner/l_sole:
+          Value: false
+        planner/l_toe:
+          Value: false
+        planner/l_wrist:
+          Value: false
+        planner/r_ankle:
+          Value: false
+        planner/r_arm_ft:
+          Value: false
+        planner/r_ball_tip:
+          Value: false
+        planner/r_foot_lower_left_link:
+          Value: false
+        planner/r_foot_lower_right_link:
+          Value: false
+        planner/r_foot_upper_left_link:
+          Value: false
+        planner/r_foot_upper_right_link:
+          Value: false
+        planner/r_heel:
+          Value: false
+        planner/r_leg_ft:
+          Value: false
+        planner/r_sole:
+          Value: false
+        planner/r_toe:
+          Value: false
+        planner/r_wrist:
+          Value: false
+        planner/start/world:
+          Value: false
+        planner/torso:
+          Value: false
+        planner/world:
+          Value: false
+        world:
+          Value: false
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        world:
+          ci/world:
+            {}
+          planner/goal/world:
+            {}
+          planner/goal_sampler/world:
+            planner/goal_sampler/base_link:
+              planner/goal_sampler/Waist:
+                planner/goal_sampler/DWL:
+                  planner/goal_sampler/DWLExt:
+                    planner/goal_sampler/DWYTorso:
+                      planner/goal_sampler/Head:
+                        planner/goal_sampler/HeadHokuyo:
+                          planner/goal_sampler/HokuyoLaser:
+                            {}
+                      planner/goal_sampler/LShp:
+                        planner/goal_sampler/LShr:
+                          planner/goal_sampler/LShy:
+                            planner/goal_sampler/LElb:
+                              planner/goal_sampler/LForearm:
+                                planner/goal_sampler/LWrMot2:
+                                  planner/goal_sampler/LWrMot3:
+                                    planner/goal_sampler/l_arm_ft:
+                                      {}
+                                    planner/goal_sampler/l_wrist:
+                                      planner/goal_sampler/LBall:
+                                        planner/goal_sampler/l_ball_tip:
+                                          planner/goal_sampler/TCP_L:
+                                            {}
+                      planner/goal_sampler/RShp:
+                        planner/goal_sampler/RShr:
+                          planner/goal_sampler/RShy:
+                            planner/goal_sampler/RElb:
+                              planner/goal_sampler/RForearm:
+                                planner/goal_sampler/RWrMot2:
+                                  planner/goal_sampler/RWrMot3:
+                                    planner/goal_sampler/r_arm_ft:
+                                      {}
+                                    planner/goal_sampler/r_wrist:
+                                      planner/goal_sampler/RBall:
+                                        planner/goal_sampler/r_ball_tip:
+                                          planner/goal_sampler/TCP_R:
+                                            {}
+                      planner/goal_sampler/torso:
+                        {}
+                planner/goal_sampler/LHipMot:
+                  planner/goal_sampler/LThighUpLeg:
+                    planner/goal_sampler/LThighLowLeg:
+                      planner/goal_sampler/LLowLeg:
+                        planner/goal_sampler/LFootmot:
+                          planner/goal_sampler/LFoot:
+                            planner/goal_sampler/l_ankle:
+                              planner/goal_sampler/l_sole:
+                                planner/goal_sampler/l_foot_lower_left_link:
+                                  {}
+                                planner/goal_sampler/l_foot_lower_right_link:
+                                  {}
+                                planner/goal_sampler/l_foot_upper_left_link:
+                                  {}
+                                planner/goal_sampler/l_foot_upper_right_link:
+                                  {}
+                                planner/goal_sampler/l_heel:
+                                  {}
+                                planner/goal_sampler/l_toe:
+                                  {}
+                            planner/goal_sampler/l_leg_ft:
+                              {}
+                planner/goal_sampler/RHipMot:
+                  planner/goal_sampler/RThighUpLeg:
+                    planner/goal_sampler/RThighLowLeg:
+                      planner/goal_sampler/RLowLeg:
+                        planner/goal_sampler/RFootmot:
+                          planner/goal_sampler/RFoot:
+                            planner/goal_sampler/r_ankle:
+                              planner/goal_sampler/r_sole:
+                                planner/goal_sampler/r_foot_lower_left_link:
+                                  {}
+                                planner/goal_sampler/r_foot_lower_right_link:
+                                  {}
+                                planner/goal_sampler/r_foot_upper_left_link:
+                                  {}
+                                planner/goal_sampler/r_foot_upper_right_link:
+                                  {}
+                                planner/goal_sampler/r_heel:
+                                  {}
+                                planner/goal_sampler/r_toe:
+                                  {}
+                            planner/goal_sampler/r_leg_ft:
+                              {}
+                planner/goal_sampler/imu_link:
+                  {}
+            planner/goal_sampler/com:
+              {}
+          planner/start/world:
+            {}
+          planner/world:
+            planner/base_link:
+              planner/Waist:
+                planner/DWL:
+                  planner/DWLExt:
+                    planner/DWYTorso:
+                      planner/Head:
+                        planner/HeadHokuyo:
+                          planner/HokuyoLaser:
+                            {}
+                      planner/LShp:
+                        planner/LShr:
+                          planner/LShy:
+                            planner/LElb:
+                              planner/LForearm:
+                                planner/LWrMot2:
+                                  planner/LWrMot3:
+                                    planner/l_arm_ft:
+                                      {}
+                                    planner/l_wrist:
+                                      planner/LBall:
+                                        planner/l_ball_tip:
+                                          planner/TCP_L:
+                                            {}
+                      planner/RShp:
+                        planner/RShr:
+                          planner/RShy:
+                            planner/RElb:
+                              planner/RForearm:
+                                planner/RWrMot2:
+                                  planner/RWrMot3:
+                                    planner/r_arm_ft:
+                                      {}
+                                    planner/r_wrist:
+                                      planner/RBall:
+                                        planner/r_ball_tip:
+                                          planner/TCP_R:
+                                            {}
+                      planner/torso:
+                        {}
+                planner/LHipMot:
+                  planner/LThighUpLeg:
+                    planner/LThighLowLeg:
+                      planner/LLowLeg:
+                        planner/LFootmot:
+                          planner/LFoot:
+                            planner/l_ankle:
+                              planner/l_sole:
+                                planner/l_foot_lower_left_link:
+                                  {}
+                                planner/l_foot_lower_right_link:
+                                  {}
+                                planner/l_foot_upper_left_link:
+                                  {}
+                                planner/l_foot_upper_right_link:
+                                  {}
+                                planner/l_heel:
+                                  {}
+                                planner/l_toe:
+                                  {}
+                            planner/l_leg_ft:
+                              {}
+                planner/RHipMot:
+                  planner/RThighUpLeg:
+                    planner/RThighLowLeg:
+                      planner/RLowLeg:
+                        planner/RFootmot:
+                          planner/RFoot:
+                            planner/r_ankle:
+                              planner/r_sole:
+                                planner/r_foot_lower_left_link:
+                                  {}
+                                planner/r_foot_lower_right_link:
+                                  {}
+                                planner/r_foot_upper_left_link:
+                                  {}
+                                planner/r_foot_upper_right_link:
+                                  {}
+                                planner/r_heel:
+                                  {}
+                                planner/r_toe:
+                                  {}
+                            planner/r_leg_ft:
+                              {}
+                planner/imu_link:
+                  {}
+      Update Interval: 0
       Value: true
   Enabled: true
   Global Options:
@@ -460,10 +1221,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.250399053
+      Pitch: -0.31960094
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.00540698
+      Yaw: 0.0154066086
     Saved: ~
 Window Geometry:
   Displays:

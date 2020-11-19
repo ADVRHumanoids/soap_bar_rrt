@@ -15,6 +15,7 @@ from goal_sampler import GoalSampler
 import manifold
 
 
+
 class Cogimon:
 
     def __init__(self, urdf, srdf, ctrl_points, logged_data):
@@ -29,16 +30,16 @@ class Cogimon:
         opt.set_string_parameter('model_type', 'RBDL')
         opt.set_string_parameter('framework', 'ROS')
         self.model = xbot.ModelInterface(opt)
-        self.robot = xbot.RobotInterface(opt)
-        self.robot.setControlMode(xbot.ControlMode.Position())
+        # self.robot = xbot.RobotInterface(opt)
+        # self.robot.setControlMode(xbot.ControlMode.Position())
         self.replay_model = xbot.ModelInterface(opt)
         self.id_model = xbot.ModelInterface(opt)
         self.logged_data = logged_data
 
         # update from robot
-        self.robot.sense()
-        self.model.syncFrom(self.robot)
-        self.model.update()
+        # self.robot.sense()
+        # self.model.syncFrom(self.robot)
+        # self.model.update()
 
         # name of control frames
         self.ctrl_points = ctrl_points
@@ -61,10 +62,15 @@ class Cogimon:
                                              color=[0.5, 0, 0.5, 0.5],
                                              tf_prefix='ci/')
 
+        self.planner_viz = visual_tools.RobotViz(self.replay_model,
+                                             '/cogimon/planner',
+                                             color=[0., 0.5, 0.5, 0.5],
+                                             tf_prefix='ci/')
+
         # planning scene defines valid regions of the state space
         self.ps = validity_check.PlanningSceneWrapper(self.model)
-        self.ps.addBox("wall", "ci/world", [1.0, 3.0, 3.0], Affine3([1.6, 0.0, 1.5]))
-        self.ps.addBox("ground", "ci/world", [3.0, 3.0, 1.0], Affine3([0.0, 0.0, -0.51]))
+        self.ps.addBox("wall", [1.0, 3.0, 3.0], Affine3([1.6, 0.0, 1.5]))
+        self.ps.addBox("ground", [3.0, 3.0, 1.0], Affine3([0.0, 0.0, -0.52]))
         self.ps.startGetPlanningSceneServer()
         self.ps.startMonitor()
 
@@ -73,12 +79,12 @@ class Cogimon:
 
         # goal sampler
         # self.gs = GoalSampler(self.model, ctrl_points.values())
-        self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
+        # self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
 
-        self.ft_map = self.sensors_init(arm_estimation_flag=True)
+        # self.ft_map = self.sensors_init(arm_estimation_flag=True)
 
-        self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
-        self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
+        # self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
+        # self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
         # self.ft_map['l_ball_tip'] = self.ft_map.pop('l_arm_ft')
         # self.ft_map['r_ball_tip'] = self.ft_map.pop('r_arm_ft')
         
@@ -87,7 +93,7 @@ class Cogimon:
             self.ps.update()
             self.rspub.publishTransforms('ci')
 
-            return not self.ps.checkCollisions() and self.cs.checkStability(5*1e-2)
+            return not self.ps.checkCollisions() and self.cs.checkStability(5 * 1e-2)
             # return not self.ps.checkCollisions()
 
         # joint limits for the planner
@@ -136,7 +142,7 @@ class Cogimon:
         constr = manifold.make_constraint(self.model, self.ctrl_points, swing_id)
 
         planner_config = {
-            'state_space': {'type': 'Atlas'}
+            'state_space': {'type': 'Atlas', 'alpha': np.pi/16, 'epsilon': 0.1, 'rho': 0.1}
         }
 
         # create planner
@@ -155,8 +161,10 @@ class Cogimon:
         if success:
             solution = np.array(planner.getSolutionPath()).transpose()
             error = solution[:, -1] - np.array(qgoal)
+            planner.clearPlanner()
             return solution, error
         else:
+            planner.clearPlanner()
             return None, None
 
     def play_on_rviz(self, solution, ntimes, duration, viz, model):
@@ -173,7 +181,7 @@ class Cogimon:
                 viz.publishMarkers()
                 rospy.sleep(dt)
 
-    def interpolate(self, solution, dt, s_threshold=0.01):
+    def interpolate(self, solution, dt, s_threshold=0.):
 
         qsize = solution.shape[0]
         nknots = solution.shape[1]

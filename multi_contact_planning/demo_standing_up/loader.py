@@ -7,7 +7,6 @@ def readFromFileStances(path):
     stances = []
     while True:
         sigma_size = f.readline()
-        print sigma_size
 
         if sigma_size == '':
             break

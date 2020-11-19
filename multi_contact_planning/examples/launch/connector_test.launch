@@ -5,8 +5,5 @@
 
     <param name="robot_description_semantic"
         textfile="$(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/utils/srdf/cogimon.srdf"/>
-        
-    <node pkg="tf" type="static_transform_publisher" name="world_connecter_planner_start"
-        args="0 0 0 0 0 0 ci/world NSPG/world 30"/>
-        
+
 </launch>
