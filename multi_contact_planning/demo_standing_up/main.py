@@ -17,6 +17,8 @@ import loader
 import os
 import gazebo_robot_handler as grh
 
+import threading
+
 import collections
 
 from cartesian_interface import pyest
@@ -49,7 +51,10 @@ def gen_com_planner(contacts, mass, mu) :
 
 if __name__ == '__main__':
 
+    rospy.init_node("standing_up")
     np.set_printoptions(precision=3, suppress=True)
+    # thr = threading.Thread(target = rospy.spin())
+    # thr.start()
 
     cpp_argv = []
     if not roscpp.init('standing_up', cpp_argv):

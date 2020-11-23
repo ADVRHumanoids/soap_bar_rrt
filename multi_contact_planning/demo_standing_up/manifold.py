@@ -31,6 +31,7 @@ def make_constraint(model, ctrl_points, swing_id):
                 'type': 'Cartesian',
                 'distal_link': c,
                 'indices': [0, 1, 2],
+                'weight': 0.1,
                 'lambda': .1
             }
         else:

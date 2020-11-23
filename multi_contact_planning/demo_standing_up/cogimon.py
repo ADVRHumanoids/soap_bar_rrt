@@ -197,7 +197,10 @@ class Cogimon:
 
         interpolators = []
         for i in range(qsize):
-            inter = interpol.UnivariateSpline(times, solution[i, :], s=s_threshold)
+            if nknots < 4:
+                inter = interpol.UnivariateSpline(times, solution[i, :], k = nknots - 1, s=s_threshold)
+            else:
+                inter = interpol.UnivariateSpline(times, solution[i, :], s=s_threshold)
             interpolators.append(inter)
 
         nsamples = int(np.sum(seg_durs) / dt)
