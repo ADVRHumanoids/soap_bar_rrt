@@ -405,9 +405,9 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
         
         if(it == active_tasks.end()){
-            Eigen::MatrixXd wM = 0.1 * Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
+            Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
             if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
-                wM.block<3,3>(3,3) *= 0.0001;
+                wM.block<3,3>(3,3) *= 0.001;
             ci->getTask(all_tasks.at(i))->setWeight(wM);
             ci->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
             foutLogMCP << "EE inactive = " << all_tasks.at(i) << " pos =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).translation().transpose() << std::endl;
