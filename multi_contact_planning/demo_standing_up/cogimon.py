@@ -23,7 +23,7 @@ import q_connector
 
 class Cogimon:
 
-    def __init__(self, urdf, srdf, ctrl_points, logged_data, q_list, stances):
+    def __init__(self, urdf, srdf, ctrl_points, logged_data):
 
 
         # make xbot model
@@ -40,9 +40,6 @@ class Cogimon:
         self.replay_model = xbot.ModelInterface(opt)
         self.id_model = xbot.ModelInterface(opt)
         self.logged_data = logged_data
-
-        self.q_list = q_list
-        self.stances = stances
 
         # update from robot
         # self.robot.sense()
