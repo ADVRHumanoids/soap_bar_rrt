@@ -8,15 +8,15 @@ def make_constraint(model, ctrl_points, swing_id):
     # write cartesio config
     cs_cfg = dict()
 
-    cs_cfg['solver_options'] = {'regularization': 1e-2, 'back_end': 'qpoases'}
+    cs_cfg['solver_options'] = {'regularization': 1e-2, 'back_end': 'osqp'}
 
     if not swing_id == -1:
         cs_cfg['stack'] = [
-            [c for c in ctrl_points.values() if c != ctrl_points[swing_id]]#, ['postural']  # discard postural
+            [c for c in ctrl_points.values() if c != ctrl_points[swing_id]]
         ]
     else:
         cs_cfg['stack'] = [
-            [c for c in ctrl_points.values()]#, ['postural']  # discard postural
+            [c for c in ctrl_points.values()]
         ]
 
     cs_cfg['constraints'] = ['joint_limits']
@@ -31,7 +31,6 @@ def make_constraint(model, ctrl_points, swing_id):
                 'type': 'Cartesian',
                 'distal_link': c,
                 'indices': [0, 1, 2],
-                'weight': 0.1,
                 'lambda': .1
             }
         else:
@@ -40,11 +39,6 @@ def make_constraint(model, ctrl_points, swing_id):
                 'distal_link': c,
                 'lambda': .1
             }
-    cs_cfg['postural'] = {
-        'name': 'postural',
-        'type': 'Postural',
-        'lambda': 0.1,
-    }
 
     cs_str = yaml.dump(cs_cfg)
     cs_ci = pyci.CartesianInterface.MakeInstance('OpenSot', cs_str, model, 0.1, '/tmp/manifold')

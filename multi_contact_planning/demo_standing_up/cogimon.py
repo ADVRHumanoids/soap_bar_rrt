@@ -14,11 +14,16 @@ import rospy
 from goal_sampler import GoalSampler
 import manifold
 
+import cartesio_planning.NSPG
+import cartesio_planning.validity_check
+
+import q_connector
+
 
 
 class Cogimon:
 
-    def __init__(self, urdf, srdf, ctrl_points, logged_data):
+    def __init__(self, urdf, srdf, ctrl_points, logged_data, q_list, stances):
 
 
         # make xbot model
@@ -35,6 +40,9 @@ class Cogimon:
         self.replay_model = xbot.ModelInterface(opt)
         self.id_model = xbot.ModelInterface(opt)
         self.logged_data = logged_data
+
+        self.q_list = q_list
+        self.stances = stances
 
         # update from robot
         # self.robot.sense()
@@ -76,6 +84,8 @@ class Cogimon:
 
         # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
         self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5*np.sqrt(2))
+        # self.counter_cs = 0
+        # self.counter_coll = 0
 
         # goal sampler
         # self.gs = GoalSampler(self.model, ctrl_points.values())
@@ -87,14 +97,6 @@ class Cogimon:
         # self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
         # self.ft_map['l_ball_tip'] = self.ft_map.pop('l_arm_ft')
         # self.ft_map['r_ball_tip'] = self.ft_map.pop('r_arm_ft')
-        
-        # validity checker
-        def is_model_state_valid():
-            self.ps.update()
-            self.rspub.publishTransforms('ci')
-
-            return not self.ps.checkCollisions() and self.cs.checkStability(5 * 1e-2)
-            # return not self.ps.checkCollisions()
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
@@ -112,12 +114,20 @@ class Cogimon:
         def is_state_valid(q):
             self.model.setJointPosition(q)
             self.model.update()
-            return is_model_state_valid()
+            return self.is_model_state_valid()
 
         self.state_vc = is_state_valid
 
         # publish robot
         self.rspub.publishTransforms('ci')
+
+    # validity checker
+    def is_model_state_valid(self):
+        self.ps.update()
+        self.rspub.publishTransforms('ci')
+
+        return not self.ps.checkCollisions() and self.cs.checkStability(5 * 1e-2)
+        # return not self.ps.checkCollisions()
 
     def sensors_init(self, arm_estimation_flag):
 
@@ -156,15 +166,14 @@ class Cogimon:
         planner.setStateValidityPredicate(self.state_vc)
         success = planner.solve(timeout, planner_type)
 
+
         print('Planner output : {}'.format(success))
 
         if success:
             solution = np.array(planner.getSolutionPath()).transpose()
             error = solution[:, -1] - np.array(qgoal)
-            planner.clearPlanner()
             return solution, error
         else:
-            planner.clearPlanner()
             return None, None
 
     def play_on_rviz(self, solution, ntimes, duration, viz, model):
@@ -211,5 +220,4 @@ class Cogimon:
                 solution_interp[i, j] = interpolators[i](dt * j)
 
         return solution_interp, [dt * j for j in range(nsamples)], times
-
 
