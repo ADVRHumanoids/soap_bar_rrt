@@ -59,7 +59,7 @@ void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std
 }
 
 void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName){
-    std::string filePrefix = "/home/luca/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
     
@@ -82,7 +82,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
 }
 
 void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
-    std::string filePrefix = "/home/luca/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;       
@@ -156,7 +156,6 @@ PlannerExecutor::PlannerExecutor():
     plan.clear();
 
     std::cout << "EVERYTHING INITIALIZED" << std::endl;
-    std::cout << env << std::endl;
 }
 
 void PlannerExecutor::run()
