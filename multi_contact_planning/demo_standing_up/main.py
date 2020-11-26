@@ -17,9 +17,9 @@ import loader
 import os
 import gazebo_robot_handler as grh
 
-import threading
-
 import collections
+
+import sys
 
 from cartesian_interface import pyest
 from geometry_msgs.msg import *

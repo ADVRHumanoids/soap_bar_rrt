@@ -81,19 +81,6 @@ class Cogimon:
 
         # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
         self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5*np.sqrt(2))
-        # self.counter_cs = 0
-        # self.counter_coll = 0
-
-        # goal sampler
-        # self.gs = GoalSampler(self.model, ctrl_points.values())
-        # self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
-
-        # self.ft_map = self.sensors_init(arm_estimation_flag=True)
-
-        # self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
-        # self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
-        # self.ft_map['l_ball_tip'] = self.ft_map.pop('l_arm_ft')
-        # self.ft_map['r_ball_tip'] = self.ft_map.pop('r_arm_ft')
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
@@ -123,8 +110,15 @@ class Cogimon:
         self.ps.update()
         self.rspub.publishTransforms('ci')
 
-        return not self.ps.checkCollisions() and self.cs.checkStability(5 * 1e-2)
-        # return not self.ps.checkCollisions()
+        in_collision = self.ps.checkCollisions()
+        stable = self.cs.checkStability(5 * 1e-2)
+
+        if in_collision:
+            print "collision state!"
+        if not stable:
+            print "not stable state!"
+
+        return not in_collision and stable
 
     def sensors_init(self, arm_estimation_flag):
 

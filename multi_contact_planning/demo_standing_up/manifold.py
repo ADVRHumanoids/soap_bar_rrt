@@ -8,7 +8,7 @@ def make_constraint(model, ctrl_points, swing_id):
     # write cartesio config
     cs_cfg = dict()
 
-    cs_cfg['solver_options'] = {'regularization': 1e-2, 'back_end': 'osqp'}
+    cs_cfg['solver_options'] = {'regularization': 1e-3, 'back_end': 'osqp'}
 
     if not swing_id == -1:
         cs_cfg['stack'] = [

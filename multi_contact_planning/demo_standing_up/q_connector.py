@@ -10,8 +10,14 @@ import cartesio_planning.validity_check as vc
 from cartesio_planning import NSPG
 from cartesio_planning.msg import SetContactFrames
 import eigenpy
-from geometry_msgs.msg import Quaternion
 import os
+import sys
+
+# import coman_rising.py from cartesio_planning
+user = os.getenv("ROBOTOLOGY_ROOT")
+folder = user + "/external/cartesio_planning/examples/python"
+sys.path.append(folder)
+import coman_rising
 
 class Connector:
 
@@ -31,21 +37,21 @@ class Connector:
 
         self.ik_solver = planning.PositionCartesianSolver(self.ci)
 
-
         self.contacts_pub = rospy.Publisher('/contacts', SetContactFrames, queue_size=10, latch=True)
+        self.planner_client = coman_rising.planner_client()
 
-    def make_vc_context(self, active_links, quaternions):
-        _planner_config = dict()
-        _planner_config['state_validity_check'] = ['collisions', 'centroidal_statics']
-        _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'true'}
-        _planner_config['centroidal_statics'] = {'type': 'CentroidalStatics',
-                                                 'eps': 5 * 1e-2, 'friction_coefficient': 0.71,
-                                                 'links': active_links,
-                                                 'rotations': quaternions}
-
-        vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model, True)
-
-        return vc_context
+    # def make_vc_context(self, active_links, quaternions):
+    #     _planner_config = dict()
+    #     _planner_config['state_validity_check'] = ['collisions', 'centroidal_statics']
+    #     _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'true'}
+    #     _planner_config['centroidal_statics'] = {'type': 'CentroidalStatics',
+    #                                              'eps': 5 * 1e-2, 'friction_coefficient': 0.71,
+    #                                              'links': active_links,
+    #                                              'rotations': quaternions}
+    #
+    #     vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
+    #
+    #     return vc_context
 
     def sensors_init(self, arm_estimation_flag):
 
@@ -250,53 +256,70 @@ class Connector:
 
 
     def run(self):
-        for i in range(4, len(self.q_list), 2):
+        for i in range(0, len(self.q_list), 2):
         # for i in range(0, 6, 2):
             ################################################
             # First Planning Phase to unload swing contact #
             ################################################
-            # q_start = self.q_list[i]
+            q_start = self.q_list[i]
             # self.model.model.setJointPosition(q_start)
             # self.model.model.update()
-            # self.q_bounder(q_start)
+            self.q_bounder(q_start)
             # self.model.ps.update()
             # self.model.start_viz.publishMarkers(self.model.ps.getCollidingLinks())
             # self.model.rspub.publishTransforms('')
-            #
+
             # poses = [self.model.model.getPose(link) for link in self.model.ctrl_points.values()]
             # print 'START POSES'
             # for printer in range(len(poses)):
             #     print 'active_link: ', self.model.ctrl_points.values()[printer], '\n'
             #     print poses[printer].matrix()
-            #
-            # q_goal = self.q_list[i+1]
-            # self.q_bounder(q_goal)
+
+            q_goal = self.q_list[i+1]
+            self.q_bounder(q_goal)
+
+            self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # self.model.model.setJointPosition(q_goal)
             # self.model.model.update()
             # self.model.ps.update()
             # self.model.goal_viz.publishMarkers(self.model.ps.getCollidingLinks())
-            #
+
             # poses = [self.model.model.getPose(link) for link in self.model.ctrl_points.values()]
             # print 'GOAL POSES'
             # for printer in range(len(poses)):
             #     print 'active_link: ', self.model.ctrl_points.values()[printer], '\n'
             #     print poses[printer].matrix()
-            #
-            # # set all contacts to be active for first planning phase
-            # active_ind = [ind['ind'] for ind in self.stance_list[i]]
-            # active_links = [self.model.ctrl_points[j] for j in active_ind]  #names
-            # self.model.cs.setContactLinks(active_links)
-            #
-            # # set rotation matrix for each contact
-            # normals = [j['ref']['normal'] for j in self.stance_list[i]]
-            # [self.model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
-            #
+
+            # set all contacts to be active for first planning phase
+            active_ind = [ind['ind'] for ind in self.stance_list[i]]
+            active_links = [self.model.ctrl_points[j] for j in active_ind]  #names
+            self.model.cs.setContactLinks(active_links)
+
+            # set rotation matrix for each contact
+            normals = [j['ref']['normal'] for j in self.stance_list[i]]
+            [self.model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links,  [self.rotation(elem) for elem in normals])]
+            rot = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+            quat_list = []
+            quat = [0., 0., 0., 0.]
+            for val in range(0, len(rot)):
+                quat[0] = rot[val].x
+                quat[1] = rot[val].y
+                quat[2] = rot[val].z
+                quat[3] = rot[val].w
+                map(float, quat)
+                quat_list.append(quat)
+
+            # create a dictionary of contacts and rotations for the planner_client
+            contacts = {c: r for c, r in zip(active_links, quat_list)}
+            print contacts
+            self.planner_client.publishContacts(contacts)
+
             # print 'FIRST PLANNING PHASE CS'
             # for c in self.model.cs.getContactLinks():
             #    print 'active link: \n', c, '\n rotation: \n', self.model.cs.getContactFrame(c)
-            #
-            # # os.system('cls' if os.name == 'nt' else 'clear')
-            #
+
+            # os.system('cls' if os.name == 'nt' else 'clear')
+
             # index = 0
             # if np.linalg.norm(np.array(q_start) - np.array(q_goal)) > 0.05:
             #     solution = None
@@ -328,24 +351,24 @@ class Connector:
             #          self.model.ctrl_points.values()]
             #         self.nspg = NSPG.NSPG(self.ik_solver, vc_context)
             #
-            #         solution, error = self.model.plan_step(q_start, q_goal, planner_type='RRTConnect', timeout=60.0, threshold = 0.05)
+            #         solution, error = self.model.plan_step(q_start, q_goal, planner_type='RRT', timeout=120.0, threshold = 0.1)
             #         print 'done!'
             #     print 'start interpolation ...'
             #     solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
             #     print 'done!'
-            #
-            #     #     # solution_interp = np.loadtxt('solution.csv', delimiter=',')
-            #     #     for val in range(np.size(solution_interp, 1)):
-            #     #         self.model.replay_model.setJointPosition(solution_interp[:, val])
-            #     #         self.model.replay_model.update()
-            #     #         self.model.model.setJointPosition(solution_interp[:, val])
-            #     #         self.model.model.update()
-            #     #         self.model.ps.update()
-            #     #         self.model.planner_viz.publishMarkers(self.model.ps.getCollidingLinks())
-            #     #         rospy.sleep(self.ik_dt)
-            #     #
-            #         # project the interpolated trajectory onto the maninfold
-            #     # self.make_cartesian_interface()
+
+                #     # solution_interp = np.loadtxt('solution.csv', delimiter=',')
+                #     for val in range(np.size(solution_interp, 1)):
+                #         self.model.replay_model.setJointPosition(solution_interp[:, val])
+                #         self.model.replay_model.update()
+                #         self.model.model.setJointPosition(solution_interp[:, val])
+                #         self.model.model.update()
+                #         self.model.ps.update()
+                #         self.model.planner_viz.publishMarkers(self.model.ps.getCollidingLinks())
+                #         rospy.sleep(self.ik_dt)
+                #
+                    # project the interpolated trajectory onto the maninfold
+                # self.make_cartesian_interface()
             #     ci_time = 0
             #     UNABLE_TO_SOLVE_MAX = 5.
             #     q_first_plan = np.empty(shape=[self.model.model.getJointNum(), 0])
@@ -582,9 +605,9 @@ class Connector:
                 if index == self.MAX_RRT_ATTEMPTS:
                     raise Exception("Unable to find a feasible plan!")
 
-                solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect',
+                solution, error = self.model.plan_step(q_start, q_goal, planner_type='RRTConnect',
                                                        timeout=60.0, threshold=0.1)
-            solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
+            solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.1)
 
             print 'done!'
 
@@ -655,7 +678,7 @@ class Connector:
 
                     solution, error = self.model.plan_step(q_start, q_goal, lifted_contact, planner_type='RRTConnect',
                                                            timeout=60.0, threshold=0.0005)
-                solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.01)
+                solution_interp, times, knot_times = self.model.interpolate(solution, self.ik_dt, s_threshold=0.1)
 
                 print 'done!'
 
