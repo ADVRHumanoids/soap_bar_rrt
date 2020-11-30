@@ -15,6 +15,7 @@ import cogimon
 import q_connector
 import loader
 import os
+import roslaunch
 import gazebo_robot_handler as grh
 
 import collections
@@ -60,6 +61,14 @@ if __name__ == '__main__':
     if not roscpp.init('standing_up', cpp_argv):
         print 'Unable to initialize roscpp node!'
     # define contacts for the ForcePublisher
+    user = os.getenv('ROBOTOLOGY_ROOT')
+    uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+    cli_args = [user + '/external/cartesio_planning/examples/launch/example_comanplus_manipulation.launch', 'use_goal_generator:=false']
+    roslaunch_args = cli_args[1:]
+    roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], roslaunch_args)]
+    launch = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
+    launch.start()
+    rospy.sleep(2.)
     opt = xbot_opt.ConfigOptions()
 
     urdf = rospy.get_param('robot_description')
@@ -71,7 +80,7 @@ if __name__ == '__main__':
 
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
 
-    user = os.getenv('ROBOTOLOGY_ROOT')
+
     q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
     stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
@@ -83,7 +92,7 @@ if __name__ == '__main__':
     # initial_pos['orientation'] = [-0.03, -0.8, -0.03, -0.6]
     # gzhandler.set_robot_position(initial_pos)
 
-    qc = q_connector.Connector(cogimon, q_list, stances)
+    qc = q_connector.Connector(cogimon, q_list, stances, launch)
     # qc.play_all_poses(2)
     qc.run()
 
