@@ -17,8 +17,19 @@ std::string env(getenv("ROBOTOLOGY_ROOT"));
 static std::ofstream foutLogMCP(env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
 
 // Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
-Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, XBot::Cartesian::Planning::NSPG::Ptr _NSPG, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
-
+Planner::Planner(Configuration _qInit,
+                 std::vector<EndEffector> _activeEEsInit,
+                 Configuration _qGoal,
+                 std::vector<EndEffector> _activeEEsGoal,
+                 Eigen::MatrixXd _pointCloud,
+                 Eigen::MatrixXd _pointNormals,
+                 std::vector<EndEffector> _allowedEEs,
+                 XBot::ModelInterface::Ptr _planner_model,
+                 XBot::Cartesian::Planning::NSPG::Ptr _NSPG,
+                 XBot::Cartesian::Planning::ValidityCheckContext _vc_context,
+                 ros::NodeHandle& nh):
+_nh(nh)
+{
 	// set model, goal generator and cartesian interface
 	planner_model = _planner_model;
 // 	goal_generator = _goal_generator;
@@ -119,6 +130,8 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 
 	// for collision checking (seems that it is not needed anymore)
 	vc_context = _vc_context;
+
+    _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("/planner/contacts", 10, true);
 
 }
 
@@ -384,6 +397,36 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
             
             foutLogMCP << "EE(stance) =\n " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).matrix() << std::endl;
 	}
+
+    // set active links and rotations
+    multi_contact_planning::SetContactFrames contacts;
+
+    contacts.action = multi_contact_planning::SetContactFrames::SET;
+    contacts.frames_in_contact = active_tasks;
+
+    Eigen::MatrixXd nC(sigma.getContacts().size(), 3);
+    std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
+    for (int i = 0; i < sigma.getContacts().size(); i ++)
+    {
+        nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());
+        Eigen::Matrix3d rot = generateRotationAroundAxis(sigma.getContacts()[i]->getEndEffectorName(), nC.row(i));
+        Eigen::Quaternion<double> quat(rot);
+        rotations[i].x = quat.coeffs().x();
+        rotations[i].y = quat.coeffs().y();
+        rotations[i].z = quat.coeffs().z();
+        rotations[i].w = quat.coeffs().w();
+    }
+    contacts.rotations = rotations;
+    contacts.friction_coefficient = 0.5 * sqrt(2.0);
+    _pub.publish(contacts);
+
+    foutLogMCP << "contacts:" << std::endl;
+    for (auto i : contacts.frames_in_contact)
+        foutLogMCP << i << "  ";
+    foutLogMCP << "\nrotations:" << std::endl;
+    for (auto i : contacts.rotations)
+        foutLogMCP << i << "  ";
+    foutLogMCP << "\n";
 	
 	// set references
     std::vector<std::string> all_tasks;
@@ -410,29 +453,18 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
             Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
             if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
                 wM.block<3,3>(3,3) *= 0.001;
-            ci->getTask(all_tasks.at(i))->setWeight(wM);
-            ci->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
-            foutLogMCP << "EE inactive = " << all_tasks.at(i) << " pos =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).translation().transpose() << std::endl;
-            foutLogMCP << "EE inactive = " << all_tasks.at(i) << " rot =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).linear() << std::endl;
+            NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setWeight(wM);
+            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
         }
     	else{
             Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
             if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
                 wM.block<3,3>(3,3) *= 0.001;
-            ci->getTask(all_tasks.at(i))->setWeight(wM);
+            NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setWeight(wM);
             int index = it - active_tasks.begin();
-            ci->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-            foutLogMCP << "EE active = " << all_tasks.at(i) << " pos =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).translation().transpose() << std::endl;
-            foutLogMCP << "EE active = " << all_tasks.at(i) << " rot =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).linear() << std::endl;
+            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
         }
     }
-
-    // postural
-    //Eigen::VectorXd qhome;
-    //planner_model->getRobotState("home", qhome);
-	//XBot::JointNameMap jmap;
-    //planner_model->eigenToMap(qhome, jmap);
-    //ci->setReferencePosture(jmap);
     
     Eigen::VectorXd cPrev(n_dof);
     Eigen::Vector3d posFB = qPrev.getFBPosition();
@@ -448,20 +480,17 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     Eigen::VectorXd c(n_dof);
     
     NSPG->getIKSolver()->solve();
+    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
 
-    if(!NSPG->sample(time_budget)) return false;
+    if(!NSPG->sample(time_budget))
+        return false;
     else{
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
         q.setJointValues(c.tail(n_dof-6));
         return true;
-    }        
-    
-    
-//     if(!goal_generator->sample(c, time_budget)) return false;
-    
-
+    }            
 }
 
 bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList){
@@ -799,19 +828,35 @@ void Planner::run(){
 
 						// COMPUTE IK SOLUTION (BALANCED)
 						if(resCPL){
-							for(int i = 0; i < sigmaNew.getSize(); i++) sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
+                            for(int i = 0; i < sigmaNew.getSize(); i++)
+                            {
+                                sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
+                                sigmaNew.getContact(i)->setPose(rC.row(i).transpose(), generateRotationAroundAxis(sigmaNew.getContact(i)->getEndEffectorName(), getNormalAtPoint(rC.row(i))));
+                            }
+                            bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
+                            if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
+                            else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
+                            if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
+                                Configuration qCheck;
 
-							//double eCoMnorm = (rCoMdes - rCoM).norm();
-							//bool resIK_CoM = false;
-							//if(eCoMnorm < 1e-03) resIK_CoM = true;
-							//else resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
-                                                        bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);	
-                                                        if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
-                                                        else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
-							if(resIK_CoM){
-								qListVertex.push_back(qNew);			
-								sigmaListVertex.push_back(sigmaNew);					
-							}							
+                                bool resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
+
+                                if (resIK_CoM_check)
+                                {
+                                    foutLogMCP << "--------------- CHECK PASSED ---------------" << std::endl;
+                                    qListVertex.push_back(qCheck);
+                                    qListVertex.push_back(qNew);
+                                    sigmaListVertex.push_back(sigmaNear);
+                                    sigmaListVertex.push_back(sigmaNew);
+                                }
+                                else
+                                    foutLogMCP << "--------------- CHECK FAILED ---------------" << std::endl;
+                            }
+                            else if (resIK_CoM)
+                            {
+                                qListVertex.push_back(qNew);
+                                sigmaListVertex.push_back(sigmaNew);
+                            }
 						}
 			
 					}	

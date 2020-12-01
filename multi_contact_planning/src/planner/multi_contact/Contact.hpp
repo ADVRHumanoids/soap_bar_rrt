@@ -16,6 +16,7 @@ class Contact {
 
 		EndEffector getEndEffectorName();
 		Eigen::Affine3d getPose();
+        void setPose(Eigen::VectorXd pos, Eigen::Matrix3d rot);
 		Eigen::Vector3d getForce();
 		Eigen::Vector3d getNormal();
 

@@ -24,6 +24,7 @@
 #include "nodes/goal_generation.h"
 #include "goal/NSPG.h"
 #include <cartesian_interface/CartesianInterfaceImpl.h>
+#include <multi_contact_planning/SetContactFrames.h>
 
 #include <fstream>
 
@@ -72,6 +73,9 @@ class Planner {
 		double computeHtorso(Configuration q);	
                 Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
 
+        ros::NodeHandle _nh;
+        ros::Publisher _pub;
+
 	public:
 
         Planner(Configuration _qInit, 
@@ -80,7 +84,8 @@ class Planner {
                 Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, 
                 XBot::ModelInterface::Ptr _planner_model, 
                 XBot::Cartesian::Planning::NSPG::Ptr _NSPG,
-                XBot::Cartesian::Planning::ValidityCheckContext _vc_context);
+                XBot::Cartesian::Planning::ValidityCheckContext _vc_context,
+                ros::NodeHandle& nh);
 		~Planner();
 		void run();
 		bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);

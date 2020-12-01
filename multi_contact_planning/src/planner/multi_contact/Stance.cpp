@@ -8,6 +8,10 @@ Contact* Stance::getContact(int i){
 	return contactsList.at(i);
 }
 
+std::vector<Contact*> Stance::getContacts(){
+    return contactsList;
+}
+
 void Stance::addContact(Contact* c){
 	contactsList.push_back(c);
 }

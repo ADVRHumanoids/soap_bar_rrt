@@ -20,6 +20,7 @@ class Stance {
         Stance();
 
 		Contact* getContact(int i);
+        std::vector<Contact*> getContacts();
 		void addContact(Contact* c);
         int getSize();
 		void clear();

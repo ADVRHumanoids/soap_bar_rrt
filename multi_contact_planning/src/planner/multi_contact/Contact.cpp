@@ -15,6 +15,11 @@ Eigen::Affine3d Contact::getPose(){
 	return pose;
 }
 
+void Contact::setPose(Eigen::VectorXd pos, Eigen::Matrix3d rot){
+    pose.translation() = pos;
+    pose.linear() = rot;
+}
+
 Eigen::Vector3d Contact::getForce(){
 	return force;
 }
