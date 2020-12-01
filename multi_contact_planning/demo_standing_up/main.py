@@ -93,7 +93,7 @@ if __name__ == '__main__':
     # gzhandler.set_robot_position(initial_pos)
 
     qc = q_connector.Connector(cogimon, q_list, stances, launch)
-    # qc.play_all_poses(2)
+    # qc.play_all_poses(1)
     qc.run()
 
     # cogimon.robot.sense()

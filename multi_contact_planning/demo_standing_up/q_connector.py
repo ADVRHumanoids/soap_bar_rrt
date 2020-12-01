@@ -293,10 +293,13 @@ class Connector:
 
             # publish the contacts
             self.planner_client.publishContacts(contacts)
+            print contacts
+            rospy.sleep(5)
 
             rospy.sleep(2)
             self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.5)
             print('First planning phase completed!')
+            rospy.sleep(2)
 
             # self.__launch.shutdown()
             # rospy.sleep(2)
@@ -344,6 +347,9 @@ class Connector:
 
                 print 'configuration ', i+2, ' is unstable on 3 contacts, finding a new one...'
                 rospy.sleep(2)
+
+                print active_links, '\n', quat_list
+                raw_input('')
 
                 self.vc_context = self.make_vc_context(active_links, quat_list)
                 self.nspg = NSPG.NSPG(self.ik_solver, self.vc_context)
@@ -440,6 +446,7 @@ class Connector:
             ###########################################
             # Last Planning Phase to load the contact #
             ###########################################
+                print 'Last planner to load the lifted contact'
                 rospy.sleep(2)
 
                 # set start state
@@ -479,17 +486,17 @@ class Connector:
                 # self.__launch.start()
                 # rospy.sleep(2)
 
-                for counter in range(10):
-                    self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
-                    contacts = {c: r for c, r in zip(active_links, quat_list)}
-                    print contacts
-                    self.planner_client.publishContacts(contacts)
+                self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
+                contacts = {c: r for c, r in zip(active_links, quat_list)}
+                print contacts
+                self.planner_client.publishContacts(contacts)
 
+                rospy.sleep(2)
                 self.planner_client.updateManifold(active_links)
 
                 self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01,
                                           goal_threshold=0.5)
-                rospy.sleep(20)
+                rospy.sleep(2)
 
             # ci_time = 0
             # UNABLE_TO_SOLVE_MAX = 5.
