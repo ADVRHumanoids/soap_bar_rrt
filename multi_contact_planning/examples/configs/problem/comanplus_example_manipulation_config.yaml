@@ -1,7 +1,7 @@
 
 state_validity_check:
     - collisions
-    #- stability
+    - stability
 
 collisions:
     type: "CollisionCheck"

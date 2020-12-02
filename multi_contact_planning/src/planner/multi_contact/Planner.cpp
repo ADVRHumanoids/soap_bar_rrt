@@ -848,38 +848,37 @@ void Planner::run(){
                                     sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
                                     sigmaNew.getContact(i)->setPose(rC.row(i).transpose(), generateRotationAroundAxis(sigmaNew.getContact(i)->getEndEffectorName(), getNormalAtPoint(rC.row(i))));
                                 }
-                            bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
-                            if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
-                            else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
-                            
-                            if(resIK_CoM)
-                            {
-                                qListVertex.push_back(qNew);
-                                sigmaListVertex.push_back(sigmaNew);
+                                bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
+                                if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
+                                else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
+                                
+    //                             if(resIK_CoM)
+    //                             {
+    //                                 qListVertex.push_back(qNew);
+    //                                 sigmaListVertex.push_back(sigmaNew);
+    //                             }
+                                if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
+                                    Configuration qCheck;
+
+                                    bool resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
+
+                                    if (resIK_CoM_check)
+                                    {
+                                        foutLogMCP << "--------------- CHECK PASSED ---------------" << std::endl;
+//                                         qListVertex.push_back(qCheck);
+                                        qListVertex.push_back(qNew);
+//                                         sigmaListVertex.push_back(sigmaNear);
+                                        sigmaListVertex.push_back(sigmaNew);
+                                    }
+                                    else
+                                        foutLogMCP << "--------------- CHECK FAILED ---------------" << std::endl;
+                                }
+                                else if (resIK_CoM)
+                                {
+                                    qListVertex.push_back(qNew);
+                                    sigmaListVertex.push_back(sigmaNew);
+                                } 
                             }
-            //                             if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
-            //                                 Configuration qCheck;
-            // 
-            //                                 bool resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
-            // 
-            //                                 if (resIK_CoM_check)
-            //                                 {
-            //                                     foutLogMCP << "--------------- CHECK PASSED ---------------" << std::endl;
-            //                                     qListVertex.push_back(qCheck);
-            //                                     qListVertex.push_back(qNew);
-            //                                     sigmaListVertex.push_back(sigmaNear);
-            //                                     sigmaListVertex.push_back(sigmaNew);
-            //                                 }
-            //                                 else
-            //                                     foutLogMCP << "--------------- CHECK FAILED ---------------" << std::endl;
-            //                             }
-            //                             else if (resIK_CoM)
-            //                             {
-            //                                 qListVertex.push_back(qNew);
-            //                                 sigmaListVertex.push_back(sigmaNew);
-            //                             }
-                            }
-            
                         }	
                     }
 
