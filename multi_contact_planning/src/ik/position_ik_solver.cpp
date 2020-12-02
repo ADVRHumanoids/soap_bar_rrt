@@ -257,7 +257,11 @@ void PositionCartesianSolver::CartesianTaskData::update(XBot::Cartesian::Cartesi
     /* Jacobian computation */
     Eigen::MatrixXd Ji;
 
-    if(base_link == "world")
+    if (distal_link == "com")
+    {
+        model->getCOMJacobian(Ji);
+    }
+    else if(base_link == "world")
     {
         model->getJacobian(distal_link, Ji);
     }

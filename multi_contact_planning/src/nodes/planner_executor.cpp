@@ -575,7 +575,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     auto ik = _NSPG->getIKSolver();
 
     std::vector<std::string> all_tasks;
-    all_tasks.push_back("Com");
+    all_tasks.push_back("com");
     all_tasks.push_back("TCP_L");
     all_tasks.push_back("TCP_R");
     all_tasks.push_back("l_sole");
@@ -637,7 +637,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::vector<Eigen::Affine3d> ref_tasks;
     Eigen::VectorXd q_ref;
 
-//     active_tasks.push_back("Com");
+//     active_tasks.push_back("com");
     active_tasks.push_back("TCP_L");
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
