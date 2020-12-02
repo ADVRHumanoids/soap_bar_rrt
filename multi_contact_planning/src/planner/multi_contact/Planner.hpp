@@ -72,6 +72,7 @@ class Planner {
 		double computeHrange(Configuration q);
 		double computeHtorso(Configuration q);	
                 Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
+                Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis);
 
         ros::NodeHandle _nh;
         ros::Publisher _pub;
