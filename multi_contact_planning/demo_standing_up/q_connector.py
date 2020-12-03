@@ -51,7 +51,9 @@ class Connector:
         _planner_config['stability'] = {'type': 'CentroidalStatics',
                                                  'eps': 5 * 1e-2, 'friction_coefficient': 0.71,
                                                  'links': active_links,
-                                                 'rotations': quaternions}
+                                                 'rotations': quaternions,
+                                                 'x_lim_cop': [-0.05, 0.1],
+                                                 'y_lim_cop': [-0.05, 0.1]}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
 
@@ -253,7 +255,7 @@ class Connector:
 
 
     def run(self):
-        for i in range(2):
+        for i in range(len(self.q_list)):
         #for i in range(0, len(self.q_list), 1):
             ################################################
             # First Planning Phase to unload swing contact #
@@ -267,12 +269,20 @@ class Connector:
             # set all contacts to be active for first planning phase
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]  # names
-            # self.model.cs.setContactLinks(active_links)
+            self.model.cs.setContactLinks(active_links)
+            raw_input('active_links set')
 
             # set rotation matrix for each contact
             normals = [j['ref']['normal'] for j in self.stance_list[i]]
-            [self.model.cs.setContactRotationMatrix(k, j) for k, j in
-             zip(active_links, [self.rotation(elem) for elem in normals])]
+            [self.model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [self.rotation(elem) for elem in normals])]
+            raw_input('rotations set')
+
+            if len(active_links) == 2:
+                self.model.cs.setOptimizeTorque(True)
+            else:
+                self.model.cs.setOptimizeTorque(False)
+            raw_input('optimizeTorque set')
+
             rot = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
 
             quat_list = []
@@ -285,25 +295,39 @@ class Connector:
                 map(float, quat)
                 quat_list.append(quat)
 
-            contacts = {c: r for c, r in zip(active_links, quat_list)}
-
-            # check if the goal state is valid on the manifold defined by the start state
+            # # check if the goal state is valid on the manifold defined by the start state
             # if not self.model.state_vc(q_goal):
             #     raw_input('goal pose is not valid, click to compute a new feasible one')
             #
             #     # create NSPG
             #     vc_context = self.make_vc_context(active_links, quat_list)
             #     nspg = NSPG.NSPG(self.ik_solver, vc_context)
-
-
-
-            self.planner_client.updateManifold(active_links)
+            #     raw_input('NSPG created')
+            #
+            #     # set contact position for ik_solver
+            #     self.model.model.setJointPosition(q_goal)
+            #     self.model.model.update()
+            #     [self.ci.getTask(c).setPoseReference(self.model.model.getPose(c)) for c in self.model.ctrl_points.values()]
+            #
+            #     print '[NSPG]: start sampling!'
+            #     if not nspg.sample(10.0):
+            #         print '[NSPG]: unable to find a feasible solution!'
+            #         exit()
+            #     else:
+            #         print '[NSPG]: feasible goal pose found!'
+            #
+            # # set nspg solution as new goal state
+            # q_goal = nspg.getModel().getJointPosition()
+            # self.q_bounder(q_goal)
 
             # publish start and goal states
+            self.planner_client.updateManifold(active_links)
+            raw_input('Manifold updated')
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             raw_input("Start and Goal poses sent")
 
             # publish the contacts
+            contacts = {c: r for c, r in zip(active_links, quat_list)}
             optimize_torque = False
             if len(contacts) == 2: # we assume that 2 contacts happen ONLY when on feet
                 optimize_torque = True
@@ -313,6 +337,5 @@ class Connector:
             rospy.sleep(5)
 
             self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.5)
-            print('First planning phase completed!')
 
             raw_input("Press to next config")
