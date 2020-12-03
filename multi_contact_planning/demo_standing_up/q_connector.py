@@ -287,6 +287,16 @@ class Connector:
 
             contacts = {c: r for c, r in zip(active_links, quat_list)}
 
+            # check if the goal state is valid on the manifold defined by the start state
+            # if not self.model.state_vc(q_goal):
+            #     raw_input('goal pose is not valid, click to compute a new feasible one')
+            #
+            #     # create NSPG
+            #     vc_context = self.make_vc_context(active_links, quat_list)
+            #     nspg = NSPG.NSPG(self.ik_solver, vc_context)
+
+
+
             self.planner_client.updateManifold(active_links)
 
             # publish start and goal states
@@ -304,6 +314,5 @@ class Connector:
 
             self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.5)
             print('First planning phase completed!')
-
 
             raw_input("Press to next config")
