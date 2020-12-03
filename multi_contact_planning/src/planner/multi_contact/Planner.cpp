@@ -399,38 +399,46 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
 	}
 
     // set active links and rotations
-//     multi_contact_planning::SetContactFrames contacts;
-// 
-//     contacts.action = multi_contact_planning::SetContactFrames::SET;
-//     if (refCoM)
-//         contacts.frames_in_contact = {active_tasks.begin()+1, active_tasks.end()};
-//     else
-//         contacts.frames_in_contact = active_tasks;
-// 
-//     Eigen::MatrixXd nC(sigma.getContacts().size(), 3);
-//     std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
-//     for (int i = 0; i < sigma.getContacts().size(); i ++)
-//     {
-//         nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());
-//         Eigen::Matrix3d rot = generateRotationAroundAxis(sigma.getContacts()[i]->getEndEffectorName(), nC.row(i));
-//         Eigen::Quaternion<double> quat(rot);
-//         rotations[i].x = quat.x();
-//         rotations[i].y = quat.y();
-//         rotations[i].z = quat.z();
-//         rotations[i].w = quat.w();
-//     }
-//     contacts.rotations = rotations;
-//     contacts.friction_coefficient = 0.5 * sqrt(2.0);
-//     _pub.publish(contacts);
-// 
-//     foutLogMCP << "contacts:" << std::endl;
-//     for (auto i : contacts.frames_in_contact)
-//         foutLogMCP << i << "  ";
-//     foutLogMCP << "\nrotations:" << std::endl;
-//     for (auto i : contacts.rotations)
-//         foutLogMCP << i << "  ";
-//     foutLogMCP << "\n";
-//     ros::spinOnce();
+     multi_contact_planning::SetContactFrames contacts;
+
+     contacts.action = multi_contact_planning::SetContactFrames::SET;
+     if (refCoM)
+         contacts.frames_in_contact = {active_tasks.begin()+1, active_tasks.end()};
+     else
+         contacts.frames_in_contact = active_tasks;
+
+     Eigen::MatrixXd nC(sigma.getContacts().size(), 3);
+     std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
+     for (int i = 0; i < sigma.getContacts().size(); i ++)
+     {
+         nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());
+         Eigen::Matrix3d rot = generateRotationAroundAxis(sigma.getContacts()[i]->getEndEffectorName(), nC.row(i));
+         Eigen::Quaternion<double> quat(rot);
+         rotations[i].x = quat.x();
+         rotations[i].y = quat.y();
+         rotations[i].z = quat.z();
+         rotations[i].w = quat.w();
+     }
+     contacts.rotations = rotations;
+     contacts.friction_coefficient = 0.5 * sqrt(2.0);
+     _pub.publish(contacts);
+
+     foutLogMCP << "contacts:" << std::endl;
+     for (auto i : contacts.frames_in_contact)
+         foutLogMCP << i << "  ";
+     foutLogMCP << "\nrotations:" << std::endl;
+     for (auto i : contacts.rotations)
+         foutLogMCP << i << "  ";
+     foutLogMCP << "\n";
+     double counter = 0;
+     ros::Rate rate(100);
+     while (counter < 1)
+     {
+        ros::spinOnce();
+        rate.sleep();
+        counter += 0.1;
+     }
+
 	
 	// set references
     std::vector<std::string> all_tasks;
@@ -487,8 +495,15 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
 
     if(!NSPG->sample(time_budget))
+    {
+        NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        q.setFBPosition(c.segment(0,3));
+        q.setFBOrientation(c.segment(3,3));
+        q.setJointValues(c.tail(n_dof-6));
         return false;
-    else{
+    }
+    else
+    {
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
@@ -823,63 +838,60 @@ void Planner::run(){
                         else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
 
                         // COMPUTE CENTROIDAL STATICS
-                        if(resIK)
+                        Eigen::Vector3d rCoMdes = computeCoM(qNew);
+                        Eigen::MatrixXd rCdes(activeEEsDes.size(), 3);
+                        Eigen::MatrixXd nCdes(activeEEsDes.size(), 3);
+                        Eigen::Vector3d rCoM;
+                        Eigen::MatrixXd rC(activeEEsDes.size(), 3);
+                        Eigen::MatrixXd FC(activeEEsDes.size(), 3);
+                        for(int i = 0; i < activeEEsDes.size(); i++)
                         {
-                            Eigen::Vector3d rCoMdes = computeCoM(qNew);
-                            Eigen::MatrixXd rCdes(activeEEsDes.size(), 3);
-                            Eigen::MatrixXd nCdes(activeEEsDes.size(), 3);
-                            Eigen::Vector3d rCoM;
-                            Eigen::MatrixXd rC(activeEEsDes.size(), 3);
-                            Eigen::MatrixXd FC(activeEEsDes.size(), 3);
-                            for(int i = 0; i < activeEEsDes.size(); i++)
+                            rCdes.row(i) = sigmaNew.getContact(i)->getPose().translation().transpose();
+                            nCdes.row(i) = sigmaNew.getContact(i)->getNormal().transpose();
+                        }
+                        bool resCPL = computeCentroidalStatics(activeEEsDes, rCoMdes, rCdes, nCdes, rCoM, rC, FC);
+                        if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
+                        else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;
+
+                        // COMPUTE IK SOLUTION (BALANCED)
+                        if(resCPL)
+                        {
+                            for(int i = 0; i < sigmaNew.getSize(); i++)
                             {
-                                rCdes.row(i) = sigmaNew.getContact(i)->getPose().translation().transpose();
-                                nCdes.row(i) = sigmaNew.getContact(i)->getNormal().transpose();
+                                sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
+                                sigmaNew.getContact(i)->setPose(rC.row(i).transpose(), generateRotationAroundAxis(sigmaNew.getContact(i)->getEndEffectorName(), getNormalAtPoint(rC.row(i))));
                             }
-                            bool resCPL = computeCentroidalStatics(activeEEsDes, rCoMdes, rCdes, nCdes, rCoM, rC, FC); 
-                            if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
-                            else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;
+                            bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
+                            if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
+                            else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
 
-                            // COMPUTE IK SOLUTION (BALANCED)
-                            if(resCPL)
-                            {
-                                for(int i = 0; i < sigmaNew.getSize(); i++)
+//                             if(resIK_CoM)
+//                             {
+//                                 qListVertex.push_back(qNew);
+//                                 sigmaListVertex.push_back(sigmaNew);
+//                             }
+                            if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
+                                Configuration qCheck;
+
+                                bool resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
+
+                                if (resIK_CoM_check)
                                 {
-                                    sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
-                                    sigmaNew.getContact(i)->setPose(rC.row(i).transpose(), generateRotationAroundAxis(sigmaNew.getContact(i)->getEndEffectorName(), getNormalAtPoint(rC.row(i))));
-                                }
-                                bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
-                                if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
-                                else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
-                                
-    //                             if(resIK_CoM)
-    //                             {
-    //                                 qListVertex.push_back(qNew);
-    //                                 sigmaListVertex.push_back(sigmaNew);
-    //                             }
-                                if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
-                                    Configuration qCheck;
-
-                                    bool resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
-
-                                    if (resIK_CoM_check)
-                                    {
-                                        foutLogMCP << "--------------- CHECK PASSED ---------------" << std::endl;
+                                    foutLogMCP << "--------------- CHECK PASSED ---------------" << std::endl;
 //                                         qListVertex.push_back(qCheck);
-                                        qListVertex.push_back(qNew);
-//                                         sigmaListVertex.push_back(sigmaNear);
-                                        sigmaListVertex.push_back(sigmaNew);
-                                    }
-                                    else
-                                        foutLogMCP << "--------------- CHECK FAILED ---------------" << std::endl;
-                                }
-                                else if (resIK_CoM)
-                                {
                                     qListVertex.push_back(qNew);
+//                                         sigmaListVertex.push_back(sigmaNear);
                                     sigmaListVertex.push_back(sigmaNew);
-                                } 
+                                }
+                                else
+                                    foutLogMCP << "--------------- CHECK FAILED ---------------" << std::endl;
                             }
-                        }	
+                            else if (resIK_CoM)
+                            {
+                                qListVertex.push_back(qNew);
+                                sigmaListVertex.push_back(sigmaNew);
+                            }
+                        }
                     }
 
                     foutLogMCP << "j = " << j << " qListVertex.size() = " << qListVertex.size() << std::endl;
