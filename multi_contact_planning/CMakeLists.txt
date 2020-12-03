@@ -203,14 +203,14 @@ add_library(cartesian_trajectory_interpolation SHARED src/planner/cartesian_traj
 target_link_libraries(cartesian_trajectory_interpolation PRIVATE trajectory_interpolation ${XBotInterface_LIBRARIES})
 
 # Stability test exe
-add_executable(stability_test src/test_nodes/stability_test.cpp)
-target_link_libraries(stability_test multi_contact_planning ${XBotInterface_LIBRARIES} matlogger2::matlogger2 ${catkin_LIBRARIES}) ########################################### PF
+#add_executable(stability_test src/test_nodes/stability_test.cpp)
+#target_link_libraries(stability_test multi_contact_planning ${XBotInterface_LIBRARIES} matlogger2::matlogger2 ${catkin_LIBRARIES}) ########################################### PF
 
 # ompl_test_control exe
-add_executable(ompl_control_test
-    src/ompl_test_control.cpp
-    )
-target_link_libraries(ompl_control_test multi_contact_planning ${XBotInterface_LIBRARIES} matlogger2::matlogger2 ${catkin_LIBRARIES}) ########################################### PF
+#add_executable(ompl_control_test
+#    src/ompl_test_control.cpp
+#    )
+#target_link_libraries(ompl_control_test multi_contact_planning ${XBotInterface_LIBRARIES} matlogger2::matlogger2 ${catkin_LIBRARIES}) ########################################### PF
 
 
 # Previewer node
@@ -242,21 +242,21 @@ target_link_libraries(self_collision_robot ${OMPL_LIBRARIES}
 
 
 # goal_generation node
-add_executable(goal_generation_test
-        src/test_nodes/goal_generation_test.cpp
-    )
+#add_executable(goal_generation_test
+#        src/test_nodes/goal_generation_test.cpp
+ #   )
 
-add_dependencies(goal_generation_test multi_contact_planning)
+#add_dependencies(goal_generation_test multi_contact_planning)
 
-target_link_libraries(goal_generation_test ${OMPL_LIBRARIES}
-    yaml-cpp
-    dl
-    multi_contact_planning ########################################### PF
-    ${centroidal_planner_LIBRARIES}
-    ${cartesian_interface_LIBRARIES}
-    ${XBotInterface_LIBRARIES}
-    ${catkin_LIBRARIES}
-    matlogger2::matlogger2)
+#target_link_libraries(goal_generation_test ${OMPL_LIBRARIES}
+#    yaml-cpp
+ #   dl
+ #   multi_contact_planning ########################################### PF
+#    ${centroidal_planner_LIBRARIES}
+#    ${cartesian_interface_LIBRARIES}
+#    ${XBotInterface_LIBRARIES}
+#    ${catkin_LIBRARIES}
+#    matlogger2::matlogger2)
 
 # Planning scene publisher
 add_executable(planning_scene_publisher src/planning_scene_publisher.cpp)
@@ -271,8 +271,8 @@ add_executable(octomap_collision_main src/utils/octomap_collision_main.cpp)
 target_link_libraries(octomap_collision_main multi_contact_planning ${XBotInterface_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES}) ########################################### PF
 
 # Point Cloud test
-add_executable(point_cloud_test src/test_nodes/point_cloud_test.cpp)
-target_link_libraries(point_cloud_test multi_contact_planning ${catkin_LIBRARIES} ${PCL_LIBRARIES}) ########################################### PF
+#add_executable(point_cloud_test src/test_nodes/point_cloud_test.cpp)
+#target_link_libraries(point_cloud_test multi_contact_planning ${catkin_LIBRARIES} ${PCL_LIBRARIES}) ########################################### PF
 
 
 ## Add cmake target dependencies of the library
@@ -351,23 +351,23 @@ install(TARGETS cartesian_trajectory_interpolation
     )
 
 
-install(TARGETS stability_test
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+#install(TARGETS stability_test
+#    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#    )
 
-install(TARGETS ompl_control_test
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+#install(TARGETS ompl_control_test
+#    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#    )
 
-install(TARGETS goal_generation_test
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+#install(TARGETS goal_generation_test
+#    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#    )
 
 
 install(TARGETS planning_server
@@ -382,11 +382,11 @@ install(TARGETS octomap_collision_main
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
-install(TARGETS point_cloud_test
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+#install(TARGETS point_cloud_test
+#    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#    )
 
 # Mark cpp header files for installation
 install(DIRECTORY launch/

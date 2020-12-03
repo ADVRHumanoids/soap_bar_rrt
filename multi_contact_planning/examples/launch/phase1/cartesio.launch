@@ -1,0 +1,61 @@
+<launch>
+
+    <arg name="solver" default="OpenSot"/>
+    <arg name="prefix" default=""/>
+    <arg name="world_frame_link" default="l_sole"/>
+
+
+<rosparam param="cartesian/home">
+    VIRTUALJOINT_1: 0.2888153811240176
+    VIRTUALJOINT_2:  -0.10708525959342215
+    VIRTUALJOINT_3: 0.7105819860473047
+    VIRTUALJOINT_4: -0.035451270109696384
+    VIRTUALJOINT_5: 1.4610654739980438
+    VIRTUALJOINT_6: 0.03590619327812437
+    LHipLat: -0.02329568052262268
+    LHipSag: -1.9198621771899997
+    LHipYaw: -0.030208999394556322
+    LKneePitch: 1.0963802421730324
+    LAnklePitch:  -0.6377953224367714
+    LAnkleRoll: -0.011065123797751058
+    RHipLat: -0.023355762878176135
+    RHipSag: -1.9198621771899997
+    RHipYaw: -0.03027559866514737
+    RKneePitch: 1.0971063579228364
+    RAnklePitch: -0.6385220595522175
+    RAnkleRoll: -0.011088030498353144
+    WaistLat:  -0.002014910507209268
+    WaistYaw: 0.02924732903250586
+    LShSag: -0.6849524960124524
+    LShLat: 0.7591803871235414
+    LShYaw: 0.11358971124907283
+    LElbj: -1.097175689601611
+    LForearmPlate: 0.8677243750505815
+    LWrj1: 0.5581080064324063
+    LWrj2: -0.3210574104395654
+    RShSag: -0.6872309534272558
+    RShLat: -0.7791364969502387
+    RShYaw: -0.11173878791083616
+    RElbj: -1.0981727617455548
+    RForearmPlate: -0.8769878429277983
+    RWrj1: 0.5754415389596044
+    RWrj2: 0.3364778179939809
+</rosparam>
+
+
+    <param name="robot_description"
+        textfile="$(find multi_contact_planning)/utils/urdf/cogimon.urdf"/>
+
+    <param name="robot_description_semantic"
+        textfile="$(find multi_contact_planning)/utils/srdf/cogimon.srdf"/>
+
+    <param name="cartesian/problem_description"
+        textfile="$(find multi_contact_planning)/configs/problem/phase1/ik.stack"/>
+
+
+    <include file="$(find cartesian_interface)/launch/cartesio.launch">
+        <arg name="tf_prefix" value="ci"/>
+        <arg name="world_frame_link" value="$(arg world_frame_link)"/> 
+    </include>
+
+</launch>

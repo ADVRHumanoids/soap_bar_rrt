@@ -1,0 +1,34 @@
+manifold:
+    param_name: "manifold"
+
+state_validity_check:
+    - self_collision
+    - stability
+
+self_collision:
+    type: "CollisionCheck"
+    include_environment: true
+
+stability:
+    type: "CentroidalStatics"
+    links: 
+      - "l_foot_lower_left_link"
+      - "l_foot_lower_right_link"
+      - "l_foot_upper_left_link"
+      - "l_foot_upper_right_link"
+      - "r_foot_lower_left_link"
+      - "r_foot_lower_right_link"
+      - "r_foot_upper_left_link"
+      - "r_foot_upper_right_link"
+    friction_coefficient: 0.71
+    eps: 5e-2
+
+RRTstar:
+    GoalBias: 0.1
+    KNearest: true
+    Range: 1000
+
+state_space:
+    floating_base_pos_min: [-1, -1, -1]
+    floating_base_pos_max: [ 1,  1,  1]
+    type: "Atlas"

@@ -76,4 +76,3 @@ Waist:
     type: "Cartesian"
     distal_link: "Waist"
     indices: [0, 2]
-    

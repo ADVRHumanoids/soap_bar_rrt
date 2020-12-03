@@ -120,6 +120,8 @@
     <joint name="LAnklePitch" value="-0.307420"/>
     <joint name="LAnkleRoll" value="0.0"/>
   </group_state>
+    <disable_collisions link1="LThighUpLeg" link2="Waist" reason="Adjacent"/>
+    <disable_collisions link1="RThighUpLeg" link2="Waist" reason="Adjacent"/>
     <disable_collisions link1="DWL" link2="DWLExt" reason="Adjacent"/>
     <disable_collisions link1="DWL" link2="DWYTorso" reason="Never"/>
     <disable_collisions link1="DWL" link2="Head" reason="Never"/>

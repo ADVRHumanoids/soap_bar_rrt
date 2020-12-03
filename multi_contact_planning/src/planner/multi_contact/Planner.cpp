@@ -81,7 +81,7 @@ Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, 
 		Eigen::Affine3d T_i = computeForwardKinematics(qGoal, _activeEEsGoal.at(i));
 		rCGoal.row(i) = T_i.translation().transpose();
 		nCGoal.row(i) = getNormalAtPoint(rCGoal.row(i)).transpose();					
-		std::cout << "EE = " << _activeEEsInit.at(i) << " pos = " << T_i.translation().transpose() << std::endl;	
+        std::cout << "EE = " << _activeEEsGoal.at(i) << " pos = " << T_i.translation().transpose() << std::endl;
 	}
 	Eigen::MatrixXd FCGoal;
 	FCGoal.resize(_activeEEsGoal.size(), 3);	
@@ -188,14 +188,19 @@ Eigen::Vector3d Planner::pickPointInReachableWorkspace(EndEffector pk, Configura
 
 	std::vector<Eigen::Vector3d> pointsInWorkspace;
 	std::vector<int> pointsInWorkspaceIndices;
-	for(int i = 0; i < pointCloud.rows(); i++){
-		Eigen::Vector3d p = pointCloud.row(i).transpose();
-		double d = euclideanDistance(p_cur, p);
-		if(d < ReachableWorkspaceRadius){
-			pointsInWorkspace.push_back(p);
-			pointsInWorkspaceIndices.push_back(i);
-		}
-	}
+
+    do
+    {
+        for(int i = 0; i < pointCloud.rows(); i++){
+            Eigen::Vector3d p = pointCloud.row(i).transpose();
+            double d = euclideanDistance(p_cur, p);
+            if(d < ReachableWorkspaceRadius){
+                pointsInWorkspace.push_back(p);
+                pointsInWorkspaceIndices.push_back(i);
+            }
+        }
+        ReachableWorkspaceRadius += 0.01;
+    }while(pointsInWorkspace.size() == 0);
 
 	//foutLogMCP << "pointsInWorkspace.size() = " << pointsInWorkspace.size() << std::endl;
 
@@ -212,7 +217,8 @@ Eigen::Vector3d Planner::pickPointInReachableWorkspace(EndEffector pk, Configura
 		}
 	}
 	
-	Eigen::Vector3d r = pointsInWorkspace.at(iMin);
+
+    Eigen::Vector3d r = pointsInWorkspace.at(iMin);
 	
 	index = pointsInWorkspaceIndices.at(iMin);
 
@@ -259,7 +265,7 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
 		bool c1 = true; // the same vertex can be used for expansion at most a given number of times 
 		bool c2 = true; // at least 3 contact (after expansion)
 		bool c3 = true; // non empty workspace for end effector pk if inactive at vnear
-		bool c4 = true; // don't move an active ee that is already at the goal
+        bool c4 = true; // don't move an active ee that is already at the goal
 
 		std::vector<EndEffector> activeEEs = sigma.retrieveActiveEndEffectors();		
 		std::vector<EndEffector> activeEEsCand;
@@ -366,8 +372,7 @@ EndEffector Planner::getTaskEndEffectorName(std::string ee_str){
 }
 			
 bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev){
-	
-	// build references
+    // build references
 	std::vector<std::string> active_tasks;
 	std::vector<Eigen::Affine3d> ref_tasks;
 	if(refCoM){
@@ -387,7 +392,7 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
 	
 	// set references
     std::vector<std::string> all_tasks;
-    all_tasks.push_back("Com");
+    all_tasks.push_back("com");
     all_tasks.push_back("TCP_L");
     all_tasks.push_back("TCP_R");
     all_tasks.push_back("l_sole");
@@ -407,9 +412,11 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
         
         if(it == active_tasks.end()){
-            Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
-            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
+            Eigen::MatrixXd wM = 0.001*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
+            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R"){
                 wM.block<3,3>(3,3) *= 0.001;
+                //ci->getTask(all_tasks.at(i))->setActivationState(XBot::Cartesian::ActivationState::Disabled);
+            }
             ci->getTask(all_tasks.at(i))->setWeight(wM);
             ci->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
             foutLogMCP << "EE inactive = " << all_tasks.at(i) << " pos =" << computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))).translation().transpose() << std::endl;
@@ -417,8 +424,10 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
         }
     	else{
             Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
-            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
+            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R"){
                 wM.block<3,3>(3,3) *= 0.001;
+                //ci->getTask(all_tasks.at(i))->setActivationState(XBot::Cartesian::ActivationState::Enabled);
+            }
             ci->getTask(all_tasks.at(i))->setWeight(wM);
             int index = it - active_tasks.begin();
             ci->setPoseReference(all_tasks.at(i), ref_tasks[index]);
@@ -448,6 +457,8 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     Eigen::VectorXd c(n_dof);
     
     NSPG->getIKSolver()->solve();
+
+    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
 
     if(!NSPG->sample(time_budget)) return false;
     else{

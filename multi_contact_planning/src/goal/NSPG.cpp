@@ -116,7 +116,7 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
             {
                 random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*generateRandom()));
                 random_map.insert(std::make_pair("VIRTUALJOINT_2", 50*generateRandom()));
-                random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*generateRandom()));
+                random_map.insert(std::make_pair("VIRTUALJOINT_3", 50*generateRandom()));
             }
             
                 

@@ -166,7 +166,14 @@ void PlannerExecutor::run()
     if(_use_goal_generator)
         _goal_generator->update();
 
-    publish_and_check_start_and_goal_models(time);        
+    publish_and_check_start_and_goal_models(time);
+
+//    multi_contact_planning::CartesioPlanner::Request req;
+//    multi_contact_planning::CartesioPlanner::Response res;
+//    planner_service(req, res);
+
+
+
 }
 
 void PlannerExecutor::init_load_model()
@@ -217,18 +224,22 @@ void PlannerExecutor::init_load_model()
     q_init.resize(n_dof);
 //     q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
 //     q_init << 0.0817944, -0.0459652, 0.562943, 3.22873, 1.29048, 3.13332, 0.287751, -1.22788, 0.335744, 0.0259489, -0.633213, -0.194167, -0.983884, -1.21671, -1.10644, 0.4062, -0.865606, 0.249889, 0.118649, 0.0118292, -3.32887, 2.05704, -1.67603, -1.81254, 0.959125, 1.478, 0.241725, -3.2857, -0.251944, -1.40935, -1.43088, -1.5163, -1.09998, -0.0285249;
-    q_init <<  -0.0519934, -0.00367742, 0.622926, 3.11831, 1.17912, 3.2064, 0.448539, -1.50196, 0.489673, 0, -0.452481, -0.0825496, -1.13953, -1.26619, -1.24827, 0, -0.507944, 0.261799, -0.150113, -0.204497, -3.352, 1.04099, -1.75615, -1.1217, 0.994067, 1.478, 0.162285, -3.359, -1.13074, -1.1096, -0.189419, -1.9351, -1.19221, -2.22644,  
+    //q_init <<  -0.0519934, -0.00367742, 0.622926, 3.11831, 1.17912, 3.2064, 0.448539, -1.50196, 0.489673, 0, -0.452481, -0.0825496, -1.13953, -1.26619, -1.24827, 0, -0.507944, 0.261799, -0.150113, -0.204497, -3.352, 1.04099, -1.75615, -1.1217, 0.994067, 1.478, 0.162285, -3.359, -1.13074, -1.1096, -0.189419, -1.9351, -1.19221, -2.22644,
+    q_init << -0.15368987081904212, -0.10314795366518807, 0.7640134656474494, 3.4844940641908996e-05, 1.003581914293611, -3.785843110696436e-05, -3.953783628909849e-05, -1.9198621771899997, -2.1363360846215855e-05, 0.7922061790512522, 0.12407408333227256, 1.3795065767494878e-06, -3.9537658402357405e-05, -1.9198621771899997, -2.136311438261588e-05, 0.7921945501430171, 0.12408571224052402, 1.3796065471541717e-06, -1.8660286220993518e-05, 8.489006516230123e-06, -0.19445292297202182, 0.46857182904733846, 0.14653695168167274, -1.2247166922656882, 0.027710856918766916, -0.26325518320383146, 3.7626266681327204e-05, -0.1944428210179786, -0.46859844701659054, -0.1465736712234979, -1.2247131748749565, -0.027654977402383155, -0.2632529596729626, 4.140472081021349e-05;
+
 
     q_goal.resize(n_dof);
-    q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
-    
+    //q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
+    q_goal << 0.2897166672668218, -0.10497984950213589, 0.7104804442728724, 3.104455991817528, 1.6793981240585394, -3.107317267703274, -0.023706803180887262, -1.9198621771899997, -0.03040918808097502, 1.0969486064844232, -0.6394877009738038, -0.00780238674281394, -0.0241003135409776, -1.917624286088548, -0.030811330306817007, 1.0934274269591522, -0.6382074706322688, -0.007875487068303546, -0.005429823381191566, 0.01842619153855117, -0.6844226756691532, 0.7658428969706649, 0.11810632873339647, -1.0874541007345015, 0.8638498193190264, 0.5531709213915008, -0.3218712377766213, -0.6865507741765947, -0.7716121180509629, -0.10740784977333687, -1.108326716296526, -0.8812963153486938, 0.5769499241699871, 0.3372134899368016;
+
+
     _model->setJointPosition(q_init);
     _model->update();
 
     _start_model->setJointPosition(q_init);
     _start_model->update();
 
-    _goal_model->setJointPosition(q_init);
+    _goal_model->setJointPosition(q_goal);
     _goal_model->update();
     //////////////////////////////////////////////////////////////////////////////////////////  
         
@@ -575,7 +586,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     auto ik = _NSPG->getIKSolver();
 
     std::vector<std::string> all_tasks;
-    all_tasks.push_back("Com");
+    all_tasks.push_back("com");
     all_tasks.push_back("TCP_L");
     all_tasks.push_back("TCP_R");
     all_tasks.push_back("l_sole");
@@ -637,7 +648,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::vector<Eigen::Affine3d> ref_tasks;
     Eigen::VectorXd q_ref;
 
-//     active_tasks.push_back("Com");
+//     active_tasks.push_back("com");
     active_tasks.push_back("TCP_L");
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
@@ -900,8 +911,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     qInit.setFBOrientation(Eigen::Vector3d(q_init(3), q_init(4), q_init(5)));
     qInit.setJointValues(q_init.tail(n_dof-6));  
     std::vector<EndEffector> activeEEsInit;
-    activeEEsInit.push_back(L_HAND);
-    activeEEsInit.push_back(R_HAND); 
+    //activeEEsInit.push_back(L_HAND);
+    //activeEEsInit.push_back(R_HAND);
     activeEEsInit.push_back(L_FOOT);
     activeEEsInit.push_back(R_FOOT);
         
@@ -914,7 +925,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     activeEEsGoal.push_back(L_HAND);
     activeEEsGoal.push_back(R_HAND);
     activeEEsGoal.push_back(L_FOOT);
-    activeEEsGoal.push_back(R_FOOT); 
+    activeEEsGoal.push_back(R_FOOT);
         
     // construct the environment description    
     Eigen::MatrixXd pointCloud = _pc_manager->getPointCloud();
@@ -924,8 +935,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<EndEffector> allowedEEs;
     allowedEEs.push_back(L_HAND);
     allowedEEs.push_back(R_HAND);  
-    allowedEEs.push_back(L_FOOT);
-    allowedEEs.push_back(R_FOOT);
+    //allowedEEs.push_back(L_FOOT);
+    //allowedEEs.push_back(R_FOOT);
     
     // plan a solution    
 

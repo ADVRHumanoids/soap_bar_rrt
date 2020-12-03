@@ -1,0 +1,44 @@
+solver_options:
+    regularization: 1e-3
+    back_end: "qpoases"
+
+stack:
+    - ["LeftFoot", "RightFoot", "LHand", "RHand"]
+    - ["Postural"]
+    
+constraints: ["JointLimits"]
+
+JointLimits:
+    type: "JointLimits"
+
+
+LeftFoot:
+    type: "Cartesian"
+    distal_link: "l_sole"
+    lambda: 1.0
+
+    
+RightFoot:
+    type: "Cartesian"
+    distal_link: "r_sole"
+    lambda: 1.0
+
+    
+Postural:
+    type: "Postural"
+    lambda: 0.1
+
+LHand:
+    type: "Cartesian"
+    distal_link: "l_ball_tip"
+    lambda: 1.0
+
+    
+RHand:
+    type: "Cartesian"
+    distal_link: "r_ball_tip"
+    lambda: 1.0
+    
+
+
+

@@ -31,6 +31,8 @@ namespace XBot { namespace Cartesian { namespace Planning {
         bool sample(double timeout);
         
         double generateRandom();
+
+        std::shared_ptr<XBot::Cartesian::Utils::RobotStatePublisher> _rspub;
         
     private:        
         
@@ -38,6 +40,6 @@ namespace XBot { namespace Cartesian { namespace Planning {
         
         Planning::ValidityCheckContext _vc_context;
         
-        std::shared_ptr<XBot::Cartesian::Utils::RobotStatePublisher> _rspub;
+
     };
 }}}

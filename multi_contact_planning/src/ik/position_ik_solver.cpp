@@ -31,7 +31,9 @@ PositionCartesianSolver::PositionCartesianSolver(CartesianInterfaceImpl::Ptr ci)
             //t->setWeight(w); // do this only for hands
             /////////////   
 
-            auto tdata = std::make_shared<CartesianTaskData>(cart->getDistalLink(),
+            std::string distal_link=cart->getDistalLink();
+
+            auto tdata = std::make_shared<CartesianTaskData>(distal_link,
                                                              cart->getBaseLink(),
                                                              cart->getIndices());
 
@@ -40,8 +42,8 @@ PositionCartesianSolver::PositionCartesianSolver(CartesianInterfaceImpl::Ptr ci)
             std::cout << "WEIGHTS" << std::endl;
             std::cout << t->getWeight() << std::endl;
             //std::cout << cart->getLambda() << std::endl;    
-            std::cout << "cart->getDistalLink()" << std::endl;    
-            std::cout << cart->getDistalLink() << std::endl;    
+            std::cout << "distal_link" << std::endl;
+            std::cout << distal_link << std::endl;
             std::cout << "cart->getBaseLink()" << std::endl;    
             std::cout << cart->getBaseLink() << std::endl;           
             std::cout << "cart->getIndices()" << std::endl;
@@ -51,11 +53,11 @@ PositionCartesianSolver::PositionCartesianSolver(CartesianInterfaceImpl::Ptr ci)
             
             _n_task += tdata->size;
 
-            _task_map[cart->getDistalLink()] = tdata;
+            _task_map[distal_link] = tdata;
 
             printf("[PositionCartesianSolver] adding cartesian task '%s' to '%s', size is %d \n",
                    cart->getBaseLink().c_str(),
-                   cart->getDistalLink().c_str(),
+                   distal_link,
                    tdata->size);
         }
     }
@@ -257,7 +259,11 @@ void PositionCartesianSolver::CartesianTaskData::update(XBot::Cartesian::Cartesi
     /* Jacobian computation */
     Eigen::MatrixXd Ji;
 
-    if(base_link == "world")
+    if(distal_link == "com")
+    {
+        model->getCOMJacobian(Ji);
+    }
+    else if(base_link == "world")
     {
         model->getJacobian(distal_link, Ji);
     }
