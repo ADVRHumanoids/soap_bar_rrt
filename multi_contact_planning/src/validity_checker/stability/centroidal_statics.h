@@ -131,6 +131,10 @@ public:
      */
     const std::map<std::string, Eigen::Vector6d>& getForces();
 
+    std::vector<std::string> getContactLinks() {return _contact_links;}
+
+    const Eigen::Matrix3d getContactFrame(const std::string& contact_link){ return _fcs[contact_link]->getContactFrame();}
+
 
 private:
     YAML::Node createYAMLProblem(const std::vector<std::string>& contact_links,
@@ -219,7 +223,7 @@ public:
 
                 //Piselloni (Forze)
                 visualization_msgs::Marker marker;
-                marker.header.frame_id = _tf_prefix+fc.first;
+                marker.header.frame_id = _tf_prefix+"ci/"+fc.first;
                 marker.header.stamp = t;
                 marker.ns = "computed_contact_forces";
                 marker.id = i;
@@ -388,6 +392,7 @@ private:
      */
 public: void set_contacts(cartesio_planning::SetContactFrames::ConstPtr msg)
     {
+        std::cout << "i'm in the callback" << std::endl;
         if(msg->action.data() == msg->SET)
         {
             _cs.setContactLinks(msg->frames_in_contact);

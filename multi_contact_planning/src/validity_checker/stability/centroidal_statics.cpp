@@ -51,7 +51,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
     yaml << YAML::BeginMap;
     yaml << YAML::Key << "solver_options";
     yaml << YAML::BeginMap;
-    yaml << YAML::Key << "back_end" << YAML::Value << "qpoases";
+    yaml << YAML::Key << "back_end" << YAML::Value << "osqp";
     yaml << YAML::Key << "regularisation" << YAML::Value << 1e-4;
     yaml << YAML::EndMap;
 
@@ -237,7 +237,6 @@ bool CentroidalStatics::checkStability(const double eps)
         if(!_dyn_feas->getTaskError(error))
             return false;
         double res = error.norm();
-        //std::cout<<"error.norm(): "<<error.norm()<<std::endl;
         if(res <= eps)
             return true;
     }
