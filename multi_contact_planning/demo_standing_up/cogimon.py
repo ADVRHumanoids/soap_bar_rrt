@@ -80,7 +80,12 @@ class Cogimon:
         self.ps.startMonitor()
 
         # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
-        self.cs = validity_check.CentroidalStatics(self.model, self.ctrl_points.values(), 0.5*np.sqrt(2))
+        self.cs = validity_check.CentroidalStatics(self.model,
+                                                   self.ctrl_points.values(),
+                                                   0.5*np.sqrt(2),
+                                                   optimize_torque=False,
+                                                   xlims_cop=np.array([-0.05, 0.1]),
+                                                   ylims_cop=np.array([-0.05, 0.1]))
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()

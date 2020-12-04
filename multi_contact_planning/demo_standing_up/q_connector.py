@@ -296,29 +296,29 @@ class Connector:
                 quat_list.append(quat)
 
             # # check if the goal state is valid on the manifold defined by the start state
-            # if not self.model.state_vc(q_goal):
-            #     raw_input('goal pose is not valid, click to compute a new feasible one')
-            #
-            #     # create NSPG
-            #     vc_context = self.make_vc_context(active_links, quat_list)
-            #     nspg = NSPG.NSPG(self.ik_solver, vc_context)
-            #     raw_input('NSPG created')
-            #
-            #     # set contact position for ik_solver
-            #     self.model.model.setJointPosition(q_goal)
-            #     self.model.model.update()
-            #     [self.ci.getTask(c).setPoseReference(self.model.model.getPose(c)) for c in self.model.ctrl_points.values()]
-            #
-            #     print '[NSPG]: start sampling!'
-            #     if not nspg.sample(10.0):
-            #         print '[NSPG]: unable to find a feasible solution!'
-            #         exit()
-            #     else:
-            #         print '[NSPG]: feasible goal pose found!'
-            #
-            # # set nspg solution as new goal state
-            # q_goal = nspg.getModel().getJointPosition()
-            # self.q_bounder(q_goal)
+            if not self.model.state_vc(q_goal):
+                raw_input('goal pose is not valid, click to compute a new feasible one')
+
+                # create NSPG
+                vc_context = self.make_vc_context(active_links, quat_list)
+                nspg = NSPG.NSPG(self.ik_solver, vc_context)
+                raw_input('NSPG created')
+
+                # set contact position for ik_solver
+                self.model.model.setJointPosition(q_goal)
+                self.model.model.update()
+                [self.ci.getTask(c).setPoseReference(self.model.model.getPose(c)) for c in self.model.ctrl_points.values()]
+
+                print '[NSPG]: start sampling!'
+                if not nspg.sample(10.0):
+                    print '[NSPG]: unable to find a feasible solution!'
+                    exit()
+                else:
+                    print '[NSPG]: feasible goal pose found!'
+
+                # set nspg solution as new goal state
+                q_goal = nspg.getModel().getJointPosition()
+                self.q_bounder(q_goal)
 
             # publish start and goal states
             self.planner_client.updateManifold(active_links)
