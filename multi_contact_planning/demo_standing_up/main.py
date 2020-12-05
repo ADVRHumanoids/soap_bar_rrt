@@ -69,19 +69,25 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'),(1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
     q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
     stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
-    # gzhandler = grh.GazeboRobotHandler()
-    # gzhandler.set_robot_posture(np.array(q_list[0])[6:])
+    if cogimon.simulation:
+        q_list.insert(0, list(cogimon.model.getRobotState('home')))
+        stances.insert(0, stances[0])
+
+    # if cogimon.simulation:
+    #     gzhandler = grh.GazeboRobotHandler()
+    #     gzhandler.set_robot_posture(np.array(q_list[0])[6:])
     #
-    # initial_pos = dict()
-    # initial_pos['position'] = [-0.0519934, -0.00367742, 0.63]
-    # initial_pos['orientation'] = [-0.03, -0.8, -0.03, -0.6]
-    # gzhandler.set_robot_position(initial_pos)
+    #     initial_pos = dict()
+    #     initial_pos['position'] = [q_list[0][0:2]]
+    #     # initial_pos['orientation'] = [-0.03, -0.8, -0.03, -0.6]
+    #     initial_pos['orientation'] = [0., 0., 0., 1.]
+    #     gzhandler.set_robot_position(initial_pos)
 
     qc = q_connector.Connector(cogimon, q_list, stances)
     # qc.play_all_poses(2)

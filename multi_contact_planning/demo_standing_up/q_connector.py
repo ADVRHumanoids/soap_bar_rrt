@@ -42,7 +42,7 @@ class Connector:
         self.__launch = launch
 
     def callback(self, data):
-        self.solution = [data.points[index].positions for index in range(len(data.points))]
+        self.solution = [list(data.points[index].positions) for index in range(len(data.points))]
 
     def make_vc_context(self, active_links, quaternions):
         _planner_config = dict()
@@ -275,6 +275,12 @@ class Connector:
         q_goal = nspg.getModel().getJointPosition()
         self.q_bounder(q_goal)
 
+    def moveRobot(self, solution, dt):
+        for index in range(len(solution)):
+            self.model.robot.setPositionReference(solution[index][6:])
+            self.model.robot.move()
+            rospy.sleep(dt)
+
     def run(self):
         for i in range(len(self.q_list)):
         #for i in range(0, len(self.q_list), 1):
@@ -339,5 +345,10 @@ class Connector:
             rospy.sleep(5)
 
             self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.5)
+            rospy.sleep(2.)
+
+            # send solution trajectory to the robot
+            if self.model.simulation:
+                self.moveRobot(self.solution, 0.01)
 
             raw_input("Press to next config")

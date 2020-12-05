@@ -23,7 +23,7 @@ import q_connector
 
 class Cogimon:
 
-    def __init__(self, urdf, srdf, ctrl_points, logged_data):
+    def __init__(self, urdf, srdf, ctrl_points, logged_data, simulation=False):
 
 
         # make xbot model
@@ -35,16 +35,19 @@ class Cogimon:
         opt.set_string_parameter('model_type', 'RBDL')
         opt.set_string_parameter('framework', 'ROS')
         self.model = xbot.ModelInterface(opt)
-        # self.robot = xbot.RobotInterface(opt)
-        # self.robot.setControlMode(xbot.ControlMode.Position())
+        self.simulation = simulation
+        if self.simulation:
+            self.robot = xbot.RobotInterface(opt)
+            self.robot.setControlMode(xbot.ControlMode.Position())
         self.replay_model = xbot.ModelInterface(opt)
         self.id_model = xbot.ModelInterface(opt)
         self.logged_data = logged_data
 
         # update from robot
-        # self.robot.sense()
-        # self.model.syncFrom(self.robot)
-        # self.model.update()
+        if self.simulation:
+            self.robot.sense()
+            self.model.syncFrom(self.robot)
+            self.model.update()
 
         # name of control frames
         self.ctrl_points = ctrl_points
@@ -86,6 +89,14 @@ class Cogimon:
                                                    optimize_torque=False,
                                                    xlims_cop=np.array([-0.05, 0.1]),
                                                    ylims_cop=np.array([-0.05, 0.1]))
+
+        if self.simulation:
+            self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
+
+            self.ft_map = self.sensors_init(arm_estimation_flag=True)
+
+            self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
+            self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
