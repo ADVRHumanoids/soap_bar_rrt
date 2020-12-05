@@ -6,11 +6,6 @@
       <uri>model://sun</uri>
     </include>
 
-    <!-- A wall -->
-      <include>
-          <uri>model://brick_box_3x1x3</uri>
-          <pose> 1.5 0 0 0 0 1.5707</pose>
-      </include>
 
     <!-- A ground plane -->
     <include>
