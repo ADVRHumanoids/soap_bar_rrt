@@ -1,11 +1,11 @@
 
 XBotCore:
-  config_path: "configs/ADVR_shared/cogimon/configs/cogimon_impedance.yaml"
+  config_path: "configs/CogimonConfig/configs/cogimon_impedance.yaml"
 
 XBotInterface:
   urdf_path: "external/soap_bar_rrt/multi_contact_planning/examples/utils/urdf/cogimon.urdf"    
   srdf_path: "external/soap_bar_rrt/multi_contact_planning/examples/utils/srdf/cogimon.srdf"  
-  joint_map_path: "configs/ADVR_shared/cogimon/joint_map/cogimon_joint_map.yaml"
+  joint_map_path: "configs/CogimonConfig/joint_map/cogimon_joint_map.yaml"
 
 RobotInterface:
   framework_name: "ROS"
@@ -26,7 +26,8 @@ NRTPlugins:
   
 TransmissionPlugins:
   plugins: [] #CogimonImpedanceAnkles CogimonAnkles
-  
+ 
+ 
 WebServer:
   enable: "false"
   address: "10.24.5.100"
