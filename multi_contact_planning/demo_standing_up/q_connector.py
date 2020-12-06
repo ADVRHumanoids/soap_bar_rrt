@@ -40,6 +40,7 @@ class Connector:
 
         self.__trj_sub = rospy.Subscriber('/planner/joint_trajectory', JointTrajectory, self.callback)
         self.__launch = launch
+        self.__solution = list()
 
     def callback(self, data):
         self.solution = [list(data.points[index].positions) for index in range(len(data.points))]
@@ -253,6 +254,17 @@ class Connector:
                 rospy.sleep(1)
             index = index + 1
 
+    def play_solution(self, iter):
+        index = 0
+        rospy.sleep(2.)
+        while index < iter:
+            for j in range(len(self.__solution)):
+                self.model.model.setJointPosition(self.__solution[j])
+                self.model.model.update()
+                self.model.rspub.publishTransforms('solution')
+                rospy.sleep(0.01)
+            index = index + 1
+
     def NSPGsample(self, q_goal, active_links, quat_list, timeout):
         # create NSPG
         vc_context = self.make_vc_context(active_links, quat_list)
@@ -282,7 +294,7 @@ class Connector:
             rospy.sleep(dt)
 
     def run(self):
-        for i in range(len(self.q_list)):
+        for i in range(len(self.q_list)-1):
         #for i in range(0, len(self.q_list), 1):
             ################################################
             # First Planning Phase to unload swing contact #
@@ -297,18 +309,26 @@ class Connector:
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]  # names
             self.model.cs.setContactLinks(active_links)
-            raw_input('active_links set')
+            # raw_input('active_links set')
+            print 'active_links set'
+            rospy.sleep(2.)
 
             # set rotation matrix for each contact
             normals = [j['ref']['normal'] for j in self.stance_list[i]]
             [self.model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [self.rotation(elem) for elem in normals])]
-            raw_input('rotations set')
+            # raw_input('rotations set')
+            print 'rotations set'
+            rospy.sleep(2.)
 
+            optimize_torque = False
             if len(active_links) == 2:
-                self.model.cs.setOptimizeTorque(True)
+                optimize_torque = True
             else:
-                self.model.cs.setOptimizeTorque(False)
-            raw_input('optimizeTorque set')
+                optimize_torque = False
+            self.model.cs.setOptimizeTorque(optimize_torque)
+            # raw_input('optimizeTorque set')
+            print 'optimize_torque set'
+            rospy.sleep(2.)
 
             rot = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
 
@@ -330,25 +350,32 @@ class Connector:
 
             # publish start and goal states
             self.planner_client.updateManifold(active_links)
-            raw_input('Manifold updated')
+            # raw_input('Manifold updated')
+            print 'Manifold updated'
+            rospy.sleep(2.)
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
-            raw_input("Start and Goal poses sent")
+            # raw_input("Start and Goal poses sent")
+            print 'Start and Goal poses set'
+            rospy.sleep(2.)
 
             # publish the contacts
             contacts = {c: r for c, r in zip(active_links, quat_list)}
             optimize_torque = False
-            if len(contacts) == 2: # we assume that 2 contacts happen ONLY when on feet
-                optimize_torque = True
             self.planner_client.publishContacts(contacts, optimize_torque)
             print contacts
-            raw_input("Contacts published")
+            # raw_input("Contacts published")
+            print 'Contacts published'
             rospy.sleep(5)
 
             self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.5)
             rospy.sleep(2.)
 
+            self.__solution = self.__solution + self.solution
+
             # send solution trajectory to the robot
             if self.model.simulation:
                 self.moveRobot(self.solution, 0.01)
 
-            raw_input("Press to next config")
+            # raw_input("Press to next config")
+            print 'next config'
+            rospy.sleep(2.)

@@ -69,15 +69,21 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'),(1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
     q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
     stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
-    if cogimon.simulation:
-        q_list.insert(0, list(cogimon.model.getRobotState('home')))
-        stances.insert(0, stances[0])
+    # if cogimon.simulation:
+    q_home = [0.0300119, -0.10315, 0.962093, -0, -0.059999, -0,
+              0, -0.363826, 0, 0.731245, -0.30742, 0,
+              0, -0.363826, 0, 0.731245, -0.30742, 0,
+              0, 0,
+              0.959931, 0.007266, 0, -1.91986, 0, -0.523599, 0,
+              0.959931, -0.007266, 0, -1.91986, 0, -0.523599, 0]
+    q_list.insert(0, q_home)
+    stances.insert(0, stances[0])
 
     # if cogimon.simulation:
     #     gzhandler = grh.GazeboRobotHandler()
@@ -92,6 +98,8 @@ if __name__ == '__main__':
     qc = q_connector.Connector(cogimon, q_list, stances)
     # qc.play_all_poses(2)
     qc.run()
+    raw_input('click to see the whole solution')
+    qc.play_solution(2)
 
     # cogimon.robot.sense()
     # cogimon.model.syncFrom(cogimon.robot)
