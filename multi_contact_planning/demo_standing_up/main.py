@@ -69,7 +69,7 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'),(1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
     q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")

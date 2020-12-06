@@ -11,7 +11,6 @@ from cartesian_interface.pyci_all import *
 import numpy as np
 import yaml
 import rospy
-from goal_sampler import GoalSampler
 import manifold
 
 import cartesio_planning.NSPG
@@ -24,7 +23,6 @@ import q_connector
 class Cogimon:
 
     def __init__(self, urdf, srdf, ctrl_points, logged_data, simulation=False):
-
 
         # make xbot model
         opt = co.ConfigOptions()
@@ -90,13 +88,13 @@ class Cogimon:
                                                    xlims_cop=np.array([-0.05, 0.1]),
                                                    ylims_cop=np.array([-0.05, 0.1]))
 
-        if self.simulation:
-            self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
-
-            self.ft_map = self.sensors_init(arm_estimation_flag=True)
-
-            self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
-            self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
+        # if self.simulation:
+        #     self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
+        #
+        #     self.ft_map = self.sensors_init(arm_estimation_flag=True)
+        #
+        #     self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
+        #     self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
