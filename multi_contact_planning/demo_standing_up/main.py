@@ -100,6 +100,7 @@ if __name__ == '__main__':
     qc.run()
     raw_input('click to see the whole solution')
     qc.play_solution(2)
+    qc.saveSolution()
 
     # cogimon.robot.sense()
     # cogimon.model.syncFrom(cogimon.robot)

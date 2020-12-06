@@ -261,6 +261,9 @@ class Connector:
             for j in range(len(self.__solution)):
                 self.model.model.setJointPosition(self.__solution[j])
                 self.model.model.update()
+                if self.model.simulation:
+                    self.model.robot.setPositionReference(self.__solution[j][6:])
+                    self.model.robot.move()
                 self.model.rspub.publishTransforms('solution')
                 rospy.sleep(0.01)
             index = index + 1
@@ -373,9 +376,12 @@ class Connector:
             self.__solution = self.__solution + self.solution
 
             # send solution trajectory to the robot
-            if self.model.simulation:
-                self.moveRobot(self.solution, 0.01)
+            # if self.model.simulation:
+            #     self.moveRobot(self.solution, 0.01)
 
             # raw_input("Press to next config")
             print 'next config'
             rospy.sleep(2.)
+
+    def saveSolution(self):
+        np.savetxt('solution.csv', self.__solution, delimiter=',')
