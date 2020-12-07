@@ -72,8 +72,8 @@ if __name__ == '__main__':
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
-    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
+    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
+    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
     # if cogimon.simulation:
     q_home = [0.0300119, -0.10315, 0.962093, -0, -0.059999, -0,
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     q_list.insert(0, q_home)
     stances.insert(0, stances[0])
 
-    loader.checkStability(cogimon, stances, q_list)
+    # loader.checkStability(cogimon, stances, q_list)
 
     # if cogimon.simulation:
     #     gzhandler = grh.GazeboRobotHandler()

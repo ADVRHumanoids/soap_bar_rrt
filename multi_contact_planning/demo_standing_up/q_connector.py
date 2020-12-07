@@ -11,6 +11,10 @@ from trajectory_msgs.msg import JointTrajectory
 import eigenpy
 import os
 import sys
+from moveit_msgs.msg import CollisionObject
+from shape_msgs.msg import SolidPrimitive
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Pose
 import roslaunch
 
 # import coman_rising.py from cartesio_planning
@@ -41,6 +45,7 @@ class Connector:
         self.__trj_sub = rospy.Subscriber('/planner/joint_trajectory', JointTrajectory, self.callback)
         self.__launch = launch
         self.__solution = list()
+        self.__marker_pub = rospy.Publisher('planner/collision_objects', CollisionObject, latch=True)
 
     def callback(self, data):
         self.solution = [list(data.points[index].positions) for index in range(len(data.points))]
@@ -296,8 +301,76 @@ class Connector:
             self.model.robot.move()
             rospy.sleep(dt)
 
+    def setClearenceObstacle(self, qstart, qgoal, stance_start):
+        if len(stance_start) > 2 and len(stance_start) < 4:
+            # find the lifted contact
+            lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
+                              x not in [j['ind'] for j in stance_start]][0]
+            lifted_contact_link = self.model.ctrl_points[lifted_contact]
+
+            # retrieve start and goal poses for the lifted contact
+            self.model.model.setJointPosition(qstart)
+            self.model.model.update()
+            T = self.model.model.getPose(lifted_contact_link)
+            start_pose = T.translation
+            self.model.model.setJointPosition(qgoal)
+            self.model.model.update()
+            T = self.model.model.getPose(lifted_contact_link)
+            goal_pose = T.translation
+
+            # if start and goal z-axis position is the same, create the clearence obstacle,
+            # otherwise no further action is needed
+            clearence = 0.02
+            if start_pose[2] - goal_pose[2] < clearence:
+                # create Marker
+                marker = Marker()
+                marker.header.frame_id = 'world'
+                marker.header.stamp = rospy.Time.now()
+
+                marker.type = Marker.CUBE
+                marker.action = Marker.ADD
+                marker.pose.position.x = (start_pose[0] + goal_pose[0])/2.
+                marker.pose.position.y = (start_pose[1] + goal_pose[1])/2.
+                marker.pose.position.z = clearence/2
+                marker.pose.orientation.x = 0
+                marker.pose.orientation.y = 0
+                marker.pose.orientation.z = 0
+                marker.pose.orientation.w = 1
+
+                marker.scale.x = 0.01
+                marker.scale.y = 0.2
+                marker.scale.z = clearence
+
+                # create CollisionObject
+                co = CollisionObject()
+                co.header.frame_id = marker.header.frame_id
+                co.id = 'clearence'
+                co.header.stamp = rospy.Time.now()
+                co.operation = CollisionObject.ADD
+
+                primitive = SolidPrimitive()
+                primitive.type = SolidPrimitive.BOX
+                primitive.dimensions.append(marker.scale.x)
+                primitive.dimensions.append(marker.scale.y)
+                primitive.dimensions.append(marker.scale.z)
+                co.primitives.append(primitive)
+
+                pose = Pose()
+                pose.position.x = marker.pose.position.x
+                pose.position.y = marker.pose.position.y
+                pose.position.z = marker.pose.position.z
+                pose.orientation.x = marker.pose.orientation.x
+                pose.orientation.y = marker.pose.orientation.y
+                pose.orientation.z = marker.pose.orientation.z
+                pose.orientation.w = marker.pose.orientation.w
+
+                co.primitive_poses.append(pose)
+
+                self.__marker_pub.publish(co)
+
+
     def run(self):
-        for i in range(len(self.q_list)-1):
+        for i in range(3, len(self.q_list)-1):
         #for i in range(0, len(self.q_list), 1):
             ################################################
             # First Planning Phase to unload swing contact #
@@ -307,6 +380,10 @@ class Connector:
 
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
+
+            if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
+                print 'Start and Goal poses are the same, skipping!'
+                continue
 
             # set all contacts to be active for first planning phase
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
@@ -356,6 +433,12 @@ class Connector:
             # raw_input('Manifold updated')
             print 'Manifold updated'
             rospy.sleep(2.)
+
+            # add clearence obstacle to the planning scene
+            self.setClearenceObstacle(q_start, q_goal, self.stance_list[i])
+            print 'Clearence obstacle set'
+            rospy.sleep(2.)
+
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
             print 'Start and Goal poses set'
@@ -370,7 +453,7 @@ class Connector:
             print 'Contacts published'
             rospy.sleep(5)
 
-            self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.5)
+            self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTstar', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(2.)
 
             self.__solution = self.__solution + self.solution
