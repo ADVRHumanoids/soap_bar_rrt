@@ -131,6 +131,10 @@ public:
      */
     const std::map<std::string, Eigen::Vector6d>& getForces();
 
+    std::vector<std::string> getContactLinks() {return _contact_links;}
+
+    const Eigen::Matrix3d getContactFrame(const std::string& contact_link){ return _fcs[contact_link]->getContactFrame();}
+
 
 private:
     YAML::Node createYAMLProblem(const std::vector<std::string>& contact_links,
@@ -170,12 +174,12 @@ class CentroidalStaticsROS
 public:
     typedef std::shared_ptr<CentroidalStaticsROS> Ptr;
 
-    CentroidalStaticsROS(XBot::ModelInterface::ConstPtr model, CentroidalStatics& cs, ros::NodeHandle& nh):
+    CentroidalStaticsROS(XBot::ModelInterface::Ptr model, CentroidalStatics& cs, ros::NodeHandle& nh, double eps = 1e-3):
         _cs(cs),
         _model(*model),
         _nh(nh),
         _tf_prefix(""),
-        _eps(1e-3)
+        _eps(eps)
     {
         _contact_sub = _nh.subscribe("contacts", 10, &CentroidalStaticsROS::set_contacts, this);
 
@@ -184,10 +188,12 @@ public:
         std::string tmp;
         if(_nh.getParam("tf_prefix", tmp))
             _tf_prefix = tmp;
-        double eps;
+//        double _eps;
         if(nh.getParam("eps", eps))
             _eps = eps;
     }
+
+    double getEps() {return _eps;}
 
 
     void publish()
@@ -217,7 +223,7 @@ public:
 
                 //Piselloni (Forze)
                 visualization_msgs::Marker marker;
-                marker.header.frame_id = _tf_prefix+fc.first;
+                marker.header.frame_id = _tf_prefix+"ci/"+fc.first;
                 marker.header.stamp = t;
                 marker.ns = "computed_contact_forces";
                 marker.id = i;
@@ -386,6 +392,7 @@ private:
      */
 public: void set_contacts(cartesio_planning::SetContactFrames::ConstPtr msg)
     {
+        std::cout << "i'm in the callback" << std::endl;
         if(msg->action.data() == msg->SET)
         {
             _cs.setContactLinks(msg->frames_in_contact);

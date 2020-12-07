@@ -16,10 +16,11 @@ namespace XBot { namespace Cartesian { namespace Planning {
      * @param nh: NodeHandle to be used for internal topics.
      * @return The validity checker
      */
-    std::function<bool(void)> MakeValidityChecker(YAML::Node task_node,
-                                                  ModelInterface::ConstPtr model,
+    std::function<bool(void)> MakeValidityChecker(YAML::Node planner_config,
+                                                  YAML::Node task_node,
+                                                  ModelInterface::Ptr model,
                                                   std::string lib_name,
-                                                  ros::NodeHandle& nh);
+                                                  ros::NodeHandle nh);
 
 } } }
 

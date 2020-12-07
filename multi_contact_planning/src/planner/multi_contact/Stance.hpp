@@ -5,31 +5,32 @@
 #include <iostream>
 #include <vector>
 #include "enum.h"
-#include <Eigen/Dense>  
+#include <Eigen/Dense>
 #include "Contact.hpp"
 #include "constant_values.hpp"
 
 class Stance {
 
-	private:
+    private:
 
-		std::vector<Contact*> contactsList;
-		
-	public:	
+        std::vector<Contact*> contactsList;
+
+    public:
 
         Stance();
 
-		Contact* getContact(int i);
-		void addContact(Contact* c);
+        Contact* getContact(int i);
+        std::vector<Contact*> getContacts();
+        void addContact(Contact* c);
         int getSize();
-		void clear();
+        void clear();
 
         std::vector<EndEffector> retrieveActiveEndEffectors();
-		bool isActiveEndEffector(EndEffector pk);
-		Eigen::Affine3d retrieveContactPose(EndEffector pk);
-		Eigen::Vector3d retrieveContactNormal(EndEffector pk);
+        bool isActiveEndEffector(EndEffector pk);
+        Eigen::Affine3d retrieveContactPose(EndEffector pk);
+        Eigen::Vector3d retrieveContactNormal(EndEffector pk);
 
-		void print();
+        void print();
 
 };
 

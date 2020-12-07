@@ -18,7 +18,7 @@ public:
     ValidityCheckContext();
 
     ValidityCheckContext(YAML::Node config,
-                         ModelInterface::ConstPtr model, ros::NodeHandle& nh);
+                         ModelInterface::Ptr model, ros::NodeHandle nh);
 
     PlanningSceneWrapper::Ptr planning_scene;
     ValidityPredicateAggregate vc_aggregate;
@@ -27,7 +27,7 @@ private:
 
     std::function<bool()> make_collision_checker(YAML::Node vc_node);
 
-    ModelInterface::ConstPtr _model;
+    ModelInterface::Ptr _model;
 
 };
 

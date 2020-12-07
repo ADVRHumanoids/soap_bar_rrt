@@ -22,7 +22,7 @@ void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::
     std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
-    
+
     for(int i = 0; i < qList.size(); i++){
         Configuration q = qList.at(i);
         Eigen::VectorXd c(n_dof);
@@ -30,15 +30,15 @@ void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::
         c.segment(3,3) = q.getFBOrientation();
         c.tail(n_dof-6) = q.getJointValues();
         fileOut << c.transpose() << std::endl;
-    } 
+    }
 }
 
 void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
     std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
-    std::string line;       
-    
+    std::string line;
+
     while(getline(fileIn, line)){
         std::stringstream linestream(line);
         std::string value;
@@ -62,7 +62,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
     std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
-    
+
     for(int i = 0; i < sigmaList.size(); i++){
         Stance sigma = sigmaList.at(i);
         fileOut << sigma.getSize() << std::endl;
@@ -78,15 +78,15 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
             fileOut << F.transpose() << std::endl;
             fileOut << n.transpose() << std::endl;
         }
-    } 
+    }
 }
 
 void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
     std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
-    std::string line;       
-    
+    std::string line;
+
     while(getline(fileIn, line)){
 
         double sigma_size = boost::lexical_cast<double>(line);
@@ -97,7 +97,7 @@ void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::s
         for(int i = 0; i < sigma_size; i++){
             getline(fileIn, line); // end effector name
             EndEffector ee = (EndEffector)boost::lexical_cast<int>(line);
-            
+
             getline(fileIn, line); // pose
             Eigen::Vector3d pos;
             std::stringstream pose_stream(line);
@@ -118,7 +118,7 @@ void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::s
                 F(index) = boost::lexical_cast<double>(value);
                 index++;
             }
-                
+
             getline(fileIn, line); // normal
             Eigen::Vector3d n;
             std::stringstream normal_stream(line);
@@ -130,18 +130,18 @@ void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::s
 
             Contact* c = new Contact(ee, T, F, n);
             sigma.addContact(c);
-        }    
-        
+        }
+
         sigmaList.push_back(sigma);
     }
 }
-            
+
 PlannerExecutor::PlannerExecutor():
     _nh("planner"),
-    _nhpr("~"), 
+    _nhpr("~"),
     _n()
 {
-    
+
     init_load_config();
     init_load_model();
     init_load_planner();
@@ -167,13 +167,6 @@ void PlannerExecutor::run()
         _goal_generator->update();
 
     publish_and_check_start_and_goal_models(time);
-
-//    multi_contact_planning::CartesioPlanner::Request req;
-//    multi_contact_planning::CartesioPlanner::Response res;
-//    planner_service(req, res);
-
-
-
 }
 
 void PlannerExecutor::init_load_model()
@@ -224,14 +217,10 @@ void PlannerExecutor::init_load_model()
     q_init.resize(n_dof);
 //     q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
 //     q_init << 0.0817944, -0.0459652, 0.562943, 3.22873, 1.29048, 3.13332, 0.287751, -1.22788, 0.335744, 0.0259489, -0.633213, -0.194167, -0.983884, -1.21671, -1.10644, 0.4062, -0.865606, 0.249889, 0.118649, 0.0118292, -3.32887, 2.05704, -1.67603, -1.81254, 0.959125, 1.478, 0.241725, -3.2857, -0.251944, -1.40935, -1.43088, -1.5163, -1.09998, -0.0285249;
-    //q_init <<  -0.0519934, -0.00367742, 0.622926, 3.11831, 1.17912, 3.2064, 0.448539, -1.50196, 0.489673, 0, -0.452481, -0.0825496, -1.13953, -1.26619, -1.24827, 0, -0.507944, 0.261799, -0.150113, -0.204497, -3.352, 1.04099, -1.75615, -1.1217, 0.994067, 1.478, 0.162285, -3.359, -1.13074, -1.1096, -0.189419, -1.9351, -1.19221, -2.22644,
-    q_init << -0.15368987081904212, -0.10314795366518807, 0.7640134656474494, 3.4844940641908996e-05, 1.003581914293611, -3.785843110696436e-05, -3.953783628909849e-05, -1.9198621771899997, -2.1363360846215855e-05, 0.7922061790512522, 0.12407408333227256, 1.3795065767494878e-06, -3.9537658402357405e-05, -1.9198621771899997, -2.136311438261588e-05, 0.7921945501430171, 0.12408571224052402, 1.3796065471541717e-06, -1.8660286220993518e-05, 8.489006516230123e-06, -0.19445292297202182, 0.46857182904733846, 0.14653695168167274, -1.2247166922656882, 0.027710856918766916, -0.26325518320383146, 3.7626266681327204e-05, -0.1944428210179786, -0.46859844701659054, -0.1465736712234979, -1.2247131748749565, -0.027654977402383155, -0.2632529596729626, 4.140472081021349e-05;
-
+    q_init <<  -0.0519934, -0.00367742, 0.622926, 3.11831, 1.17912, 3.2064, 0.448539, -1.50196, 0.489673, 0, -0.452481, -0.0825496, -1.13953, -1.26619, -1.24827, 0, -0.507944, 0.261799, -0.150113, -0.204497, -3.352, 1.04099, -1.75615, -1.1217, 0.994067, 1.478, 0.162285, -3.359, -1.13074, -1.1096, -0.189419, -1.9351, -1.19221, -2.22644,
 
     q_goal.resize(n_dof);
-    //q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
-    q_goal << 0.2897166672668218, -0.10497984950213589, 0.7104804442728724, 3.104455991817528, 1.6793981240585394, -3.107317267703274, -0.023706803180887262, -1.9198621771899997, -0.03040918808097502, 1.0969486064844232, -0.6394877009738038, -0.00780238674281394, -0.0241003135409776, -1.917624286088548, -0.030811330306817007, 1.0934274269591522, -0.6382074706322688, -0.007875487068303546, -0.005429823381191566, 0.01842619153855117, -0.6844226756691532, 0.7658428969706649, 0.11810632873339647, -1.0874541007345015, 0.8638498193190264, 0.5531709213915008, -0.3218712377766213, -0.6865507741765947, -0.7716121180509629, -0.10740784977333687, -1.108326716296526, -0.8812963153486938, 0.5769499241699871, 0.3372134899368016;
-
+    q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
 
     _model->setJointPosition(q_init);
     _model->update();
@@ -239,10 +228,10 @@ void PlannerExecutor::init_load_model()
     _start_model->setJointPosition(q_init);
     _start_model->update();
 
-    _goal_model->setJointPosition(q_goal);
+    _goal_model->setJointPosition(q_init);
     _goal_model->update();
-    //////////////////////////////////////////////////////////////////////////////////////////  
-        
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     //_pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, "filtered_cloud2");
 
     Eigen::Affine3d T;
@@ -422,7 +411,7 @@ void PlannerExecutor::init_load_validity_checker()
 
     _vc_context.planning_scene->startMonitor();
 
-   
+
     ///////////////////////////////////////////////////////////////////////
     _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
@@ -431,9 +420,9 @@ void PlannerExecutor::init_load_validity_checker()
     _vc_context.planning_scene->acm.setEntry("LWrMot2", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("LWrMot3", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RWrMot2", "<octomap>", true);
-    _vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);  
+    _vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);
     ///////////////////////////////////////////////////////////////////////
-   
+
 
     _get_planning_scene_srv = _nh.advertiseService("get_planning_scene",
                                                    &PlannerExecutor::get_planning_scene_service, this);
@@ -537,10 +526,10 @@ void PlannerExecutor::init_goal_generator()
 
         auto ci = CartesianInterfaceImpl::MakeInstance("OpenSot",
                                                        ik_prob, ci_ctx);
-        
+
         auto ik_solver_NSPG = std::make_shared<Planning::PositionCartesianSolver>(ci);
 
-        
+
         _NSPG = std::make_shared<Planning::NSPG>(ik_solver_NSPG, _vc_context);
 
         _goal_generator = std::make_shared<GoalGenerator>(ci, _vc_context);
@@ -573,7 +562,7 @@ void PlannerExecutor::init_interpolator()
 {
     _interpolator = std::make_shared<CartesianTrajectoryInterpolation>();
 
-    ///TODO: qdot, qddot limits? 
+    ///TODO: qdot, qddot limits?
 }
 
 void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
@@ -595,11 +584,11 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     all_tasks.push_back("RHandOrientation");
 
     ik->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-    
+
     for(int i = 1; i < all_tasks.size(); i++){
-        
+
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
-    
+
         if(it == active_tasks.end()){
             Eigen::MatrixXd wM = 0.1 * Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols());
             ik->getCI()->getTask(all_tasks.at(i))->setWeight(wM);
@@ -617,7 +606,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
 //     for(int i = 0; i < all_tasks.size(); i++){
 //         int index = -1;
 //         for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
-//   
+//
 //         if(index == -1) ik->getCI()->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols()));
 //         else{
 //             ik->getCI()->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols()));
@@ -640,9 +629,9 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
                                            multi_contact_planning::CartesioGoal::Response &res)
 {
 
-    std::cout << "CALL TO THE GOAL SAMPLER" << std::endl; 
+    std::cout << "CALL TO THE GOAL SAMPLER" << std::endl;
 
-     
+
     /////////////////////////////////////////////////////////////////////////////////////////////////
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
@@ -655,10 +644,10 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     active_tasks.push_back("r_sole");
     active_tasks.push_back("LHandOrientation");
     active_tasks.push_back("RHandOrientation");
-    
+
     Eigen::MatrixXd normals = _pc_manager->getNormals();
 
-    _goal_model->getJointPosition(q_ref); // for postural task 
+    _goal_model->getJointPosition(q_ref); // for postural task
 
     Eigen::Affine3d T_ref;
     Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
@@ -669,7 +658,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 //     T_ref.translation() = pos_ref;
 //     T_ref.linear() = rot_ref;
 //     ref_tasks.push_back(T_ref);
-    //LH 
+    //LH
     //pos_ref << 1.0, 0.2, 1.4;
     pos_ref << 0.7, 0.4, 0.0; // init
     T_ref.translation() = pos_ref;
@@ -677,7 +666,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     ref_tasks.push_back(T_ref);
     //RH
 //     pos_ref << 1.0, -0.4, 1.4;
-    pos_ref << 0.7, -0.6, 0.0; // init 
+    pos_ref << 0.7, -0.6, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
@@ -692,14 +681,14 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     pos_ref << -0.5, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
-    ref_tasks.push_back(T_ref);    
+    ref_tasks.push_back(T_ref);
     //LH_orientation
     pos_ref << 0.0, 0.0, 0.0;
     T_ref.translation() = pos_ref;
     T_ref.linear() << -1.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
                        0.0, 0.0, -1.0;
-    ref_tasks.push_back(T_ref);    
+    ref_tasks.push_back(T_ref);
     //RH_orientation
     pos_ref << 0.0, 0.0, 0.0;
     T_ref.translation() = pos_ref;
@@ -707,14 +696,14 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
                        0.0, 1.0, 0.0,
                        0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref);
-      
+
     setReferences( active_tasks, ref_tasks, q_ref );
-    
+
     _NSPG->getIKSolver()->solve();
-      
+
     Eigen::VectorXd q;
     _NSPG->getIKSolver()->getModel()->getJointPosition(q);
-    _model->setJointPosition(q); 
+    _model->setJointPosition(q);
 //     if(!_goal_generator->sample(q, req.time)){
 //         res.status.val = res.status.TIMEOUT;
 //         res.status.msg.data = "TIMEOUT";
@@ -723,13 +712,13 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 //     {
 //         res.status.val = res.status.EXACT_SOLUTION;
 //         res.status.msg.data = "EXACT_SOLUTION";
-// 
+//
 //         res.sampled_goal.name = _goal_model->getEnabledJointNames();
 //         res.sampled_goal.position.resize(q.size());
 //         Eigen::VectorXd::Map(&res.sampled_goal.position[0], q.size()) = q;
 //         res.sampled_goal.header.stamp = ros::Time::now();
 //     }
-//     
+//
     if(!_vc_context.vc_aggregate.checkAll())
     {
         if(_NSPG->sample(req.time))
@@ -737,11 +726,11 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
         else
         std::runtime_error("no solution found!");
     }
-    
-    //if(_manifold) 
-        //_manifold->project(q);  // not needed in this planner 
-        
-    
+
+    //if(_manifold)
+        //_manifold->project(q);  // not needed in this planner
+
+
     _goal_model->setJointPosition(q);
     _goal_model->update();
 
@@ -900,57 +889,57 @@ void PlannerExecutor::on_goal_state_recv(const sensor_msgs::JointStateConstPtr &
 bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::Request& req,
                                       multi_contact_planning::CartesioPlanner::Response& res)
 {
-    
+
     std::cout << "+++++++++++++ PLANNING +++++++++++++" << std::endl;
-        
+
     auto ci = _goal_generator->getCartesianInterface();
-        
+
     // retrieve start
     Configuration qInit;
     qInit.setFBPosition(Eigen::Vector3d(q_init(0), q_init(1), q_init(2)));
     qInit.setFBOrientation(Eigen::Vector3d(q_init(3), q_init(4), q_init(5)));
-    qInit.setJointValues(q_init.tail(n_dof-6));  
+    qInit.setJointValues(q_init.tail(n_dof-6));
     std::vector<EndEffector> activeEEsInit;
-    //activeEEsInit.push_back(L_HAND);
-    //activeEEsInit.push_back(R_HAND);
+    activeEEsInit.push_back(L_HAND);
+    activeEEsInit.push_back(R_HAND);
     activeEEsInit.push_back(L_FOOT);
     activeEEsInit.push_back(R_FOOT);
-        
-    // retrieve goal 
+
+    // retrieve goal
     Configuration qGoal;
     qGoal.setFBPosition(Eigen::Vector3d(q_goal(0), q_goal(1), q_goal(2)));
     qGoal.setFBOrientation(Eigen::Vector3d(q_goal(3), q_goal(4), q_goal(5)));
-    qGoal.setJointValues(q_goal.tail(n_dof-6));  
+    qGoal.setJointValues(q_goal.tail(n_dof-6));
     std::vector<EndEffector> activeEEsGoal;
     activeEEsGoal.push_back(L_HAND);
     activeEEsGoal.push_back(R_HAND);
     activeEEsGoal.push_back(L_FOOT);
     activeEEsGoal.push_back(R_FOOT);
-        
-    // construct the environment description    
+
+    // construct the environment description
     Eigen::MatrixXd pointCloud = _pc_manager->getPointCloud();
     Eigen::MatrixXd pointNormals = _pc_manager->getNormals();
 
     // construct allowed end-effectors description
     std::vector<EndEffector> allowedEEs;
     allowedEEs.push_back(L_HAND);
-    allowedEEs.push_back(R_HAND);  
-    //allowedEEs.push_back(L_FOOT);
-    //allowedEEs.push_back(R_FOOT);
-    
-    // plan a solution    
+    allowedEEs.push_back(R_HAND);
+    allowedEEs.push_back(L_FOOT);
+    allowedEEs.push_back(R_FOOT);
+
+    // plan a solution
 
     std::vector<Stance> sigmaList;
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = true; 
-    
+    bool runPlanner = true;
+
     if(index_config == -1){
-        
+
         if(runPlanner){
             // create/initialize the planner
-            Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context);
+            Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
             std::cout << "planner created!" << std::endl;
 
             // run planner
@@ -960,8 +949,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             std::cout << "Planning completed!" << std::endl;
             auto t_curr_chrono = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono).count();
             t_elapsed = (float)t_curr_chrono / 1000.0;
-            std::cout << "Planning Time:: " << t_elapsed << std::endl;  
-                
+            std::cout << "Planning Time:: " << t_elapsed << std::endl;
+
             // retrieve solution
             sigmaList.clear();
             qList.clear();
@@ -975,18 +964,18 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
         }
         else{
             sigmaList.clear();
-            qList.clear();    
+            qList.clear();
             readFromFileConfigs(qList, "qList");
             readFromFileStances(sigmaList, "sigmaList");
-            sol_found = true;      
+            sol_found = true;
         }
 
-/*        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);   
-        _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);     
-        _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);    
-        _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true); */ 
-    
-    } 
+/*        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
+        _vc_context.planning_scene->acm.setEntry("LBall", "<octomap>", true);
+        _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
+        _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true); */
+
+    }
 
     // this is for DEBUGGING
     if(index_config == -1 && sol_found){
@@ -997,25 +986,25 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             c.segment(3,3) = q.getFBOrientation();
             c.tail(n_dof-6) = q.getJointValues();
             plan.push_back(c);
-        }    
-        index_config++; 
+        }
+        index_config++;
     }
 
     if(plan.size() > 0){
         _goal_model->setJointPosition(plan[index_config]);
-        _goal_model->update();    
-          
+        _goal_model->update();
+
         index_config++;
-                
+
         std::cout << "index_config = " << index_config << std::endl;
         std::cout << "plan.size() = " << plan.size() << std::endl;
 
-        if(index_config == plan.size()) index_config = 0; 
+        if(index_config == plan.size()) index_config = 0;
     }
-        
-    
+
+
     return true; // if solution found
-         
+
 }
 
 
@@ -1166,7 +1155,7 @@ Eigen::Matrix3d PlannerExecutor::generateRotationAroundAxis(EndEffector pk, Eige
         Eigen::Matrix3d rot;
 
         bool vertical = false;
-        Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0); 
+        Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0);
     if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
 
     if(pk == L_HAND || pk == R_HAND){
@@ -1179,7 +1168,7 @@ Eigen::Matrix3d PlannerExecutor::generateRotationAroundAxis(EndEffector pk, Eige
                 rot <<  0.0, 0.0, 1.0,
                         1.0, 0.0, 0.0,
                         0.0, 1.0, 0.0;
-        }               
+        }
     }
         else{
         if(vertical){
@@ -1191,9 +1180,8 @@ Eigen::Matrix3d PlannerExecutor::generateRotationAroundAxis(EndEffector pk, Eige
                 rot <<  0.0, 0.0, -1.0,
                         0.0, 1.0, 0.0,
                         1.0, 0.0, 0.0;
-        }               
+        }
     }
 
-        return rot;    
+        return rot;
 }
-
