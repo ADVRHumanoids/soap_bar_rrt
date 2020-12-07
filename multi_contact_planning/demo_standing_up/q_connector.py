@@ -346,9 +346,9 @@ class Connector:
                 quat_list.append(quat)
 
             # # check if the goal state is valid on the manifold defined by the start state
-            # if not self.model.state_vc(q_goal):
-            #     raw_input('goal pose is not valid, click to compute a new feasible one')
-            #     self.NSPGsample(q_goal, active_links, quat_list, 10.)
+            if not self.model.state_vc(q_goal):
+                raw_input('goal pose is not valid, click to compute a new feasible one')
+                self.NSPGsample(q_goal, active_links, quat_list, 10.)
 
 
             # publish start and goal states
