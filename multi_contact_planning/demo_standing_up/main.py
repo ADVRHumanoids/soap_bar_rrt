@@ -72,10 +72,10 @@ if __name__ == '__main__':
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
-    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
+    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/qList.txt")
+    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
 
-    # if cogimon.simulation:
+    # home configuration added for phase0
     q_home = [0.0300119, -0.10315, 0.962093, -0, -0.059999, -0,
               0, -0.363826, 0, 0.731245, -0.30742, 0,
               0, -0.363826, 0, 0.731245, -0.30742, 0,

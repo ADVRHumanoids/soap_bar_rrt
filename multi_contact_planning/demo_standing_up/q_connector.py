@@ -277,8 +277,7 @@ class Connector:
         # create NSPG
         vc_context = self.make_vc_context(active_links, quat_list)
         nspg = NSPG.NSPG(self.ik_solver, vc_context)
-        raw_input('NSPG created')
-
+        
         # set contact position for ik_solver
         self.model.model.setJointPosition(q_goal)
         self.model.model.update()
@@ -370,7 +369,7 @@ class Connector:
 
 
     def run(self):
-        for i in range(3, len(self.q_list)-1):
+        for i in range(0, len(self.q_list)-1):
         #for i in range(0, len(self.q_list), 1):
             ################################################
             # First Planning Phase to unload swing contact #
@@ -381,9 +380,9 @@ class Connector:
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
 
-            if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
-                print 'Start and Goal poses are the same, skipping!'
-                continue
+            # if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
+            #     print 'Start and Goal poses are the same, skipping!'
+            #     continue
 
             # set all contacts to be active for first planning phase
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
@@ -453,7 +452,7 @@ class Connector:
             print 'Contacts published'
             rospy.sleep(5)
 
-            self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTstar', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
+            self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(2.)
 
             self.__solution = self.__solution + self.solution
