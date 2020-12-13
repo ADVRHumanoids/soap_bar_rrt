@@ -917,7 +917,7 @@ void Planner::run(){
 
                         ///////////////////////////////////////////////////////////////////
                         solutionFound = isGoalStance(vNew);
-                        if(solutionFound) vNew = new Vertex(sigmaGoal, qGoal, iNear);
+//                         if(solutionFound) vNew = new Vertex(sigmaGoal, qGoal, iNear);
                         ///////////////////////////////////////////////////////////////////
 
                         tree->addVertex(vNew);
