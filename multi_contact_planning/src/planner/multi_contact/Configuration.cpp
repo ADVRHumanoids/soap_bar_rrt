@@ -3,7 +3,7 @@
 Configuration::Configuration(){ }
 
 Configuration::Configuration(int dof){
-	q_jnt.resize(dof);	
+    q_jnt.resize(dof);
 }
 
 Configuration::~Configuration(){ }

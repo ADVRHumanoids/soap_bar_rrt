@@ -15,13 +15,17 @@ class Vertex {
 
 		Stance sigma;
 		Configuration q;
+        Configuration q_transition;
 		
 		int numExpansionAttempts;
 		int parentIndex;
+
+        bool transition;
 		
 	public:	
 
 		Vertex(Stance _sigma, Configuration _q, int _parentIndex);
+        Vertex(Stance _sigma, Configuration _q, Configuration _q_transition, int _parentIndex);
 		~Vertex();
 
 		Stance getStance();
@@ -29,6 +33,10 @@ class Vertex {
 		int getNumExpansionAttempts();
 		void increaseNumExpansionAttempts(); 
 		int getParentIndex();	
+        void setTransitionConfiguration(Configuration q);
+        Configuration getTransitionConfiguration() const;
+
+        bool getTransitionState();
 
 };
 

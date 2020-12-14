@@ -133,6 +133,14 @@ _nh(nh)
 
     _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("/planner/contacts", 10, true);
 
+    Eigen::Matrix3d rot;
+    rot <<  0.0, 0.0, 1.0,
+            0.0, 1.0, 0.0,
+           -1.0, 0.0, 0.0;
+
+    Eigen::Quaternion<double> quat(rot);
+    foutLogMCP << "ROTATION CHECK: \n " << quat.coeffs() << std::endl;
+
 }
 
 Planner::~Planner(){ }
@@ -411,13 +419,13 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
      std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
      for (int i = 0; i < sigma.getContacts().size(); i ++)
      {
-         nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());
-         Eigen::Matrix3d rot = generateRotationAroundAxis(sigma.getContacts()[i]->getEndEffectorName(), nC.row(i));
+         nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());        
+         Eigen::Matrix3d rot = generateRotationFrictionCone(nC.row(i));
          Eigen::Quaternion<double> quat(rot);
-         rotations[i].x = quat.x();
-         rotations[i].y = quat.y();
-         rotations[i].z = quat.z();
-         rotations[i].w = quat.w();
+         rotations[i].x = quat.coeffs().x();
+         rotations[i].y = quat.coeffs().y();
+         rotations[i].z = quat.coeffs().z();
+         rotations[i].w = quat.coeffs().w();
      }
      contacts.rotations = rotations;
      contacts.friction_coefficient = 0.5 * sqrt(2.0);
@@ -514,6 +522,7 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
 
 bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList){
     int iEnd = tree->getSize() - 1;
+    int branchSize = 1;
 
     Vertex* v = tree->getVertex(iEnd);
     bool solutionFound = isGoalStance(v);
@@ -524,19 +533,32 @@ bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Confi
         return false;
     }
 
-    sigmaList.push_back(v->getStance());
+    sigmaList.push_back(v->getStance());  
     qList.push_back(v->getConfiguration());
+    if (v->getTransitionState())
+    {
+        sigmaList.push_back(v->getStance());
+        qList.push_back(v->getTransitionConfiguration());
+    }
     int parentIndex = v->getParentIndex();
 
     while(parentIndex > -1){
         v = tree->getVertex(parentIndex);
         sigmaList.push_back(v->getStance());
         qList.push_back(v->getConfiguration());
+        if (v->getTransitionState())
+        {
+            sigmaList.push_back(v->getStance());
+            qList.push_back(v->getTransitionConfiguration());
+        }
         parentIndex = v->getParentIndex();
+        branchSize++;
     }
 
     std::reverse(sigmaList.begin(), sigmaList.end());
     std::reverse(qList.begin(), qList.end());
+
+    std::cout << "++++++++++++++++++++++++++++++++++branchSize++++++++++++++++++++++++++++ \n" << branchSize << std::endl;
 
     return true;
 }
@@ -829,6 +851,9 @@ void Planner::run(){
                     sigmaListVertex.clear();
                     qListVertex.clear();
                     Configuration qNew;
+                    // Transition configuration
+                    Configuration qCheck;
+                    bool resIK_CoM_check = false;
 
                     for(int k = 0; k < NUM_CONF_PER_VERTEX; k++)
                     {
@@ -871,9 +896,8 @@ void Planner::run(){
 //                                 sigmaListVertex.push_back(sigmaNew);
 //                             }
                             if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
-                                Configuration qCheck;
 
-                                bool resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
+                                resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
 
                                 if (resIK_CoM_check)
                                 {
@@ -886,7 +910,7 @@ void Planner::run(){
                                 else
                                     foutLogMCP << "--------------- CHECK FAILED ---------------" << std::endl;
                             }
-                            else if (resIK_CoM)
+                            else if (resIK_CoM && sigmaNear.isActiveEndEffector(pk))
                             {
                                 qListVertex.push_back(qNew);
                                 sigmaListVertex.push_back(sigmaNew);
@@ -913,7 +937,12 @@ void Planner::run(){
                         qNew = qListVertex.at(iNew);
                         sigmaNew = sigmaListVertex.at(iNew);
 
-                        vNew = new Vertex(sigmaNew, qNew, iNear);
+                        if (!resIK_CoM_check)
+                            vNew = new Vertex(sigmaNew, qNew, iNear);
+                        else
+                            vNew = new Vertex(sigmaNew, qNew, qCheck, iNear);
+
+//                        vNew = new Vertex(sigmaNew, qNew, iNear);
 
                         ///////////////////////////////////////////////////////////////////
                         solutionFound = isGoalStance(vNew);
@@ -1028,4 +1057,8 @@ Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
                     0.0, 1.0, 0.0,
                    -1.0, 0.0, 0.0;
     }
+
+    return rot;
 }
+
+

@@ -437,6 +437,8 @@ void PlannerExecutor::init_load_validity_checker()
         return _vc_context.vc_aggregate.checkAll();
     };
 
+//    _contact_pub = _nh.advertise<multi_contact_planning::SetContactFrames>("contacts", 10, true);
+
     _planner->setStateValidityPredicate(validity_predicate);
 }
 
@@ -990,9 +992,13 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
         index_config++;
     }
 
+//    multi_contact_planning::SetContactFrames contact;
     if(plan.size() > 0){
         _goal_model->setJointPosition(plan[index_config]);
         _goal_model->update();
+
+//        contact.action = multi_contact_planning::SetContactFrames::SET;
+//        contact.frames_in_contact = sigmaList[index_config].getContacts();
 
         index_config++;
 

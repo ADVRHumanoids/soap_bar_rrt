@@ -166,6 +166,7 @@ private:
 
     ros::Publisher _trj_pub;
     ros::Publisher _pc_pub;
+    ros::Publisher _contact_pub;
     std::vector<ros::Publisher> _cartesian_trajectory_publishers;
     std::vector<std::string> _base_links, _distal_links;
 
