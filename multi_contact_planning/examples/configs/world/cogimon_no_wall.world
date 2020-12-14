@@ -12,10 +12,10 @@
       <uri>model://ground_plane</uri>
     </include>
     <include>
-      <uri>/home/luca/src/MultiDoF-superbuild/robots/iit-cogimon-ros-pkg/cogimon_gazebo/database/cogimon</uri>
+      <uri>model://cogimon</uri>
     </include>
     <physics type='ode'>
-        <max_step_size>0.00050</max_step_size>
+        <max_step_size>0.00010</max_step_size>
     </physics>
   </world>
 </sdf>
