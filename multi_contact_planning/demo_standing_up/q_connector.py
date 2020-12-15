@@ -45,7 +45,7 @@ class Connector:
         self.__trj_sub = rospy.Subscriber('/planner/joint_trajectory', JointTrajectory, self.callback)
         self.__launch = launch
         self.__solution = list()
-        self.__marker_pub = rospy.Publisher('planner/collision_objects', CollisionObject, latch=True)
+        self.__marker_pub = rospy.Publisher('planner/collision_objects', CollisionObject, latch=True, queue_size=10)
 
     def callback(self, data):
         self.solution = [list(data.points[index].positions) for index in range(len(data.points))]
@@ -270,7 +270,7 @@ class Connector:
                     self.model.robot.setPositionReference(self.__solution[j][6:])
                     self.model.robot.move()
                 self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.01)
+                rospy.sleep(0.08)
             index = index + 1
 
     def NSPGsample(self, q_goal, active_links, quat_list, timeout):
@@ -319,7 +319,7 @@ class Connector:
 
             # if start and goal z-axis position is the same, create the clearence obstacle,
             # otherwise no further action is needed
-            clearence = 0.02
+            clearence = 0.005
             if start_pose[2] - goal_pose[2] < clearence:
                 # create Marker
                 marker = Marker()
@@ -369,7 +369,8 @@ class Connector:
 
 
     def run(self):
-        for i in range(0, len(self.q_list)-1):
+        # for i in range(0, len(self.q_list)-1):
+        for i in range(5):
         #for i in range(0, len(self.q_list), 1):
             ################################################
             # First Planning Phase to unload swing contact #
@@ -380,11 +381,12 @@ class Connector:
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
 
-            # if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
-            #     print 'Start and Goal poses are the same, skipping!'
-            #     continue
+            if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
+                print 'Start and Goal poses are the same, skipping!'
+                continue
 
             # set all contacts to be active for first planning phase
+            print 'setting active_links...'
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]  # names
             self.model.cs.setContactLinks(active_links)
@@ -393,6 +395,7 @@ class Connector:
             rospy.sleep(2.)
 
             # set rotation matrix for each contact
+            print 'setting rotations...'
             normals = [j['ref']['normal'] for j in self.stance_list[i]]
             [self.model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [self.rotation(elem) for elem in normals])]
             # raw_input('rotations set')
@@ -400,6 +403,7 @@ class Connector:
             rospy.sleep(2.)
 
             optimize_torque = False
+            print 'setting optimize_torque...'
             if len(active_links) == 2:
                 optimize_torque = True
             else:
@@ -422,37 +426,41 @@ class Connector:
                 quat_list.append(quat)
 
             # # check if the goal state is valid on the manifold defined by the start state
-            if not self.model.state_vc(q_goal):
-                raw_input('goal pose is not valid, click to compute a new feasible one')
-                self.NSPGsample(q_goal, active_links, quat_list, 10.)
+            # if not self.model.state_vc(q_goal):
+            #     raw_input('goal pose is not valid, click to compute a new feasible one')
+            #     self.NSPGsample(q_goal, active_links, quat_list, 10.)
 
 
             # publish start and goal states
+            print 'setting manifold...'
             self.planner_client.updateManifold(active_links)
             # raw_input('Manifold updated')
             print 'Manifold updated'
             rospy.sleep(2.)
 
             # add clearence obstacle to the planning scene
+            print 'setting clearence obstacle...'
             self.setClearenceObstacle(q_start, q_goal, self.stance_list[i])
             print 'Clearence obstacle set'
             rospy.sleep(2.)
 
+            print 'setting start and goal states...'
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
             print 'Start and Goal poses set'
             rospy.sleep(2.)
 
             # publish the contacts
+            print 'setting contacts...'
             contacts = {c: r for c, r in zip(active_links, quat_list)}
             optimize_torque = False
             self.planner_client.publishContacts(contacts, optimize_torque)
             print contacts
             # raw_input("Contacts published")
             print 'Contacts published'
-            rospy.sleep(5)
+            rospy.sleep(2.)
 
-            self.planner_client.solve(PLAN_MAX_ATTEMPTS=5, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
+            self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(2.)
 
             self.__solution = self.__solution + self.solution
@@ -467,3 +475,8 @@ class Connector:
 
     def saveSolution(self):
         np.savetxt('solution.csv', self.__solution, delimiter=',')
+
+    def replaySolution(self):
+        self.__solution = []
+        self.__solution = np.loadtxt('solution.csv', delimiter=',')
+        self.play_solution(1)
