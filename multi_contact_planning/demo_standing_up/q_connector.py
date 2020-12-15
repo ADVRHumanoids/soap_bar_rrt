@@ -261,7 +261,7 @@ class Connector:
 
     def play_solution(self, iter):
         index = 0
-        rospy.sleep(2.)
+        # rospy.sleep(2.)
         while index < iter:
             for j in range(len(self.__solution)):
                 self.model.model.setJointPosition(self.__solution[j])
@@ -270,7 +270,7 @@ class Connector:
                     self.model.robot.setPositionReference(self.__solution[j][6:])
                     self.model.robot.move()
                 self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.08)
+                rospy.sleep(0.01)
             index = index + 1
 
     def NSPGsample(self, q_goal, active_links, quat_list, timeout):
@@ -478,5 +478,7 @@ class Connector:
 
     def replaySolution(self):
         self.__solution = []
-        self.__solution = np.loadtxt('solution.csv', delimiter=',')
+        txt = np.loadtxt('solution.csv', delimiter=',')
+        for i in range(np.size(txt, 0)):
+            self.__solution.append(txt[i, :])
         self.play_solution(1)
