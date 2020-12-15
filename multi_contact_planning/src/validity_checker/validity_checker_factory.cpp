@@ -68,8 +68,21 @@ std::function<bool ()> MakeCentroidalStaticsChecker(YAML::Node vc_node,
     YAML_PARSE_OPTION(vc_node, friction_coefficient, double, 0.5);
     YAML_PARSE_OPTION(vc_node, optimize_torque, bool, false);
     YAML_PARSE_OPTION(vc_node, rotations, std::vector<std::vector<double>>, {});
+    YAML_PARSE_OPTION(vc_node, x_lim_cop, std::vector<double>, {});
+    YAML_PARSE_OPTION(vc_node, y_lim_cop, std::vector<double>, {});
 
-    auto cs = std::make_shared<CentroidalStatics>(model, links, friction_coefficient, optimize_torque);
+    Eigen::Vector2d x_lim_cop_eig, y_lim_cop_eig;
+    x_lim_cop_eig.setZero();
+    y_lim_cop_eig.setZero();
+    if(x_lim_cop.size() > 0){
+        x_lim_cop_eig[0] = x_lim_cop[0];
+        x_lim_cop_eig[1] = x_lim_cop[1];}
+    if(y_lim_cop.size() > 0){
+        y_lim_cop_eig[0] = y_lim_cop[0];
+        y_lim_cop_eig[1] = y_lim_cop[1];}
+
+    auto cs = std::make_shared<CentroidalStatics>(model, links, friction_coefficient,
+                                                  optimize_torque, x_lim_cop_eig, y_lim_cop_eig);
 
     // set rotations
     for (int i = 0; i < rotations.size(); i++)
@@ -78,7 +91,7 @@ std::function<bool ()> MakeCentroidalStaticsChecker(YAML::Node vc_node,
         cs->setContactRotationMatrix(links[i], quat.toRotationMatrix());
     }
 
-    auto cs_ros = std::make_shared<CentroidalStaticsROS>(model, *cs, nh, eps);
+    auto cs_ros = std::make_shared<CentroidalStaticsROS>(model, cs, nh, eps);
 
     double ros_eps = cs_ros->getEps();
 

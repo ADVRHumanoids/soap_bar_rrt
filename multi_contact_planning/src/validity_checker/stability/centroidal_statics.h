@@ -21,6 +21,7 @@ namespace Planning {
 class CentroidalStatics{
 
 public:
+    typedef std::shared_ptr<CentroidalStatics> Ptr;
     /**
      * @brief CentroidalStatics checks if the robot is statically stable with given contacts.
      * The problem which is optimized depends if the contact moments are optimized or not.
@@ -66,6 +67,7 @@ public:
 
     /**
      * @brief setOptimizeTorque permits to enable or disable the optimization of contact moments
+     * NOTE: init() is called
      * @param optimize_torque
      */
     void setOptimizeTorque(const bool optimize_torque);
@@ -79,9 +81,24 @@ public:
 
     /**
      * @brief setContactLinks permits to set a new vector of contact links (rotations are initialized as identity)
+     * NOTE: init() is called
      * @param contact_links
      */
     void setContactLinks(const std::vector<std::string>& contact_links);
+    /**
+     * @brief setContactLinks ermits to set a new vector of contact links (rotations are initialized as identity)
+     * and optimize torque.
+     * NOTE: init() is called once ins this case
+     * @param contact_links
+     * @param optimize_torque
+     */
+    void setContactLinks(const std::vector<string> &contact_links, const bool optimize_torque);
+
+    /**
+     * @brief getContactLinks retrieve the list of set contact links
+     * @return std::vector<std::string> containing the contact links
+     */
+    const std::vector<std::string>& getContactLinks();
 
     /**
      * @brief addContactLinks add contact links to existing once (rotations are initialized as identity)
@@ -104,6 +121,13 @@ public:
      */
     bool setContactRotationMatrix(const std::string& contact_link,
                                   const Eigen::Matrix3d& w_R_c);
+
+    /**
+     * @brief getContactFrame retrive contact rotation matrix
+     * @return a con Eigen::Matrix3d containing the rotation matrix
+     */
+
+    const Eigen::Matrix3d getContactFrame(const std::string& contact_link){ return _fcs[contact_link]->getContactFrame();}
 
     /**
      * @brief getFrictionCones
@@ -131,9 +155,7 @@ public:
      */
     const std::map<std::string, Eigen::Vector6d>& getForces();
 
-    std::vector<std::string> getContactLinks() {return _contact_links;}
-
-    const Eigen::Matrix3d getContactFrame(const std::string& contact_link){ return _fcs[contact_link]->getContactFrame();}
+    void setForces(std::map<std::string, Eigen::Vector6d> forces);
 
 
 private:
@@ -174,7 +196,8 @@ class CentroidalStaticsROS
 public:
     typedef std::shared_ptr<CentroidalStaticsROS> Ptr;
 
-    CentroidalStaticsROS(XBot::ModelInterface::Ptr model, CentroidalStatics& cs, ros::NodeHandle& nh, double eps = 1e-3):
+    CentroidalStaticsROS(XBot::ModelInterface::ConstPtr model,
+                         CentroidalStatics::Ptr cs, ros::NodeHandle& nh, double eps=1e-3):
         _cs(cs),
         _model(*model),
         _nh(nh),
@@ -188,23 +211,23 @@ public:
         std::string tmp;
         if(_nh.getParam("tf_prefix", tmp))
             _tf_prefix = tmp;
-//        double _eps;
-        if(nh.getParam("eps", eps))
+        double _eps;
+        if(nh.getParam("eps", _eps))
             _eps = eps;
     }
 
-    double getEps() {return _eps;}
+    double getEps(){return _eps;}
 
 
     void publish()
     {
-        _fcs = _cs.getFrictionCones();
+        _fcs = _cs->getFrictionCones();
 
         if(_fcs.size() > 0)
         {
-            bool check_stability =  _cs.checkStability(_eps);
+            bool check_stability =  _cs->checkStability(_eps);
 
-            std::map<std::string, Eigen::Vector6d> Fcs = _cs.getForces();
+            std::map<std::string, Eigen::Vector6d> Fcs = _cs->getForces();
 
             int i = 0; int k = 0;
             ros::Time t = ros::Time::now();
@@ -223,7 +246,7 @@ public:
 
                 //Piselloni (Forze)
                 visualization_msgs::Marker marker;
-                marker.header.frame_id = _tf_prefix+"ci/"+fc.first;
+                marker.header.frame_id = _tf_prefix+fc.first;
                 marker.header.stamp = t;
                 marker.ns = "computed_contact_forces";
                 marker.id = i;
@@ -325,7 +348,7 @@ public:
                 static const double DELTA_THETA = M_PI/16.0;
                 double theta = 0.;
                 double scale = 0.09;
-                double angle = M_PI_2-std::atan(_cs.getFricitonCoefficient());
+                double angle = M_PI_2-std::atan(_cs->getFricitonCoefficient());
                 for (std::size_t i = 0; i < 32; i++)
                 {
                    pp[0].x = 0;
@@ -392,19 +415,19 @@ private:
      */
 public: void set_contacts(cartesio_planning::SetContactFrames::ConstPtr msg)
     {
-        std::cout << "i'm in the callback" << std::endl;
+        std::cout << "CALLING CALLBACK FUNCTION!" << std::endl;
         if(msg->action.data() == msg->SET)
         {
-            _cs.setContactLinks(msg->frames_in_contact);
-            _cs.setFrictionCoeff(msg->friction_coefficient);
+            _cs->setContactLinks(msg->frames_in_contact);
+            _cs->setFrictionCoeff(msg->friction_coefficient);
         }
         else if(msg->action.data() == msg->ADD)
         {
-            _cs.addContactLinks(msg->frames_in_contact);
-            _cs.setFrictionCoeff(msg->friction_coefficient);
+            _cs->addContactLinks(msg->frames_in_contact);
+            _cs->setFrictionCoeff(msg->friction_coefficient);
         }
         else if(msg->action.data() == msg->REMOVE)
-            _cs.removeContactLinks(msg->frames_in_contact);
+            _cs->removeContactLinks(msg->frames_in_contact);
 
 
         if(!msg->rotations.empty() && (msg->action.data() == msg->ADD || msg->action.data() == msg->SET))
@@ -418,17 +441,17 @@ public: void set_contacts(cartesio_planning::SetContactFrames::ConstPtr msg)
                     Eigen::Quaterniond q;
                     tf::quaternionMsgToEigen(msg->rotations[i], q);
 
-                    _cs.setContactRotationMatrix(msg->frames_in_contact[i], q.toRotationMatrix());
+                    _cs->setContactRotationMatrix(msg->frames_in_contact[i], q.toRotationMatrix());
                 }
             }
         }
 
-        _cs.setOptimizeTorque(msg->optimize_torque);
+        _cs->setOptimizeTorque(msg->optimize_torque);
 
     }
 
 private:
-    CentroidalStatics& _cs;
+    CentroidalStatics::Ptr _cs;
     const XBot::ModelInterface& _model;
     ros::NodeHandle _nh;
     ros::Subscriber _contact_sub;
