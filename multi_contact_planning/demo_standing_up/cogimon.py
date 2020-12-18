@@ -75,8 +75,8 @@ class Cogimon:
 
         # planning scene defines valid regions of the state space
         self.ps = validity_check.PlanningSceneWrapper(self.model)
-        self.ps.addBox("wall", [1.0, 3.0, 3.0], Affine3([1.6, 0.0, 1.5]))
-        self.ps.addBox("ground", [3.0, 3.0, 1.0], Affine3([0.0, 0.0, -0.52]))
+        # self.ps.addBox("wall", [1.0, 3.0, 3.0], Affine3([1.6, 0.0, 1.5]))
+        # self.ps.addBox("ground", [3.0, 3.0, 1.0], Affine3([0.0, 0.0, -0.52]))
         self.ps.startGetPlanningSceneServer()
         self.ps.startMonitor()
 
@@ -86,7 +86,7 @@ class Cogimon:
                                                    0.5*np.sqrt(2),
                                                    optimize_torque=False,
                                                    xlims_cop=np.array([-0.05, 0.1]),
-                                                   ylims_cop=np.array([-0.05, 0.1]))
+                                                   ylims_cop=np.array([-0.05, 0.05]))
 
         # if self.simulation:
         #     self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
