@@ -131,7 +131,7 @@ _nh(nh)
     // for collision checking (seems that it is not needed anymore)
     vc_context = _vc_context;
 
-    _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("/planner/contacts", 10, true);
+    _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("contacts", 10, true);
 
     Eigen::Matrix3d rot;
     rot <<  0.0, 0.0, 1.0,
@@ -407,47 +407,45 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     }
 
     // set active links and rotations
-     multi_contact_planning::SetContactFrames contacts;
+    multi_contact_planning::SetContactFrames contacts;
+    
+    if (refCoM)
+    {
+        contacts.action = multi_contact_planning::SetContactFrames::NONE;
+        contacts.frames_in_contact = {active_tasks.begin()+1, active_tasks.end()};       
+    }
+    else
+    {
+        contacts.action = multi_contact_planning::SetContactFrames::SET;
+        contacts.frames_in_contact = active_tasks;
+    }
 
-     contacts.action = multi_contact_planning::SetContactFrames::SET;
-     if (refCoM)
-         contacts.frames_in_contact = {active_tasks.begin()+1, active_tasks.end()};
-     else
-         contacts.frames_in_contact = active_tasks;
-
-     Eigen::MatrixXd nC(sigma.getContacts().size(), 3);
-     std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
-     for (int i = 0; i < sigma.getContacts().size(); i ++)
-     {
-         nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());        
-         Eigen::Matrix3d rot = generateRotationFrictionCone(nC.row(i));
-         Eigen::Quaternion<double> quat(rot);
-         rotations[i].x = quat.coeffs().x();
-         rotations[i].y = quat.coeffs().y();
-         rotations[i].z = quat.coeffs().z();
-         rotations[i].w = quat.coeffs().w();
-     }
-     contacts.rotations = rotations;
-     contacts.friction_coefficient = 0.5 * sqrt(2.0);
-     _pub.publish(contacts);
-
-     foutLogMCP << "contacts:" << std::endl;
-     for (auto i : contacts.frames_in_contact)
-         foutLogMCP << i << "  ";
-     foutLogMCP << "\nrotations:" << std::endl;
-     for (auto i : contacts.rotations)
-         foutLogMCP << i << "  ";
-     foutLogMCP << "\n";
-     double counter = 0;
-     ros::Rate rate(100);
-     while (counter < 1)
-     {
-        ros::spinOnce();
-        rate.sleep();
-        counter += 0.1;
-     }
-
-
+    Eigen::MatrixXd nC(sigma.getContacts().size(), 3);
+    std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
+    for (int i = 0; i < sigma.getContacts().size(); i ++)
+    {
+        nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());        
+        Eigen::Matrix3d rot = generateRotationFrictionCone(nC.row(i));
+        Eigen::Quaternion<double> quat(rot);
+        rotations[i].x = quat.coeffs().x();
+        rotations[i].y = quat.coeffs().y();
+        rotations[i].z = quat.coeffs().z();
+        rotations[i].w = quat.coeffs().w();
+    }
+    contacts.rotations = rotations;
+    contacts.friction_coefficient = 0.5 * sqrt(2.0);
+    
+    foutLogMCP << "contacts:" << std::endl;
+    for (auto i : contacts.frames_in_contact)
+        foutLogMCP << i << "  ";
+    foutLogMCP << "\nrotations:" << std::endl;
+    for (auto i : contacts.rotations)
+        foutLogMCP << i << "  ";
+    foutLogMCP << "\n";
+    
+    _pub.publish(contacts);
+    ros::spinOnce();
+    
     // set references
     std::vector<std::string> all_tasks;
     all_tasks.push_back("com");
@@ -902,9 +900,7 @@ void Planner::run(){
                                 if (resIK_CoM_check)
                                 {
                                     foutLogMCP << "--------------- CHECK PASSED ---------------" << std::endl;
-//                                         qListVertex.push_back(qCheck);
                                     qListVertex.push_back(qNew);
-//                                         sigmaListVertex.push_back(sigmaNear);
                                     sigmaListVertex.push_back(sigmaNew);
                                 }
                                 else
