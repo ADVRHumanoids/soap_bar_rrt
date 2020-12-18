@@ -69,11 +69,11 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'),(1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/qList.txt")
-    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
+    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0+/qList.txt")
+    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0+/sigmaList.txt")
 
     # home configuration added for phase0
     q_home = [0.0300119, -0.10315, 0.962093, -0, -0.059999, -0,
@@ -98,8 +98,8 @@ if __name__ == '__main__':
     #     gzhandler.set_robot_position(initial_pos)
 
     qc = q_connector.Connector(cogimon, q_list, stances)
-    qc.replaySolution()
-    exit()
+    # qc.replaySolution()
+    # exit()
     # qc.play_all_poses(1)
     qc.run()
     raw_input('click to see the whole solution')
