@@ -93,6 +93,10 @@ def checkStability(model, stances, qlist):
         # print 'cop',  sum([np.array(j['ref']['pose'])*j['ref']['force'][2]/686.7003 for j in stance])
 
         check.append(model.state_vc(q))
+        print 'active links: ', model.cs.getContactLinks()
+        for val in model.cs.getContactLinks():
+            print model.cs.getContactFrame(val)
+
         get_forces = model.cs.getForces()
         # print 'forces computed \n', model.cs.getForces()
 
