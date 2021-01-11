@@ -85,7 +85,10 @@ if __name__ == '__main__':
     q_list.insert(0, q_home)
     stances.insert(0, stances[0])
 
-    # loader.checkStability(cogimon, stances, q_list)
+    flag = loader.checkStability(cogimon, stances, q_list)
+    print flag
+    rospy.sleep(2.)
+    # exit()
 
     # if cogimon.simulation:
     #     gzhandler = grh.GazeboRobotHandler()
@@ -108,3 +111,7 @@ if __name__ == '__main__':
 
     # cogimon.robot.sense()
     # cogimon.model.syncFrom(cogimon.robot)
+
+
+
+

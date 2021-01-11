@@ -60,7 +60,7 @@ def rotation(normal):
 
 def checkStability(model, stances, qlist):
     check = []
-
+    iter = 0
     for stance, q in zip(stances, qlist):
         active_ind = [ind['ind'] for ind in stance]
         active_links = [model.ctrl_points[j] for j in active_ind]
@@ -92,10 +92,14 @@ def checkStability(model, stances, qlist):
 
         # print 'cop',  sum([np.array(j['ref']['pose'])*j['ref']['force'][2]/686.7003 for j in stance])
 
+        optimize_torque = False
+        active_ind = [ind['ind'] for ind in stance]
+        if len(active_ind) == 2:
+            optimize_torque = True
+
+        model.cs.setOptimizeTorque(optimize_torque)
+
         check.append(model.state_vc(q))
-        print 'active links: ', model.cs.getContactLinks()
-        for val in model.cs.getContactLinks():
-            print model.cs.getContactFrame(val)
 
         get_forces = model.cs.getForces()
         # print 'forces computed \n', model.cs.getForces()

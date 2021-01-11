@@ -339,6 +339,9 @@ class Connector:
         new_q_goal = nspg.getModel().getJointPosition()
         self.q_bounder(new_q_goal)
 
+        print 'new q_goal: \n', np.array(new_q_goal).transpose()
+        raw_input('click to continue')
+
         return new_q_goal
 
     def moveRobot(self, solution, dt):
@@ -414,17 +417,81 @@ class Connector:
 
                 self.__marker_pub.publish(co)
 
+    def computeStartAndGoal(self, clearence, i):
+        # first check if the swing contact has to move on a plane (we assume that this happens when there are
+        # three active links). In this case, first we detach the contact from the plane and then we plan to reach
+        # the next contact pose
+        if len(self.stance_list[i]) == 3 and i != 2:
+            # raw_input('click to compute cartesian trajectory')
+            # find the lifted contact
+            lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
+                              x not in [j['ind'] for j in self.stance_list[i]]][0]
+            lifted_contact_link = self.model.ctrl_points[lifted_contact]
+            lifted_contact_ind = self.model.ctrl_points.keys().index(lifted_contact)
+
+            # find the rotation matrices
+            self.model.model.setJointPosition(self.q_list[i])
+            self.model.model.update()
+            w_R_t = self.model.model.getPose('torso').linear
+            w_R_e = self.model.model.getPose(lifted_contact_link).linear
+
+            # pick the lifting direction from the stance_list and transform it in torso frame
+            normal = list()
+            for iterator in range(len(self.stance_list[i - 1])):
+                if self.stance_list[i - 1][iterator]['ind'] == lifted_contact:
+                    normal = self.stance_list[i - 1][iterator]['ref']['normal']
+                    break
+            w_p_d = clearence * np.array(normal)
+            t_p_d = np.dot(np.dot(np.linalg.inv(w_R_t), w_R_e), w_p_d.transpose())
+
+            # set pose target for the lifted link
+            self.ci.getTask('torso').setPoseReference(self.model.model.getPose('torso'))
+            [self.ci.getTask(c).setPoseReference(
+                np.dot(self.model.model.getPose('torso').inverse(), self.model.model.getPose(c))) for c in
+             self.model.ctrl_points.values()]
+            lifted_contact_final_pose = self.ctrl_tasks[lifted_contact_ind].getPoseReference()[0]
+            lifted_contact_final_pose.translation += t_p_d
+            self.ctrl_tasks[lifted_contact_ind].setPoseTarget(lifted_contact_final_pose, 1.0)
+
+            # solve
+            ci_time = 0
+            q = np.empty(shape=[self.model.model.getJointNum(), 0])
+            while self.ctrl_tasks[lifted_contact_ind].getTaskState() == pyci.State.Reaching:
+                q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
+
+                if not self.ci_solve_integrate(ci_time):
+                    print('Unable to solve!!!')
+                    unable_to_solve += 1
+                    print(unable_to_solve)
+                else:
+                    unable_to_solve = 0
+
+                ci_time += self.ik_dt
+
+            q_start = self.model.model.getJointPosition()
+            self.q_bounder(q_start)
+            q_goal = self.q_list[i+1]
+            self.q_bounder(q_goal)
+
+        else:
+            q_start = self.q_list[i]
+            self.q_bounder(q_start)
+            q_goal = self.q_list[i+1]
+            self.q_bounder(q_goal)
+
+        return q_start, q_goal
+
 
     def run(self):
-        # for i in range(0, len(self.q_list)-1):
-        for i in range(2, 5):
-        #for i in range(0, len(self.q_list), 1):
+        # for i in range(0, 5):
+        for i in range(0, len(self.q_list)-1, 1):
 
+            # raw_input(['Planning between states ', i, ' and ', i+1, '...click to continue'])
             # set all contacts to be active for first planning phase
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]  # names
             self.model.cs.setContactLinks(active_links)
-            # raw_input('active_links set')
+            # raw_input(['active_links: ', self.model.cs.getContactLinks(), ' set'])
             print 'active_links set'
             rospy.sleep(2.)
 
@@ -432,6 +499,7 @@ class Connector:
             normals = [j['ref']['normal'] for j in self.stance_list[i]]
             [self.model.cs.setContactRotationMatrix(k, j) for k, j in
              zip(active_links, [self.rotation(elem) for elem in normals])]
+            print [self.model.cs.getContactFrame(c) for c in self.model.cs.getContactLinks()]
             # raw_input('rotations set')
             print 'rotations set'
             rospy.sleep(2.)
@@ -442,7 +510,7 @@ class Connector:
             else:
                 optimize_torque = False
             self.model.cs.setOptimizeTorque(optimize_torque)
-            # raw_input('optimizeTorque set')
+            # raw_input(['optimizeTorque', self.model.cs.isTorqueOptimized(), ' set'])
             print 'optimize_torque set'
             rospy.sleep(2.)
 
@@ -458,90 +526,38 @@ class Connector:
                 map(float, quat)
                 quat_list.append(quat)
 
-            q_start = list()
-            #
-            # first check if the swing contact has to move on a plane (we assume that this happens when there are
-            # three active links). In this case, first we detach the contact from the plane and then we plan to reach
-            # the next contact pose
-            if len(self.stance_list[i]) == 3:
-                raw_input('click to compute cartesian trajectory')
-                # find the lifted contact
-                lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
-                                  x not in [j['ind'] for j in self.stance_list[i]]][0]
-                lifted_contact_link = self.model.ctrl_points[lifted_contact]
-                lifted_contact_ind = self.model.ctrl_points.keys().index(lifted_contact)
-
-                # find the rotation matrix from world to torso
-                self.model.model.setJointPosition(self.q_list[i])
-                self.model.model.update()
-                w_R_t = self.model.model.getPose('torso').linear
-                w_R_e = self.model.model.getPose(lifted_contact_link).linear
-
-                # pick the lifting direction from the stance_list and transform it in world frame
-                clearence = 0.2
-                normal = list()
-                for iterator in range(len(self.stance_list[i-1])):
-                    if self.stance_list[i-1][iterator]['ind'] == lifted_contact:
-                        normal = self.stance_list[i-1][iterator]['ref']['normal']
-                        break
-                w_p_d = clearence * np.array(normal)
-                t_p_d = np.dot(np.dot(np.linalg.inv(w_R_t), w_R_e), w_p_d.transpose())
-
-                # set pose target for the lifted link
-                self.ci.getTask('torso').setPoseReference(self.model.model.getPose('torso'))
-                [self.ci.getTask(c).setPoseReference(np.dot(self.model.model.getPose('torso').inverse(), self.model.model.getPose(c))) for c in
-                 self.model.ctrl_points.values()]
-                lifted_contact_final_pose = self.ctrl_tasks[lifted_contact_ind].getPoseReference()[0]
-                lifted_contact_final_pose.translation += t_p_d
-                self.ctrl_tasks[lifted_contact_ind].setPoseTarget(lifted_contact_final_pose, 1.0)
-
-                # solve
-                ci_time = 0
-                q = np.empty(shape=[self.model.model.getJointNum(), 0])
-                while self.ctrl_tasks[lifted_contact_ind].getTaskState() == pyci.State.Reaching:
-                    q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
-
-                    if not self.ci_solve_integrate(ci_time):
-                        print('Unable to solve!!!')
-                        unable_to_solve += 1
-                        print(unable_to_solve)
-                    else:
-                        unable_to_solve = 0
-
-                    ci_time += self.ik_dt
-
-                # replay cartesian trajectory
-                for val in range(np.size(q, 1)):
-                    joint_pos = q[:,val]
-                    self.model.model.setJointPosition(q[:, val])
-                    self.model.model.update()
-                    self.model.rspub.publishTransforms('ci')
-                    rospy.sleep(0.01)
-
-                q_start = self.model.model.getJointPosition()
-                self.q_bounder(q_start)
-
-            else:
-                q_start = self.q_list[i]
-                self.q_bounder(q_start)
-
-            q_goal = self.q_list[i+1]
-            self.q_bounder(q_goal)
+            [q_start, q_goal] = self.computeStartAndGoal(0.0, i)
 
             # check if the goal state is valid on the manifold defined by the start state
             if not self.model.state_vc(q_goal):
+                print ['for configuration ', i+1]
                 raw_input('goal pose is not valid, click to compute a new feasible one')
+
+                # active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
+                # active_links_goal = [self.model.ctrl_points[j] for j in active_ind]
+                #
+                # normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
+                # rot_goal = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+                #
+                # quat_list_goal = []
+                # quat_goal = [0., 0., 0., 0.]
+                # for val in range(0, len(rot_goal)):
+                #     quat_goal[0] = rot_goal[val].x
+                #     quat_goal[1] = rot_goal[val].y
+                #     quat_goal[2] = rot_goal[val].z
+                #     quat_goal[3] = rot_goal[val].w
+                #     map(float, quat_goal)
+                #     quat_list_goal.append(quat_goal)
+
                 q_goal = self.NSPGsample(q_goal, active_links, quat_list, optimize_torque, 10.)
+                self.q_list.insert(i+1, q_goal)
+                self.stance_list.insert(i+1, self.stance_list[i+1])
+
 
             # publish start and goal states
             self.planner_client.updateManifold(active_links)
             # raw_input('Manifold updated')
             print 'Manifold updated'
-            rospy.sleep(2.)
-
-            # add clearence obstacle to the planning scene
-            self.setClearenceObstacle(q_start, q_goal, self.stance_list[i])
-            print 'Clearence obstacle set'
             rospy.sleep(2.)
 
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
@@ -567,9 +583,9 @@ class Connector:
 
             self.__solution = self.__solution + self.solution
 
-            for val in range(len(self.solution)):
-                if not self.model.state_vc(self.solution[val]):
-                    print 'interpolated path is not feasible in position ', val
+            # for val in range(len(self.solution)):
+            #     if not self.model.state_vc(self.solution[val]):
+            #         print 'interpolated path is not feasible in position ', val
 
             # send solution trajectory to the robot
             # if self.model.simulation:
