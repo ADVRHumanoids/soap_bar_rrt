@@ -391,6 +391,7 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     // build references
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
+    int i_init;
     if(refCoM){
         active_tasks.push_back("com");
         Eigen::Affine3d T_CoM_ref;
@@ -400,10 +401,10 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     }
     for(int i = 0; i < sigma.getSize(); i++){
         EndEffector ee = sigma.getContact(i)->getEndEffectorName();
-            active_tasks.push_back(getTaskStringName(ee));
-            ref_tasks.push_back(sigma.retrieveContactPose(ee));
+        active_tasks.push_back(getTaskStringName(ee));
+        ref_tasks.push_back(sigma.retrieveContactPose(ee));
 
-            foutLogMCP << "EE(stance) =\n " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).matrix() << std::endl;
+        foutLogMCP << "EE(stance) =\n " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).matrix() << std::endl;
     }
 
     // set active links and rotations
@@ -411,21 +412,26 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     
     if (refCoM)
     {
-        contacts.action = multi_contact_planning::SetContactFrames::NONE;
-        contacts.frames_in_contact = {active_tasks.begin()+1, active_tasks.end()};       
+        contacts.action = multi_contact_planning::SetContactFrames::SET;
+        contacts.frames_in_contact = {active_tasks.begin()+1, active_tasks.end()}; 
+        i_init = 1;
     }
     else
     {
         contacts.action = multi_contact_planning::SetContactFrames::SET;
         contacts.frames_in_contact = active_tasks;
+        i_init = 0;
     }
 
-    Eigen::MatrixXd nC(sigma.getContacts().size(), 3);
+    Eigen::Vector3d nC_i;
     std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
     for (int i = 0; i < sigma.getContacts().size(); i ++)
     {
-        nC.row(i) = getNormalAtPoint(ref_tasks[i].translation().transpose());        
-        Eigen::Matrix3d rot = generateRotationFrictionCone(nC.row(i));
+        if (refCoM)
+            nC_i = getNormalAtPoint(ref_tasks[i+1].translation().transpose());   
+        else 
+            nC_i = getNormalAtPoint(ref_tasks[i].translation().transpose());
+        Eigen::Matrix3d rot = generateRotationFrictionCone(nC_i);
         Eigen::Quaternion<double> quat(rot);
         rotations[i].x = quat.coeffs().x();
         rotations[i].y = quat.coeffs().y();
@@ -434,6 +440,7 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     }
     contacts.rotations = rotations;
     contacts.friction_coefficient = 0.5 * sqrt(2.0);
+    contacts.optimize_torque = false;
     
     foutLogMCP << "contacts:" << std::endl;
     for (auto i : contacts.frames_in_contact)
@@ -454,14 +461,11 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
 
-    int i_init;
     if(!refCoM){
         ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-        i_init = 1;
     }
     else{
         ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled);
-        i_init = 0;
     }
 
     for(int i = i_init; i < all_tasks.size(); i++){
@@ -1027,8 +1031,8 @@ Eigen::Matrix3d Planner::generateRotationAroundAxis(EndEffector pk, Eigen::Vecto
         }
         else{
                 rot <<  0.0, 0.0, -1.0,
-                                        0.0, 1.0, 0.0,
-                                        1.0, 0.0, 0.0;
+                        0.0, 1.0, 0.0,
+                        1.0, 0.0, 0.0;
         }
     }
 
