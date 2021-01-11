@@ -67,7 +67,7 @@ public:
 
     /**
      * @brief setOptimizeTorque permits to enable or disable the optimization of contact moments
-     * NOTE: init() is called
+     * NOTE: needs to call init() after set
      * @param optimize_torque
      */
     void setOptimizeTorque(const bool optimize_torque);
@@ -81,19 +81,11 @@ public:
 
     /**
      * @brief setContactLinks permits to set a new vector of contact links (rotations are initialized as identity)
-     * NOTE: init() is called
+     * NOTE: needs to call init() after set
      * @param contact_links
      */
     void setContactLinks(const std::vector<std::string>& contact_links);
-    /**
-     * @brief setContactLinks ermits to set a new vector of contact links (rotations are initialized as identity)
-     * and optimize torque.
-     * NOTE: init() is called once ins this case
-     * @param contact_links
-     * @param optimize_torque
-     */
-    void setContactLinks(const std::vector<string> &contact_links, const bool optimize_torque);
-
+    
     /**
      * @brief getContactLinks retrieve the list of set contact links
      * @return std::vector<std::string> containing the contact links
@@ -101,32 +93,21 @@ public:
     const std::vector<std::string>& getContactLinks();
 
     /**
-     * @brief addContactLinks add contact links to existing once (rotations are initialized as identity)
-     * @param contact_links
-     */
-    void addContactLinks(const std::vector<std::string>& contact_links);
-
-    /**
-     * @brief removeContactLinks remove contact links from existing once
-     * @param contact_links
-     */
-    void removeContactLinks(const std::vector<std::string>& contact_links);
-
-    /**
      * @brief setContactRotationMatrix permits to change contact rotation matrix for a particular friciton cone constraint
      * associated to a contact link
+     * NOTE: needs to call init() after set
      * @param contact_link
      * @param w_R_c
      * @return false if no friction cones are associated to that contact link
      */
     bool setContactRotationMatrix(const std::string& contact_link,
                                   const Eigen::Matrix3d& w_R_c);
-
+    
     /**
      * @brief getContactFrame retrive contact rotation matrix
      * @return a con Eigen::Matrix3d containing the rotation matrix
      */
-
+    
     const Eigen::Matrix3d getContactFrame(const std::string& contact_link){ return _fcs[contact_link]->getContactFrame();}
 
     /**
@@ -154,16 +135,21 @@ public:
      * @return map of link name and associated contact forces
      */
     const std::map<std::string, Eigen::Vector6d>& getForces();
-
+    
     void setForces(std::map<std::string, Eigen::Vector6d> forces);
+
+    /**
+     * @brief init creates and initialize the optimization problem
+     */
+    void init(bool enable_log = true);
+
+    bool isTorqueOptimized(){ return _optimize_torque;}
 
 
 private:
     YAML::Node createYAMLProblem(const std::vector<std::string>& contact_links,
                            const double friction_coeff,
                            const bool optimize_torque);
-
-    void init();
 
     bool compute();
 
@@ -201,7 +187,7 @@ public:
         _cs(cs),
         _model(*model),
         _nh(nh),
-        _tf_prefix(""),
+        _tf_prefix(nh.getNamespace() + "/"),
         _eps(eps)
     {
         _contact_sub = _nh.subscribe("contacts", 10, &CentroidalStaticsROS::set_contacts, this);
@@ -235,7 +221,7 @@ public:
             {
                 Eigen::Vector6d F = Fcs[fc.first];
 
-                //std::cout<<contact.first<<"  "<<F.transpose()<<std::endl;
+                std::cout << fc.first << "  " << F.transpose() << std::endl;
 
                 Eigen::Affine3d w_T_c;
                 _model.getPose(fc.first, w_T_c);
@@ -261,7 +247,7 @@ public:
                 p.x = F[0]/Fg;
                 p.y = F[1]/Fg;
                 p.z = F[2]/Fg;
-
+                
                 marker.points.push_back(p);
 
                 marker.scale.x = 0.03;
@@ -409,28 +395,35 @@ public:
 private:
     /**
      * @brief set_contacts
-     * NOTE: when SET and ADD are used, the friction coefficient is updated with the one of the message which is the same for
+     * NOTE: when SET is used, the friction coefficient is updated with the one of the message which is the same for
      * all the contacts
      * @param msg
      */
 public: void set_contacts(cartesio_planning::SetContactFrames::ConstPtr msg)
     {
-        std::cout << "CALLING CALLBACK FUNCTION!" << std::endl;
+        bool call_init = false;
+
+        //1. we check if we have to change optimize torque option
+        if(msg->optimize_torque != _cs->isTorqueOptimized())
+        {
+            _cs->setOptimizeTorque(msg->optimize_torque);
+            call_init = true;
+        }
+
+        //2. we check if we set, add or remove contacts
         if(msg->action.data() == msg->SET)
         {
             _cs->setContactLinks(msg->frames_in_contact);
             _cs->setFrictionCoeff(msg->friction_coefficient);
+            call_init = true;
         }
-        else if(msg->action.data() == msg->ADD)
-        {
-            _cs->addContactLinks(msg->frames_in_contact);
-            _cs->setFrictionCoeff(msg->friction_coefficient);
-        }
-        else if(msg->action.data() == msg->REMOVE)
-            _cs->removeContactLinks(msg->frames_in_contact);
 
 
-        if(!msg->rotations.empty() && (msg->action.data() == msg->ADD || msg->action.data() == msg->SET))
+        if(call_init)
+            _cs->init();
+
+        //3. we change cotacts
+        if(!msg->rotations.empty())
         {
             if(msg->rotations.size() != msg->frames_in_contact.size())
                 ROS_ERROR("msg->rotations.size() != msg->frames_in_contact.size(), rotations will not be applied!");
@@ -446,7 +439,8 @@ public: void set_contacts(cartesio_planning::SetContactFrames::ConstPtr msg)
             }
         }
 
-        _cs->setOptimizeTorque(msg->optimize_torque);
+
+
 
     }
 

@@ -2,6 +2,8 @@
 #include <boost/range/algorithm.hpp>
 #include <boost/range/adaptors.hpp>
 
+#include <cartesio_acceleration_support/Force.h>
+
 using namespace XBot::Cartesian::Planning;
 using namespace XBot::Cartesian;
 
@@ -17,28 +19,38 @@ CentroidalStatics::CentroidalStatics(XBot::ModelInterface::ConstPtr model, const
     _x_lims_cop(xlims_cop),
     _y_lims_cop(ylims_cop)
 {
-    init();
+    init(false);
 }
 
-void CentroidalStatics::init()
+void CentroidalStatics::init(bool enable_log)
 {
+    if(_model_internal)
+        _model_internal.reset();
+    if(_fcs.size() > 0)
+        _fcs.clear();
+    if(_fs.size() > 0)
+        _fs.clear();
+
+    if(_dyn_feas)
+        _dyn_feas.reset();
+
     auto yaml_problem = createYAMLProblem(_contact_links, _friction_coeff, _optimize_torque);
 
     _model_internal = ModelInterface::getModel(_model->getConfigOptions());
     _model_internal->syncFrom(*_model);
-    auto ctx = std::make_shared<Context>(std::make_shared<Parameters>(1.), _model_internal);
+    auto params = std::make_shared<Parameters>(1.);
+    params->setLogEnabled(enable_log);
+    auto ctx = std::make_shared<Context>(params, _model_internal);
 
     ProblemDescription pb(yaml_problem, ctx);
 
+    if(_ci)
+        _ci.reset();
     _ci = CartesianInterfaceImpl::MakeInstance("OpenSot", pb, ctx);
 
     _dyn_feas = std::dynamic_pointer_cast<acceleration::DynamicFeasibility>(_ci->getTask("dynamic_feasibility"));
-    if(_fcs.size() > 0)
-        _fcs.clear();
     for(auto link : _contact_links)
         _fcs[link] = std::dynamic_pointer_cast<acceleration::FrictionCone>(_ci->getTask(link + "_fc"));
-    if(_fs.size() > 0)
-        _fs.clear();
     for(auto link : _contact_links)
         _fs[link] = std::dynamic_pointer_cast<acceleration::ForceTask>(_ci->getTask(link));
 }
@@ -51,7 +63,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
     yaml << YAML::BeginMap;
     yaml << YAML::Key << "solver_options";
     yaml << YAML::BeginMap;
-    yaml << YAML::Key << "back_end" << YAML::Value << "osqp";
+    yaml << YAML::Key << "back_end" << YAML::Value << "qpoases";
     yaml << YAML::Key << "regularisation" << YAML::Value << 1e-4;
     yaml << YAML::EndMap;
 
@@ -165,54 +177,20 @@ bool CentroidalStatics::setFrictionCoeff(const double friction_coeff)
 void CentroidalStatics::setOptimizeTorque(const bool optimize_torque)
 {
     _optimize_torque = optimize_torque;
-
-    init();
 }
 
 void CentroidalStatics::setContactLinks(const std::vector<std::string>& contact_links)
 {
     _contact_links.clear();
     _contact_links = contact_links;
-
-    init();
 }
 
-void CentroidalStatics::addContactLinks(const std::vector<std::string>& contact_links)
+
+const std::vector< std::string >& CentroidalStatics::getContactLinks()
 {
-    std::map<std::string, Eigen::Matrix3d> rotations;
-    for(auto fc : _fcs)
-        rotations[fc.first] = fc.second->getContactFrame();
-
-    for(auto contact_link : contact_links)
-        _contact_links.push_back(contact_link);
-
-    init();
-
-    for(auto R : rotations)
-        setContactRotationMatrix(R.first, R.second);
+    return _contact_links;
 }
 
-void CentroidalStatics::removeContactLinks(const std::vector<std::string>& contact_links)
-{
-    std::map<std::string, Eigen::Matrix3d> rotations;
-    for(auto fc : _fcs)
-        rotations[fc.first] = fc.second->getContactFrame();
-
-    for(auto link : contact_links)
-    {
-        std::vector<std::string>::iterator it = std::find(_contact_links.begin(), _contact_links.end(), link);
-        if(it != _contact_links.end())
-        {
-            _contact_links.erase(it);
-            rotations.erase(link);
-        }
-    }
-
-    init();
-
-    for(auto R : rotations)
-        setContactRotationMatrix(R.first, R.second);
-}
 
 bool CentroidalStatics::setContactRotationMatrix(const std::string& contact_link,
                                                  const Eigen::Matrix3d& w_R_c)
@@ -232,7 +210,7 @@ bool CentroidalStatics::compute()
 bool CentroidalStatics::checkStability(const double eps)
 {
     if(compute())
-    {
+    {   
         Eigen::VectorXd error;
         if(!_dyn_feas->getTaskError(error))
             return false;
@@ -249,5 +227,19 @@ const std::map<std::string, Eigen::Vector6d>& CentroidalStatics::getForces()
 
     for(auto f : _fs)
         _Fc[f.first] = f.second->getForceValue();
+//         _Fc[f.first] = f.second->getForceReference(); 
     return _Fc;
+}
+
+void CentroidalStatics::setForces(map< string, Eigen::Vector6d> forces) 
+{
+    for (auto i : forces)
+    {
+        auto task = _ci->getTask(i.first); 
+        
+        auto force_task = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::ForceTask>(task);
+        if(!force_task) throw std::runtime_error("Provided task description "
+                                                 "does not have expected type 'ForceTask'");
+        force_task->setForceReference(i.second);
+    }
 }
