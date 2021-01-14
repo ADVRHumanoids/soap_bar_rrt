@@ -7,7 +7,6 @@
     <arg name="use_goal_generator" default="true"/>
     <arg name="world_frame_link" default="l_sole"/>
 
-
     <param name="robot_description"
         textfile="$(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/utils/urdf/cogimon.urdf"/>
 
