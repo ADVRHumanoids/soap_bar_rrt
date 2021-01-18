@@ -88,13 +88,13 @@ class Cogimon:
                                                    xlims_cop=np.array([-0.05, 0.1]),
                                                    ylims_cop=np.array([-0.05, 0.05]))
 
-        # if self.simulation:
-        #     self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
-        #
-        #     self.ft_map = self.sensors_init(arm_estimation_flag=True)
-        #
-        #     self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
-        #     self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
+        if self.simulation:
+            self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
+
+            self.ft_map = self.sensors_init(arm_estimation_flag=True)
+
+            self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
+            self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
