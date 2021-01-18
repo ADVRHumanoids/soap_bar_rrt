@@ -320,7 +320,7 @@ class Connector:
                     self.model.robot.setPositionReference(self.__solution[j][6:])
                     self.model.robot.move()
                 self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.03)
+                rospy.sleep(0.01)
             index = index + 1
 
     def NSPGsample(self, q_start, q_postural, active_links, quat_list, optimize_torque, timeout):
@@ -426,7 +426,7 @@ class Connector:
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3 and i != 2:
+        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
             self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
@@ -434,7 +434,7 @@ class Connector:
             self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
             self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
-            if i == 3:
+            if i == 5:
                 q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
             else:
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
@@ -597,12 +597,12 @@ class Connector:
 
             # find optimize_torque for start and goal stances
             optimize_torque_goal = False
-            if len(active_links_goal) == 2:
+            if len(active_links_goal) == 2 or i == 2:
                 optimize_torque_goal = True
             else:
                 optimize_torque_goal = False
             optimize_torque_start = False
-            if len(active_links_start) == 2:
+            if len(active_links_start) == 2 or i == 2:
                 optimize_torque_start = True
             else:
                 optimize_torque_start = False
@@ -679,7 +679,7 @@ class Connector:
 
             self.__solution = self.__solution + self.solution
 
-            if len(active_links_start) == 3 and i != 2:
+            if len(active_links_start) == 3 and i != 3 and i != 2:
                 dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                 self.q_list[i+1] = dummy_vector
 
