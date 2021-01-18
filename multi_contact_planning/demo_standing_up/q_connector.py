@@ -203,25 +203,25 @@ class Connector:
             for k in self.model.ctrl_points.values():
                 self.ctrl_tasks.append(self.ci.getTask(k))
 
-    def impact_detector(self, lifted_contact, turn, magnitude):
+    def impact_detector(self, turn, magnitude):
 
-        task = self.ctrl_tasks[lifted_contact]
+        task = self.ctrl_tasks[self.__lifted_contact]
         detect_bool = 0
         wrench = self.model.ft_map[task.getName()].getWrench()
         # wrench[direction] = 0 # FOR SIMULATION
-        direction = [k for k, e in enumerate(self.stance_list[turn][lifted_contact]['ref']['normal']) if e != 0]
+        direction = [k for k, e in enumerate(self.stance_list[turn][self.__lifted_contact]['ref']['normal']) if e != 0]
         if (wrench[direction] >= magnitude):
             detect_bool = 1
 
         return detect_bool
 
-    def surface_reacher(self, lifted_contact, turn, force_treshold):
+    def surface_reacher(self, turn, force_treshold):
 
         print 'starting surface reacher...'
-        task = self.ctrl_tasks[lifted_contact]
+        task = self.ctrl_tasks[self.__lifted_contact]
         # velocity desired
         vel_ref = 0.01
-        vel_task = vel_ref * (np.append(- np.array(self.stance_list[turn][lifted_contact]['ref']['normal']), [0, 0, 0]))
+        vel_task = vel_ref * (np.append(- np.array(self.stance_list[turn][self.__lifted_contact]['ref']['normal']), [0, 0, 0]))
 
         print vel_task
         task.enable()
@@ -229,9 +229,9 @@ class Connector:
         lambda_value = task.getLambda()
         task.setLambda(0)
 
-        while not self.impact_detector(lifted_contact, turn, force_treshold):
+        while not self.impact_detector(turn, force_treshold):
 
-            if not self.impact_detector(lifted_contact, turn, force_treshold):
+            if not self.impact_detector(turn, force_treshold):
                 task.setVelocityReference(vel_task)
 
             self.model.robot.sense()
@@ -250,12 +250,11 @@ class Connector:
         CONVERGENCE_TIME = 5.
         UNABLE_TO_SOLVE_MAX = 5
         unable_to_solve = 0
-        ci_time = 0.0
         initialize_trj = False
         while task.getTaskState() == pyci.State.Reaching or time_from_reaching <= CONVERGENCE_TIME:
-            q = np.hstack((q, cogimon.model.getJointPosition().reshape(cogimon.model.getJointNum(), 1)))
+            q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
 
-            if not self.ci_solve_integrate(self.ci, cogimon.model, ci_time, self.ik_dt):
+            if not self.ci_solve_integrate(self.ci_time):
                 print('Unable to solve!!!')
                 unable_to_solve += 1
                 print(unable_to_solve)
@@ -267,7 +266,14 @@ class Connector:
             else:
                 unable_to_solve = 0
 
-            ci_time += self.ik_dt
+            self.ci_time += self.ik_dt
+
+        for index in range(np.size(q, 1)):
+            self.model.model.setJointPosition(q[index, :])
+            self.model.model.update()
+
+            self.model.robot.setPositionReference(q[index, 6:])
+            self.model.robot.move()
 
         print 'Surface reacher done'
 
