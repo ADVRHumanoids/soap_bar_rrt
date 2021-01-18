@@ -52,6 +52,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
+        self.__complete_solution = False
 
 
     def callback(self, data):
@@ -66,8 +67,8 @@ class Connector:
                                                  'links': active_links,
                                                  'rotations': quaternions,
                                                  'optimize_torque': optimize_torque,
-                                                 'x_lim_cop': [-0.05, 0.1],
-                                                 'y_lim_cop': [-0.05, 0.1]}
+                                                 'x_lim_cop': [-0.05, 0.01],
+                                                 'y_lim_cop': [-0.05, 0.05]}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
 
@@ -208,6 +209,7 @@ class Connector:
         task = self.ctrl_tasks[self.__lifted_contact]
         detect_bool = 0
         wrench = self.model.ft_map[task.getName()].getWrench()
+        print wrench
         # wrench[direction] = 0 # FOR SIMULATION
         direction = [k for k, e in enumerate(self.stance_list[turn][self.__lifted_contact]['ref']['normal']) if e != 0]
         if (wrench[direction] >= magnitude):
@@ -268,12 +270,11 @@ class Connector:
 
             self.ci_time += self.ik_dt
 
-        for index in range(np.size(q, 1)):
-            self.model.model.setJointPosition(q[index, :])
+            self.model.model.setJointPosition(q[-1, :])
             self.model.model.update()
-
-            self.model.robot.setPositionReference(q[index, 6:])
+            self.model.robot.setPositionReference(q[-1, 6:])
             self.model.robot.move()
+            rospy.sleep(0.01)
 
         print 'Surface reacher done'
 
@@ -440,17 +441,39 @@ class Connector:
             self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
             self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
-            if i == 5:
+            if i == 5 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            else:
+            elif i == 5 and not self.__complete_solution:
+                # self.model.robot.sense()
+                # self.model.model.syncFrom(self.model.robot)
+                # q = self.model.model.getJointPosition()
+                # q[0:5] = self.q_list[i][0:5]
+                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+            elif i != 5 and self.__complete_solution:
+                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+            elif i != 5 and not self.__complete_solution:
+                self.model.robot.sense()
+                self.model.model.syncFrom(self.model.robot)
+                q = self.model.model.getJointPosition()
+                # q[0:5] = self.q_list[i][0:5]
+                q = self.model.model.getJointPosition()
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             self.q_bounder(q_start)
+
             q_goal = self.setClearence(i+1, self.q_list[i+1], clearence, 'goal')
             self.q_bounder(q_goal)
 
         else:
-            q_start = self.q_list[i]
-            self.q_bounder(q_start)
+            if self.__complete_solution:
+                q_start = self.q_list[i]
+                self.q_bounder(q_start)
+            else:
+                self.model.robot.sense()
+                self.model.model.syncFrom(self.model.robot)
+                # q_start = self.model.model.getJointPosition()
+                # q_start[0:5] = self.q_list[i][0:5]
+                q_start = self.q_list[i]
+                self.q_bounder(q_start)
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
 
@@ -509,10 +532,20 @@ class Connector:
 
             self.ci_time += self.ik_dt
 
-        if state == 'start' or state == 'touch':
+        # if self.__complete_solution, save the cartesian solution
+        if (state == 'start' or state == 'touch') and self.__complete_solution:
             q_list = list(q.transpose())
             self.__solution = self.__solution + q_list
             self.__counter = self.__counter + len(q_list)
+
+        # else play the solution as soon as it is calculated
+        elif (state == 'start' or state == 'touch') and not self.__complete_solution:
+            for index in range(np.size(q, 1)):
+                self.model.model.setJointPosition(q[:, index])
+                self.model.model.update()
+                self.model.robot.setPositionReference(q[6:, index])
+                self.model.robot.move()
+                rospy.sleep(0.01)
 
         return self.model.model.getJointPosition()
 
@@ -683,11 +716,22 @@ class Connector:
                     del self.__solution[-1]
                 continue
 
-            self.__solution = self.__solution + self.solution
+            if self.__complete_solution:
+                self.__solution = self.__solution + self.solution
+            else:
+                for q in self.solution:
+                    self.model.model.setJointPosition(q)
+                    self.model.model.update()
+                    self.model.robot.setPositionReference(q[6:])
+                    self.model.robot.move()
+                    rospy.sleep(0.01)
 
             if len(active_links_start) == 3 and i != 3 and i != 2:
-                dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
-                self.q_list[i+1] = dummy_vector
+                if self.__complete_solution:
+                    dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
+                    self.q_list[i+1] = dummy_vector
+                else:
+                    self.surface_reacher(i, 1000)
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
