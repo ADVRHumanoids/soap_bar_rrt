@@ -39,6 +39,7 @@ class Connector:
         self.ik_dt = 0.01
         self.make_cartesian_interface(nspg=True)
         self.make_cartesian_interface(nspg=False)
+        self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
 
         self.ik_solver = planning.PositionCartesianSolver(self.ci_nspg)
         self.planner_client = coman_rising.planner_client()
@@ -212,7 +213,7 @@ class Connector:
         print wrench
         # wrench[direction] = 0 # FOR SIMULATION
         direction = [k for k, e in enumerate(self.stance_list[turn][self.__lifted_contact]['ref']['normal']) if e != 0]
-        if (wrench[direction] >= magnitude):
+        if (abs(wrench[direction]) >= magnitude):
             detect_bool = 1
 
         return detect_bool
@@ -220,10 +221,14 @@ class Connector:
     def surface_reacher(self, turn, force_treshold):
 
         print 'starting surface reacher...'
-        task = self.ctrl_tasks[self.__lifted_contact]
+        self.ci.reset(0)
+        task = self.ctrl_tasks[self.__lifted_contact_ind]
         # velocity desired
         vel_ref = 0.01
-        vel_task = vel_ref * (np.append(- np.array(self.stance_list[turn][self.__lifted_contact]['ref']['normal']), [0, 0, 0]))
+        vel_task = vel_ref * (-np.array(self.stance_list[turn + 1][self.__lifted_contact]['ref']['normal']))
+        w_R_t = self.model.model.getPose('torso').linear
+        t_vel = np.dot(np.linalg.inv(w_R_t), np.array(vel_task).transpose())
+        vel_task = np.append(t_vel, [0, 0, 0])
 
         print vel_task
         task.enable()
@@ -231,50 +236,30 @@ class Connector:
         lambda_value = task.getLambda()
         task.setLambda(0)
 
+        self.ci_time = 0
+
         while not self.impact_detector(turn, force_treshold):
 
-            if not self.impact_detector(turn, force_treshold):
-                task.setVelocityReference(vel_task)
+            task.setVelocityReference(vel_task)
+            print task.getPoseReference()[1]
+
+            if not self.ci_solve_integrate(self.ci_time):
+                print ('unable to solve')
+                break
+
+            q = self.model.model.getJointPosition()
+            self.model.robot.setPositionReference(q[6:])
+            self.model.robot.move()
+            self.ci_time += self.ik_dt
 
             self.model.robot.sense()
             self.model.model.syncFrom(self.model.robot)
             self.model.f_est.update()
-
+            rospy.sleep(self.ik_dt)
 
         task.enable()
         task.setControlMode(pyci.ControlType.Position)
         task.setLambda(lambda_value)
-
-        ############################################
-        ############################################
-        ## Cartesian part
-        time_from_reaching = 0.
-        CONVERGENCE_TIME = 5.
-        UNABLE_TO_SOLVE_MAX = 5
-        unable_to_solve = 0
-        initialize_trj = False
-        while task.getTaskState() == pyci.State.Reaching or time_from_reaching <= CONVERGENCE_TIME:
-            q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
-
-            if not self.ci_solve_integrate(self.ci_time):
-                print('Unable to solve!!!')
-                unable_to_solve += 1
-                print(unable_to_solve)
-                # break
-                if unable_to_solve >= UNABLE_TO_SOLVE_MAX:
-                    print("Maximum number of unable_to_solve reached: ")
-                    print(unable_to_solve)
-                    return q, False
-            else:
-                unable_to_solve = 0
-
-            self.ci_time += self.ik_dt
-
-            self.model.model.setJointPosition(q[-1, :])
-            self.model.model.update()
-            self.model.robot.setPositionReference(q[-1, 6:])
-            self.model.robot.move()
-            rospy.sleep(0.01)
 
         print 'Surface reacher done'
 
@@ -441,17 +426,17 @@ class Connector:
             self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
             self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
-            if i == 5 and self.__complete_solution:
+            if i == 4 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            elif i == 5 and not self.__complete_solution:
+            elif i == 4 and not self.__complete_solution:
                 # self.model.robot.sense()
                 # self.model.model.syncFrom(self.model.robot)
                 # q = self.model.model.getJointPosition()
                 # q[0:5] = self.q_list[i][0:5]
                 q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            elif i != 5 and self.__complete_solution:
+            elif i != 4 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            elif i != 5 and not self.__complete_solution:
+            elif i != 4 and not self.__complete_solution:
                 self.model.robot.sense()
                 self.model.model.syncFrom(self.model.robot)
                 q = self.model.model.getJointPosition()
@@ -554,48 +539,6 @@ class Connector:
         s = len(self.q_list) - 1
         i = 0
         while i < s:
-
-            # if i == 10:
-            # self.model.model.setJointPosition(self.q_list[-1])
-            # self.model.model.update()
-            # self.ci_nspg.reset(0)
-            #
-            # # T = list()
-            # # for index in self.model.ctrl_points.values():
-            # #     T.append(self.model.model.getPose(index))
-            # # for index in range(len(T)):
-            # #    self.ctrl_tasks_nspg[index].setPoseReference(T[index])
-            # # self.model.model.setJointPosition(self.q_list[i+1])
-            # # self.model.model.update()
-            # # self.ctrl_tasks_nspg[0].setPoseReference(self.model.model.getPose('l_ball_tip'))
-            # T = self.ci_nspg.getTask('r_ball_tip').getPoseReference()[0]
-            # T.translation = [0.7, -0.2, 0.0]
-            # self.ci_nspg.getTask('r_ball_tip').setPoseReference(T)
-            # self.ci_nspg.getTask('postural').setReferencePosture(self.model.model.eigenToMap(self.q_list[-1]))
-            #
-            # if not self.ci_nspg.update(0, self.ik_dt):
-            #     return False
-            #
-            # q = self.model.model.getJointPosition()
-            # qdot = self.model.model.getJointVelocity()
-            #
-            # q += qdot * self.ik_dt
-            #
-            # self.model.model.setJointPosition(self.q_list[-1])
-            # self.model.model.update()
-            # self.model.start_viz.publishMarkers([])
-            # self.model.model.setJointPosition(self.q_list[-2])
-            # self.model.model.update()
-            # self.model.sol_viz.publishMarkers([])
-            # self.model.model.setJointPosition(q)
-            # self.model.model.update()
-            # self.model.goal_viz.publishMarkers([])
-            # print(map(float,self.model.model.getJointPosition()))
-            # exit()
-
-
-
-
             # reset the counter
             self.__counter = 0
 
@@ -710,13 +653,15 @@ class Connector:
             rospy.sleep(2.)
 
             res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
-            rospy.sleep(2.)
+            rospy.sleep(0.5)
+
             if not res:
                 for deleter in range(self.__counter):
                     del self.__solution[-1]
                 continue
 
             if self.__complete_solution:
+
                 self.__solution = self.__solution + self.solution
             else:
                 for q in self.solution:
@@ -726,12 +671,14 @@ class Connector:
                     self.model.robot.move()
                     rospy.sleep(0.01)
 
+            rospy.sleep(0.5)
+
             if len(active_links_start) == 3 and i != 3 and i != 2:
                 if self.__complete_solution:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
                 else:
-                    self.surface_reacher(i, 1000)
+                    self.surface_reacher(i, 20)
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
