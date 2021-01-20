@@ -221,7 +221,7 @@ public:
             {
                 Eigen::Vector6d F = Fcs[fc.first];
 
-                std::cout << fc.first << "  " << F.transpose() << std::endl;
+//                 std::cout << fc.first << "  " << F.transpose() << std::endl;
 
                 Eigen::Affine3d w_T_c;
                 _model.getPose(fc.first, w_T_c);

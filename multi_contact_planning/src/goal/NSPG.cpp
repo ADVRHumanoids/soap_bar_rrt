@@ -106,6 +106,7 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
     // Add random velocities for colliding chains
     if (!_vc_context.vc_aggregate.check("collisions")) 
     {
+        std::cout << "collision check failed!" << std::endl;
         for (auto i:colliding_chains)
         {
             // Here you can add extra joints to the kinematic chains in collision.           
@@ -128,12 +129,13 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
             
         }
     }
-    if (!_vc_context.vc_aggregate.check("stability"))
-    {
-        random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*generateRandom()));
-        random_map.insert(std::make_pair("VIRTUALJOINT_2", 50*generateRandom()));
-        random_map.insert(std::make_pair("VIRTUALJOINT_3", 50*generateRandom()));
-    }
+//     if (!_vc_context.vc_aggregate.check("stability"))
+//     {
+//         std::cout << "stability check failed!" << std::endl;
+//         random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*generateRandom()));
+//         random_map.insert(std::make_pair("VIRTUALJOINT_2", 50*generateRandom()));
+//         random_map.insert(std::make_pair("VIRTUALJOINT_3", 50*generateRandom()));
+//     }
     
     // Add random velocities to the floating base when the convex hull check fails
 
