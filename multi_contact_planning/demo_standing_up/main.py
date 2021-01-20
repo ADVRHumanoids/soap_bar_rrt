@@ -67,27 +67,17 @@ if __name__ == '__main__':
 
     logged_data = []
     log_path = '/tmp'
-    ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'),(1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
+    ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'), (1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0+/qList.txt")
-    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0+/sigmaList.txt")
+    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/qList.txt")
+    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
 
-    # home configuration added for phase0
-    q_home = [0.0300119, -0.10315, 0.962093, -0, -0.059999, -0,
-              0, -0.363826, 0, 0.731245, -0.30742, 0,
-              0, -0.363826, 0, 0.731245, -0.30742, 0,
-              0, 0,
-              0.959931, 0.007266, 0, -1.91986, 0, -0.523599, 0,
-              0.959931, -0.007266, 0, -1.91986, 0, -0.523599, 0]
-    q_list.insert(0, q_home)
-    stances.insert(0, stances[0])
-
-    flag = loader.checkStability(cogimon, stances, q_list)
-    print flag
-    rospy.sleep(2.)
+    # flag = loader.checkStability(cogimon, stances, q_list)
+    # print flag
+    # rospy.sleep(2.)
     # exit()
 
     # if cogimon.simulation:
