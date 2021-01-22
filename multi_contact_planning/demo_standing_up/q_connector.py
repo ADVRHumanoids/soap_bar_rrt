@@ -68,8 +68,8 @@ class Connector:
                                                  'links': active_links,
                                                  'rotations': quaternions,
                                                  'optimize_torque': optimize_torque,
-                                                 'x_lim_cop': [-0.05, 0.1],
-                                                 'y_lim_cop': [-0.05, 0.05]}
+                                                 'x_lim_cop': [-0.025, 0.075],
+                                                 'y_lim_cop': [-0.025, 0.025]}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
 
@@ -419,7 +419,7 @@ class Connector:
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3:# and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
             self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
@@ -428,17 +428,17 @@ class Connector:
             self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
             # hardcoded stuff for phase0
-            if i == 3 and self.__complete_solution:
+            if i == 4 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            elif i == 3 and not self.__complete_solution:
+            elif i == 4 and not self.__complete_solution:
                 # self.model.robot.sense()
                 # self.model.model.syncFrom(self.model.robot)
                 # q = self.model.model.getJointPosition()
                 # q[0:5] = self.q_list[i][0:5]
                 q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            elif i != 3 and self.__complete_solution:
+            elif i != 4 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            elif i != 3 and not self.__complete_solution:
+            elif i != 4 and not self.__complete_solution:
                 self.model.robot.sense()
                 self.model.model.syncFrom(self.model.robot)
                 q = self.model.model.getJointPosition()
@@ -715,7 +715,7 @@ class Connector:
 
             rospy.sleep(0.5)
 
-            if len(active_links_start) == 3: #and i != 3 and i != 2:
+            if len(active_links_start) == 3 and i != 3 and i != 2:
                 if self.__complete_solution:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
@@ -734,7 +734,7 @@ class Connector:
 
     def replaySolution(self):
         self.__solution = []
-        txt = np.loadtxt('solution.csv', delimiter=',')
+        txt = np.loadtxt('solution_phase1.csv', delimiter=',')
         for i in range(np.size(txt, 0)):
             self.__solution.append(txt[i, :])
         self.play_solution(1)

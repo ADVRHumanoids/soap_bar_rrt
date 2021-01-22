@@ -85,8 +85,8 @@ class Cogimon:
                                                    self.ctrl_points.values(),
                                                    0.5*np.sqrt(2),
                                                    optimize_torque=False,
-                                                   xlims_cop=np.array([-0.05, 0.1]),
-                                                   ylims_cop=np.array([-0.05, 0.05]))
+                                                   xlims_cop=np.array([-0.015, 0.065]),
+                                                   ylims_cop=np.array([-0.015, 0.015]))
 
         if self.simulation:
             self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
