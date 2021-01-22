@@ -389,6 +389,8 @@ EndEffector Planner::getTaskEndEffectorName(std::string ee_str){
 bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev){
 
     // build references
+    Eigen::VectorXd q_postural(n_dof);
+    q_postural << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
     int i_init;
@@ -496,7 +498,7 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     cPrev.segment(0,3) = posFB;
     cPrev.segment(3,3) = rotFB;
     cPrev.tail(n_dof-6) = qPrev.getJointValues();
-    NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
+    NSPG->getIKSolver()->getModel()->setJointPosition(q_postural);
     NSPG->getIKSolver()->getModel()->update();
 
     // search IK solution
@@ -849,8 +851,9 @@ void Planner::run(){
                 }
 
                 bool similar = similarityTest(sigmaNew);
+                bool check_distance = distanceCheck(sigmaNew);
 
-                if(!similar)
+                if(!similar && !check_distance)
                 {
                     sigmaListVertex.clear();
                     qListVertex.clear();
@@ -1065,5 +1068,31 @@ Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
 
     return rot;
 }
+
+bool Planner::distanceCheck ( Stance sigma ) 
+{
+    Eigen::Affine3d T;
+
+    T = sigma.retrieveContactPose(L_FOOT);
+    Eigen::Vector3d pLFoot = T.translation();
+    
+    T = sigma.retrieveContactPose(L_HAND);
+    Eigen::Vector3d pLHand = T.translation();
+    
+    T = sigma.retrieveContactPose(R_FOOT);
+    Eigen::Vector3d pRFoot = T.translation();
+    
+    T = sigma.retrieveContactPose(R_HAND);
+    Eigen::Vector3d pRHand = T.translation();
+    
+    if (euclideanDistance(pLFoot, pLHand) > 0.65)
+        return false;
+    if (euclideanDistance(pRFoot, pRHand) > 0.65)
+        return false;
+    
+    return true;
+
+}
+
 
 
