@@ -65,3 +65,16 @@ bool ValidityPredicateAggregate::check(const std::string& id)
     }
     return true;
 }
+
+bool ValidityPredicateAggregate::exist(const std::string id) 
+{
+    for (auto i : _functions)
+    {
+        if (id == i.first)
+            return true;
+    }
+    
+    return false;
+    
+}
+

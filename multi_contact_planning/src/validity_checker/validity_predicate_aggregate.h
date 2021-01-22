@@ -54,6 +54,8 @@ public:
      * NOTE: throw error if id does not exists
      */
     bool check(const std::string& id);
+    
+    bool exist(const std::string id);
 
 private:
 
