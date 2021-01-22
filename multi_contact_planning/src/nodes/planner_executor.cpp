@@ -220,13 +220,14 @@ void PlannerExecutor::init_load_model()
 //     q_init <<  -0.0519934, -0.00367742, 0.622926, 3.11831, 1.17912, 3.2064, 0.448539, -1.50196, 0.489673, 0, -0.452481, -0.0825496, -1.13953, -1.26619, -1.24827, 0, -0.507944, 0.261799, -0.150113, -0.204497, -3.352, 1.04099, -1.75615, -1.1217, 0.994067, 1.478, 0.162285, -3.359, -1.13074, -1.1096, -0.189419, -1.9351, -1.19221, -2.22644,
 
     // phase 1
-    q_init << 0.3034916744484184, -0.06694713910456, 0.7191095706187617, 3.0741171970900685, 1.7417349739445287, -3.1339345599753847, -0.020844639702944954, -1.8623785977836134, -0.0270344572797985, 1.1393877960360044, -0.6769941459981967, 0.051466758875181665, -0.02632577164182046, -1.8198875947290112, -0.031892890243345205, 1.0620998584821295, -0.6418126995335836, 0.050808966906207245, -0.05059383499141644, 0.07041542368710968, -0.7448276560533552, 0.6494898591424055, 0.032442547576852436, -1.0107535207409952, 0.6731317010114631, 0.5225208467979149, -0.2407174809910508, -0.7434304992941834, -0.6493597945509444, -0.11045920840148425, -0.9038938190728106, -0.6167964905396764, 0.3957269581824489, 0.1656382227451778;
+    q_init << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
     
     q_goal.resize(n_dof);
 //     q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
 
     // phaase 1
-    q_goal << 0.0817944, -0.0459652, 0.562943, 3.22873, 1.29048, 3.13332, 0.287751, -1.22788, 0.335744, 0.0259489, -0.633213, -0.194167, -0.983884, -1.21671, -1.10644, 0.4062, -0.865606, 0.249889, 0.118649, 0.0118292, -3.32887, 2.05704, -1.67603, -1.81254, 0.959125, 1.478, 0.241725, -3.2857, -0.251944, -1.40935, -1.43088, -1.5163, -1.09998, -0.0285249;;
+    q_goal << 0.224122, -0.0630228, 0.681415, 2.839, 1.87921, -2.76584, 0.454997, -1.22762, 0.324562, 0.798218, -0.836835, -0.20195, -0.55206, -1.01035, -0.646522, 0.679781, -0.841541, 0.250388, 0.163728, -0.0791777, -0.802822, 0.738919, 0.200142, -0.710704, 0.444455, 0.433695, 0.00353928, -0.80278, -0.852888, -0.140258, -0.785431, -0.44294, 0.536017, 0.0227472;
+    
     q_goal(0) += 1.0; // aim to make move the robot 0.5 meter forward
 
     _model->setJointPosition(q_init);
@@ -250,7 +251,7 @@ void PlannerExecutor::init_load_model()
     double side_x = 5.0;
     double side_y = 2.0;
     double side_z = 3.0;
-    double resolution = 0.1;
+    double resolution = 0.05;
 
     _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, center, side_x, side_y, side_z, resolution);
     _pc_manager->computeNormals(0.2);
@@ -589,8 +590,8 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     all_tasks.push_back("TCP_R");
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
-    all_tasks.push_back("LHandOrientation");
-    all_tasks.push_back("RHandOrientation");
+//     all_tasks.push_back("LHandOrientation");
+//     all_tasks.push_back("RHandOrientation");
 
     ik->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
 
@@ -651,8 +652,8 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
     active_tasks.push_back("r_sole");
-    active_tasks.push_back("LHandOrientation");
-    active_tasks.push_back("RHandOrientation");
+//     active_tasks.push_back("LHandOrientation");
+//     active_tasks.push_back("RHandOrientation");
 
     Eigen::MatrixXd normals = _pc_manager->getNormals();
 
@@ -669,45 +670,52 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 //     ref_tasks.push_back(T_ref);
     //LH
     //pos_ref << 1.0, 0.2, 1.4;
-    pos_ref << 0.7, 0.4, 0.0; // init
+    pos_ref << 0.7, 0.2, 0.0; // init
     T_ref.translation() = pos_ref;
-    T_ref.linear() = rot_ref;
+    T_ref.linear() << -1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref);
     //RH
 //     pos_ref << 1.0, -0.4, 1.4;
-    pos_ref << 0.7, -0.6, 0.0; // init
+    pos_ref << 0.7, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
-    T_ref.linear() = rot_ref;
+    T_ref.linear() << -1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref);
     //LF
     //pos_ref << 0.0, 0.0, 0.0;
-    pos_ref << -0.5, 0.2, 0.0; // init
+    pos_ref << -0.3, 0.2, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RF
     //pos_ref << 0.0, -0.2, 0.0;
-    pos_ref << -0.5, -0.4, 0.0; // init
+    pos_ref << -0.3, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
-    //LH_orientation
-    pos_ref << 0.0, 0.0, 0.0;
-    T_ref.translation() = pos_ref;
-    T_ref.linear() << -1.0, 0.0, 0.0,
-                       0.0, 1.0, 0.0,
-                       0.0, 0.0, -1.0;
-    ref_tasks.push_back(T_ref);
-    //RH_orientation
-    pos_ref << 0.0, 0.0, 0.0;
-    T_ref.translation() = pos_ref;
-    T_ref.linear() << -1.0, 0.0, 0.0,
-                       0.0, 1.0, 0.0,
-                       0.0, 0.0, -1.0;
-    ref_tasks.push_back(T_ref);
+    
+//     //LH_orientation
+//     pos_ref << 0.0, 0.0, 0.0;
+//     T_ref.translation() = pos_ref;
+//     T_ref.linear() << -1.0, 0.0, 0.0,
+//                        0.0, 1.0, 0.0,
+//                        0.0, 0.0, -1.0;
+//     ref_tasks.push_back(T_ref);
+//     //RH_orientation
+//     pos_ref << 0.0, 0.0, 0.0;
+//     T_ref.translation() = pos_ref;
+//     T_ref.linear() << -1.0, 0.0, 0.0,
+//                        0.0, 1.0, 0.0,
+//                        0.0, 0.0, -1.0;
+//     ref_tasks.push_back(T_ref);
 
     setReferences( active_tasks, ref_tasks, q_ref );
-
+    
+    _NSPG->getIKSolver()->getModel()->setJointPosition(q_init);
+    _NSPG->getIKSolver()->getModel()->update();
     _NSPG->getIKSolver()->solve();
 
     Eigen::VectorXd q;
