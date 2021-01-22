@@ -1,0 +1,23 @@
+<launch>
+    
+    <node pkg="cartesio_acceleration_support"
+            type="force_optimization_node"
+            name="fopt_node" output="screen">
+
+ 
+
+            <param name="tf_prefix" value="ci"/>
+
+ 
+
+            <param name="problem_description"
+                   textfile="$(find multi_contact_planning)/configs/problem/coman_stack_force.yaml"/>
+
+ 
+
+            <remap from="force_opt/joint_states" to="/cartesian/solution"/>
+    </node>
+
+ 
+
+</launch>

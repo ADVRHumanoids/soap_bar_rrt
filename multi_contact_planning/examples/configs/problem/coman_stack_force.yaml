@@ -1,0 +1,149 @@
+solver_options:
+    regularization: 1e-3
+    back_end: "osqp"
+
+stack:
+    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"]
+
+constraints:
+    - "UnderactuatedDyn"
+    - "l_sole_fc"
+    - "r_sole_fc"
+    - "l_ball_tip_fc"
+    - "r_ball_tip_fc"
+    - "l_sole_F_lims"
+    - "r_sole_F_lims"
+    - "l_ball_tip_F_lims"
+    - "r_ball_tip_F_lims"
+
+
+#LeftCoP:
+#    lib_name: libcartesio_acceleration_support.so
+#    type: "CoP"
+#    link: "l_sole"
+#    x_limits: [-0.05, 0.1]
+#    y_limits: [-0.05, 0.05]
+
+#RightCoP:
+#    lib_name: libcartesio_acceleration_support.so
+#    type: "CoP"
+#    link: "r_sole"
+#    x_limits: [-0.05, 0.1]
+#    y_limits: [-0.05, 0.05]
+
+
+r_sole_wrench:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Force"
+    link: "r_sole"
+    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+
+l_sole_wrench:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Force"
+    link: "l_sole"
+    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+
+r_ball_tip_wrench:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Force"
+    link: "r_ball_tip"
+    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+
+l_ball_tip_wrench:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Force"
+    link: "l_ball_tip"
+    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+
+r_sole_fc:
+    lib_name: libcartesio_acceleration_support.so
+    type: "FrictionCone"
+    link: "r_sole"
+    friction_coeff: 0.5
+#    local: true
+
+l_sole_fc:
+    lib_name: libcartesio_acceleration_support.so
+    type: "FrictionCone"
+    link: "l_sole"
+    friction_coeff: 0.5
+#    local: true
+
+r_ball_tip_fc:
+    lib_name: libcartesio_acceleration_support.so
+    type: "FrictionCone"
+    link: "r_ball_tip"
+    friction_coeff: 0.5
+#    local: true
+
+l_ball_tip_fc:
+    lib_name: libcartesio_acceleration_support.so
+    type: "FrictionCone"
+    link: "l_ball_tip"
+    friction_coeff: 0.5
+#    local: true
+
+r_sole_F_lims:
+    lib_name: libcartesio_acceleration_support.so
+    type: "ForceLimits"
+    link: "r_sole"
+    min: [-1000, -1000, -1000, 0, 0, 0]
+    max: [1000, 1000, 1000,  0, 0, 0]
+
+l_sole_F_lims:
+    lib_name: libcartesio_acceleration_support.so
+    type: "ForceLimits"
+    link: "l_sole"
+    min: [-1000, -1000, -1000, 0, 0, 0]
+    max: [1000, 1000, 1000, 0, 0, 0]
+
+r_ball_tip_F_lims:
+    lib_name: libcartesio_acceleration_support.so
+    type: "ForceLimits"
+    link: "r_ball_tip"
+    min: [-1000, -1000, -1000, 0, 0, 0]
+    max: [1000, 1000, 1000,  0, 0, 0]
+
+l_ball_tip_F_lims:
+    lib_name: libcartesio_acceleration_support.so
+    type: "ForceLimits"
+    link: "l_ball_tip"
+    min: [-1000, -1000, -1000, 0, 0, 0]
+    max: [1000, 1000, 1000, 0, 0, 0]
+
+LHandWrench:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Force"
+    link: "l_wrist"
+    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+
+LHandFc:
+    lib_name: libcartesio_acceleration_support.so
+    type: "FrictionCone"
+    link: "l_wrist"
+
+LHandFlims:
+    lib_name: libcartesio_acceleration_support.so
+    type: "ForceLimits"
+    link: "l_wrist"
+    min: [-1000, -1000, -1000, 0, 0, 0]
+    max: [1000, 1000, 1000, 0, 0, 0]
+
+
+UnderactuatedDyn:
+    lib_name: libcartesio_acceleration_support.so
+    type: "DynamicFeasibility"
+    contacts: ["l_sole", "r_sole", "l_ball_tip", "r_ball_tip"]
+    dynamics: false
+
+postural:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Postural"
+    lambda: 0.01
+
+
+
+
+
+
