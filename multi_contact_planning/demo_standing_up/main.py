@@ -69,11 +69,11 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'), (1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/qList.txt")
-    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
+    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/#2/qList.txt")
+    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/#2/sigmaList.txt")
 
     # flag = loader.checkStability(cogimon, stances, q_list)
     # print flag
