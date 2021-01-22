@@ -69,6 +69,7 @@ class Planner {
         Eigen::Vector3d computeCoM(Configuration q);
         Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
         bool similarityTest(Stance sigmaNew);
+        bool distanceCheck(Stance sigma);
         double computeHrange(Configuration q);
         double computeHtorso(Configuration q);
                 Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
