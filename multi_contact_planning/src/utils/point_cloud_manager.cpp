@@ -22,7 +22,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d cent
 {
     double x, y, z;
     unsigned int index = 0;
-    _pcl_pointcloud->resize(1000);
+    _pcl_pointcloud->resize(10000);
     _pub = nh.advertise<visualization_msgs::MarkerArray> ( "normals_plane", 1, true);
     for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
     {
