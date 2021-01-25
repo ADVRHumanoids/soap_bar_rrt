@@ -68,7 +68,7 @@ class Connector:
                                                  'links': active_links,
                                                  'rotations': quaternions,
                                                  'optimize_torque': optimize_torque,
-                                                 'x_lim_cop': [-0.025, 0.075],
+                                                 'x_lim_cop': [-0.025, 0.065],
                                                  'y_lim_cop': [-0.025, 0.025]}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
@@ -275,9 +275,9 @@ class Connector:
 
     def rotation(self, normal):
 
-        if normal == [0., 0., 1.]:
+        if normal[2] > 0.01:
             theta = [0, 0, 0]
-        elif normal == [-1., 0., 0.]:
+        elif normal[0] < -0.01:
             theta = [0, -np.pi / 2, 0]
         else:
             raise Exception('wrong normal')
@@ -419,7 +419,7 @@ class Connector:
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3: # and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
             self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
@@ -428,23 +428,25 @@ class Connector:
             self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
             # hardcoded stuff for phase0
-            if i == 4 and self.__complete_solution:
-                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            elif i == 4 and not self.__complete_solution:
-                # self.model.robot.sense()
-                # self.model.model.syncFrom(self.model.robot)
-                # q = self.model.model.getJointPosition()
-                # q[0:5] = self.q_list[i][0:5]
-                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            elif i != 4 and self.__complete_solution:
-                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            elif i != 4 and not self.__complete_solution:
-                self.model.robot.sense()
-                self.model.model.syncFrom(self.model.robot)
-                q = self.model.model.getJointPosition()
-                # q[0:5] = self.q_list[i][0:5]
-                q = self.model.model.getJointPosition()
-                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+            # if i == 4 and self.__complete_solution:
+            #     q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+            # elif i == 4 and not self.__complete_solution:
+            #     # self.model.robot.sense()
+            #     # self.model.model.syncFrom(self.model.robot)
+            #     # q = self.model.model.getJointPosition()
+            #     # q[0:5] = self.q_list[i][0:5]
+            #     q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+            # elif i != 4 and self.__complete_solution:
+            #     q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+            # elif i != 4 and not self.__complete_solution:
+            #     self.model.robot.sense()
+            #     self.model.model.syncFrom(self.model.robot)
+            #     q = self.model.model.getJointPosition()
+            #     # q[0:5] = self.q_list[i][0:5]
+            #     q = self.model.model.getJointPosition()
+            #     q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+
+            q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             self.q_bounder(q_start)
 
             # q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
@@ -488,13 +490,15 @@ class Connector:
             for iterator in range(len(self.stance_list[i])):
                 if self.stance_list[i][iterator]['ind'] == self.__lifted_contact:
                     normal = self.stance_list[i][iterator]['ref']['normal']
+                    final = self.stance_list[i][iterator]['ref']['pose']
                     break
 
         # set clearence: state == start or state == goal -> clearence = clearence
         #                state == touch -> clearence = -model.getPose(lifted_contact).translation * normal
         if state == 'touch':
             p = self.model.model.getPose(self.__lifted_contact_link).translation
-            clearence = - np.dot(p, [abs(ele) for ele in normal])
+            step = np.array(final) - np.array(p)
+            clearence = - np.dot(step, [abs(ele) for ele in normal])
 
         w_p_d = clearence * np.array(normal)
         t_p_d = np.dot(np.linalg.inv(w_R_t), w_p_d.transpose())
@@ -548,44 +552,7 @@ class Connector:
             self.__counter = 0
 
             # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
-
-            # self.model.model.setJointPosition(q_start)
-            # self.model.model.update()
-            # for index in range(len(self.model.ctrl_points.values())):
-            #     T = self.model.model.getPose(self.model.ctrl_points.values()[index])
-            #     print self.model.ctrl_points.values()[index]
-            #     print T
-            # self.model.start_viz.publishMarkers([])
-            # # self.ci_nspg.reset(0)
-            # T = self.model.model.getPose('l_ball_tip')
-            # T.translation = [0.6818, 0.06725, 0.]
-            # [self.ci_nspg.getTask(c).setPoseReference(self.model.model.getPose(c)) for c in
-            #  self.model.ctrl_points.values()]
-            # self.ci_nspg.getTask('l_ball_tip').setPoseReference(T)
-            # print '\n'
-            # print self.model.ctrl_points.values()
-            # print [self.ci_nspg.getTask(c).getPoseReference() for c in self.model.ctrl_points.values()]
-            # raw_input('click')
-            # if not self.ci_nspg.update(0, self.ik_dt):
-            #     print 'unable to find a solution'
-            #     exit()
-            # q = self.model.model.getJointPosition()
-            # qdot = self.model.model.getJointVelocity()
-            #
-            # q += qdot * self.ik_dt
-            #
-            # self.model.model.setJointPosition(q)
-            # self.model.model.update()
-            # for index in range(len(self.model.ctrl_points.values())):
-            #     T = self.model.model.getPose(self.model.ctrl_points.values()[index])
-            #     print self.model.ctrl_points.values()[index]
-            #     print T
-            #     print map(float,q)
-            # self.model.goal_viz.publishMarkers([])
-            # exit()
-
-
+            [q_start, q_goal] = self.computeStartAndGoal(0.0, i)
 
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
@@ -677,6 +644,10 @@ class Connector:
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
             print 'Start and Goal poses set'
+            if i > 0:
+                self.model.replay_model.setJointPosition(self.q_list[i-1])
+                self.model.replay_model.update()
+                self.model.sol_viz.publishMarkers([], True)
             rospy.sleep(2.)
 
             if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
@@ -715,7 +686,7 @@ class Connector:
 
             rospy.sleep(0.5)
 
-            if len(active_links_start) == 3 and i != 3 and i != 2:
+            if len(active_links_start) == 3: # and i != 3 and i != 2:
                 if self.__complete_solution:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
