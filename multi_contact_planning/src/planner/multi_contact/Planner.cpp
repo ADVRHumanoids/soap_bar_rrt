@@ -810,214 +810,154 @@ void Planner::run(){
     Vertex* vNear;
     Vertex* vNew;
 
-    std::vector<Configuration> qListVertex;
-    std::vector<Stance> sigmaListVertex;
-
     while(j < MAX_ITERATIONS && !solutionFound)
-        {
-            foutLogMCP << "j = " << j << std::endl;
+    {
+        foutLogMCP << "j = " << j << std::endl;
 
-            double pr = exploitationDistribution(exploitationGenerator);
-            if(pr < EXPLOITATION_RATE)
+        double pr = exploitationDistribution(exploitationGenerator);
+        if(pr < EXPLOITATION_RATE)
+        {
+            // exploitation
+            // pick a random contact from sigmaGoal and retrieve the corresponding ee and position
+            foutLogMCP << "+++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++" << std::endl;
+            Contact* c = pickRandomContactFromGoalStance();
+            pk = c->getEndEffectorName();
+            rRand = c->getPose().translation();
+        }
+        else
+        {
+            // exploration
+            // pick a random ee and a random point
+            foutLogMCP << "+++++++++++++++++++++++++++++ EXPLORATION +++++++++++++++++++++++++++++" << std::endl;
+            pk = pickRandomEndEffector();
+            rRand = pickRandomPoint();
+        }
+
+        int iNear = findNearestVertexIndex(pk, rRand);
+        foutLogMCP << "iNear = " << iNear << std::endl;
+        foutLogMCP << "pk = " << pk << std::endl;
+
+        if(iNear != -1)
+        {
+            // a vertex of the tree is available for expansion using ee pk (based on the condition specified in function findNearestVertexIndex)
+            vNear = tree->getVertex(iNear);
+            Stance sigmaNear = vNear->getStance();
+            Configuration qNear = vNear->getConfiguration();
+            vNear->increaseNumExpansionAttempts();
+
+            std::vector<EndEffector> activeEEsNear = sigmaNear.retrieveActiveEndEffectors();
+            foutLogMCP << "activeEEsNear.size() = " << activeEEsNear.size() << std::endl;
+            for(int z = 0; z < activeEEsNear.size(); z++) foutLogMCP << activeEEsNear.at(z) << " ";
+            foutLogMCP << std::endl;
+
+            std::vector<EndEffector> activeEEsDes;
+            Eigen::Affine3d T_k;
+            Eigen::Vector3d n_k;
+            if(sigmaNear.isActiveEndEffector(pk))
             {
-                // exploitation
-                // pick a random contact from sigmaGoal and retrieve the corresponding ee and position
-                foutLogMCP << "+++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++" << std::endl;
-                Contact* c = pickRandomContactFromGoalStance();
-                pk = c->getEndEffectorName();
-                rRand = c->getPose().translation();
+                foutLogMCP << "REMOVING A CONTACT" << std::endl;
+                for(int i = 0; i < activeEEsNear.size(); i++) if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
             }
             else
             {
-                // exploration
-                // pick a random ee and a random point
-                foutLogMCP << "+++++++++++++++++++++++++++++ EXPLORATION +++++++++++++++++++++++++++++" << std::endl;
-                pk = pickRandomEndEffector();
-                rRand = pickRandomPoint();
+                foutLogMCP << "ADDING A CONTACT" << std::endl;
+                for(int i = 0; i < activeEEsNear.size(); i++) activeEEsDes.push_back(activeEEsNear.at(i));
+                activeEEsDes.push_back(pk);
+                int pointIndex;
+                T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);
+                //T_k.linear() = Eigen::Matrix3d::Identity(3,3);
+                T_k.linear() = generateRotationAroundAxis(pk, getNormalAtPointByIndex(pointIndex));
+                n_k = getNormalAtPointByIndex(pointIndex);
             }
 
-            int iNear = findNearestVertexIndex(pk, rRand);
-            foutLogMCP << "iNear = " << iNear << std::endl;
-            foutLogMCP << "pk = " << pk << std::endl;
+            foutLogMCP << "activeEEsDes.size() = " << activeEEsDes.size() << std::endl;
 
-            if(iNear != -1)
-            {
-                // a vertex of the tree is available for expansion using ee pk (based on the condition specified in function findNearestVertexIndex)
-                vNear = tree->getVertex(iNear);
-                Stance sigmaNear = vNear->getStance();
-                Configuration qNear = vNear->getConfiguration();
-                vNear->increaseNumExpansionAttempts();
-
-                std::vector<EndEffector> activeEEsNear = sigmaNear.retrieveActiveEndEffectors();
-                foutLogMCP << "activeEEsNear.size() = " << activeEEsNear.size() << std::endl;
-                for(int z = 0; z < activeEEsNear.size(); z++) foutLogMCP << activeEEsNear.at(z) << std::endl;
-
-                std::vector<EndEffector> activeEEsDes;
-                Eigen::Affine3d T_k;
-                Eigen::Vector3d n_k;
-                if(sigmaNear.isActiveEndEffector(pk))
+            Stance sigmaNew;
+            Eigen::Vector3d F_i(0.0, 0.0, 0.0);
+            Eigen::Affine3d T_i;
+            Eigen::Vector3d n_i;
+            for(int i = 0; i < activeEEsDes.size(); i++){
+                if(sigmaNear.isActiveEndEffector(activeEEsDes.at(i)))
                 {
-                    foutLogMCP << "REMOVING A CONTACT" << std::endl;
-                    for(int i = 0; i < activeEEsNear.size(); i++) if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
+                        T_i = sigmaNear.retrieveContactPose(activeEEsDes.at(i));
+                        n_i = sigmaNear.retrieveContactNormal(activeEEsDes.at(i));
                 }
                 else
                 {
-                    foutLogMCP << "ADDING A CONTACT" << std::endl;
-                    for(int i = 0; i < activeEEsNear.size(); i++) activeEEsDes.push_back(activeEEsNear.at(i));
-                    activeEEsDes.push_back(pk);
-                    int pointIndex;
-                    T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);
-                    //T_k.linear() = Eigen::Matrix3d::Identity(3,3);
-                    T_k.linear() = generateRotationAroundAxis(pk, getNormalAtPointByIndex(pointIndex));
-                    n_k = getNormalAtPointByIndex(pointIndex);
+                        T_i = T_k;
+                        n_i = n_k;
                 }
 
-                foutLogMCP << "activeEEsDes.size() = " << activeEEsDes.size() << std::endl;
-
-                Stance sigmaNew;
-                Eigen::Vector3d F_i(0.0, 0.0, 0.0);
-                Eigen::Affine3d T_i;
-                Eigen::Vector3d n_i;
-                for(int i = 0; i < activeEEsDes.size(); i++){
-                    if(sigmaNear.isActiveEndEffector(activeEEsDes.at(i)))
-                    {
-                            T_i = sigmaNear.retrieveContactPose(activeEEsDes.at(i));
-                            n_i = sigmaNear.retrieveContactNormal(activeEEsDes.at(i));
-                    }
-                    else
-                    {
-                            T_i = T_k;
-                            n_i = n_k;
-                    }
-
-                    Contact* c = new Contact(activeEEsDes.at(i), T_i, F_i, n_i);
-                    sigmaNew.addContact(c);
-                }
-
-                bool similarityCheckRes = similarityCheck(sigmaNew); // true if a similar stance already exists in the tree
-                bool distanceCheckRes = distanceCheck(sigmaNew); // true if L_FOOT (R_FOOT) is not too close to L_HAND (R_HAND)
-
-                if(!similarityCheckRes && distanceCheckRes) 
-                {
-                    sigmaListVertex.clear();
-                    qListVertex.clear();
-                    Configuration qNew;
-                    // Transition configuration
-                    Configuration qCheck;
-                    bool resIK_CoM_check = false;
-
-                    for(int k = 0; k < NUM_CONF_PER_VERTEX; k++)
-                    {
-                        // COMPUTE IK SOLUTION (NOT BALANCED)
-                        bool resIK = computeIKSolution(sigmaNew, false, Eigen::Vector3d(0.0,0.0,0.0), qNew, qNear);
-                        if(resIK) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
-                        else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
-                        
-                        if (resIK)
-                        {
-                            // COMPUTE CENTROIDAL STATICS
-                            Eigen::Vector3d rCoMdes = computeCoM(qNew);
-                            Eigen::MatrixXd rCdes(activeEEsDes.size(), 3);
-                            Eigen::MatrixXd nCdes(activeEEsDes.size(), 3);
-                            Eigen::Vector3d rCoM;
-                            Eigen::MatrixXd rC(activeEEsDes.size(), 3);
-                            Eigen::MatrixXd FC(activeEEsDes.size(), 3);
-                            for(int i = 0; i < activeEEsDes.size(); i++)
-                            {
-                                rCdes.row(i) = sigmaNew.getContact(i)->getPose().translation().transpose();
-                                nCdes.row(i) = sigmaNew.getContact(i)->getNormal().transpose();
-                            }
-                            bool resCPL = computeCentroidalStatics(activeEEsDes, rCoMdes, rCdes, nCdes, rCoM, rC, FC);
-                            if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
-                            else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;
-
-                            // COMPUTE IK SOLUTION (BALANCED)
-                            if(resCPL)
-                            {
-                                for(int i = 0; i < sigmaNew.getSize(); i++)
-                                {
-                                    sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
-                                    sigmaNew.getContact(i)->setPose(rC.row(i).transpose(), generateRotationAroundAxis(sigmaNew.getContact(i)->getEndEffectorName(), getNormalAtPoint(rC.row(i))));
-                                }
-                                bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
-                                if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
-                                else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
-
-                                if(resIK_CoM)
-                                {
-                                    qListVertex.push_back(qNew);
-                                    sigmaListVertex.push_back(sigmaNew);
-                                }
-//                             if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
-// 
-//                                 resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);
-// 
-//                                 if (resIK_CoM_check)
-//                                 {
-//                                     foutLogMCP << "--------------- CHECK PASSED ---------------" << std::endl;
-//                                     qListVertex.push_back(qNew);
-//                                     sigmaListVertex.push_back(sigmaNew);
-//                                 }
-//                                 else
-//                                     foutLogMCP << "--------------- CHECK FAILED ---------------" << std::endl;
-//                             }
-//                             else if (resIK_CoM && sigmaNear.isActiveEndEffector(pk))
-//                             {
-//                                 qListVertex.push_back(qNew);
-//                                 sigmaListVertex.push_back(sigmaNew);
-//                             }
-                            }
-                        }
-                    }
-
-                    foutLogMCP << "j = " << j << " qListVertex.size() = " << qListVertex.size() << std::endl;
-
-                    int iNew;
-                    if(qListVertex.size() > 0)
-                    {
-                        //iNew = integerDistribution(integerGenerator) % qListVertex.size();
-                        double dMin = 10000.0;
-                        for(int i = 0; i < qListVertex.size(); i++){
-                                double d = computeHrange(qListVertex.at(i));
-                                //double d = computeHtorso(qListVertex.at(i));
-                                if(d < dMin){
-                                        dMin = d;
-                                        iNew = i;
-                                }
-                        }
-
-                        qNew = qListVertex.at(iNew);
-                        sigmaNew = sigmaListVertex.at(iNew);
-
-                        if (!resIK_CoM_check)
-                            vNew = new Vertex(sigmaNew, qNew, iNear);
-                        else
-                            vNew = new Vertex(sigmaNew, qNew, qCheck, iNear);
-
-//                        vNew = new Vertex(sigmaNew, qNew, iNear);
-
-                        ///////////////////////////////////////////////////////////////////
-                        solutionFound = isGoalStance(vNew);
-//                         if(solutionFound) vNew = new Vertex(sigmaGoal, qGoal, iNear);
-                        ///////////////////////////////////////////////////////////////////
-
-                        tree->addVertex(vNew);
-
-                        foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
-
-                        foutLogMCP << "L_HAND = " << computeForwardKinematics(qNew, L_HAND).translation().transpose() << std::endl;
-                        foutLogMCP << "R_HAND = " << computeForwardKinematics(qNew, R_HAND).translation().transpose() << std::endl;
-                        foutLogMCP << "L_FOOT = " << computeForwardKinematics(qNew, L_FOOT).translation().transpose() << std::endl;
-                        foutLogMCP << "R_FOOT = " << computeForwardKinematics(qNew, R_FOOT).translation().transpose() << std::endl;
-
-                        //solutionFound = isGoalStance(vNew);
-                    }
-
-                }
+                Contact* c = new Contact(activeEEsDes.at(i), T_i, F_i, n_i);
+                sigmaNew.addContact(c);
             }
 
-            j++;
+            bool similarityCheckRes = similarityCheck(sigmaNew); // true if a similar stance already exists in the tree
+            bool distanceCheckRes = distanceCheck(sigmaNew); // true if L_FOOT (R_FOOT) is not too close to L_HAND (R_HAND)
 
+            if(!similarityCheckRes && distanceCheckRes) 
+            {
+                Configuration qNew;
+                
+                // COMPUTE IK SOLUTION (NOT BALANCED)
+                bool resIK = computeIKSolution(sigmaNew, false, Eigen::Vector3d(0.0,0.0,0.0), qNew, qNear);
+                if(resIK) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
+                else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
+                
+                if (resIK)
+                {
+                    // COMPUTE CENTROIDAL STATICS
+                    Eigen::Vector3d rCoMdes = computeCoM(qNew);
+                    Eigen::MatrixXd rCdes(activeEEsDes.size(), 3);
+                    Eigen::MatrixXd nCdes(activeEEsDes.size(), 3);
+                    Eigen::Vector3d rCoM;
+                    Eigen::MatrixXd rC(activeEEsDes.size(), 3);
+                    Eigen::MatrixXd FC(activeEEsDes.size(), 3);
+                    for(int i = 0; i < activeEEsDes.size(); i++)
+                    {
+                        rCdes.row(i) = sigmaNew.getContact(i)->getPose().translation().transpose();
+                        nCdes.row(i) = sigmaNew.getContact(i)->getNormal().transpose();
+                    }
+                    bool resCPL = computeCentroidalStatics(activeEEsDes, rCoMdes, rCdes, nCdes, rCoM, rC, FC);
+                    if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
+                    else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;
+
+                    // COMPUTE IK SOLUTION (BALANCED)
+                    if(resCPL)
+                    {
+                        for(int i = 0; i < sigmaNew.getSize(); i++)
+                        {
+                            sigmaNew.getContact(i)->setForce(FC.row(i).transpose());
+                            sigmaNew.getContact(i)->setPose(rC.row(i).transpose(), generateRotationAroundAxis(sigmaNew.getContact(i)->getEndEffectorName(), getNormalAtPoint(rC.row(i))));
+                        }
+                        bool resIK_CoM = computeIKSolution(sigmaNew, true, rCoM, qNew, qNear);
+                        if(resIK_CoM) foutLogMCP << "--------------- GS_COM SUCCESS ---------------" << std::endl;
+                        else foutLogMCP << "--------------- GS_COM FAIL ---------------" << std::endl;
+
+                        if(resIK_CoM)
+                        {
+                            bool resIK_CoM_check = true;
+                            if (resIK_CoM_check)
+                            {
+                                vNew = new Vertex(sigmaNew, qNew, iNear);
+                
+                                solutionFound = isGoalStance(vNew);
+                                tree->addVertex(vNew);
+
+                                foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
+                                foutLogMCP << "L_HAND = " << computeForwardKinematics(qNew, L_HAND).translation().transpose() << std::endl;
+                                foutLogMCP << "R_HAND = " << computeForwardKinematics(qNew, R_HAND).translation().transpose() << std::endl;
+                                foutLogMCP << "L_FOOT = " << computeForwardKinematics(qNew, L_FOOT).translation().transpose() << std::endl;
+                                foutLogMCP << "R_FOOT = " << computeForwardKinematics(qNew, R_FOOT).translation().transpose() << std::endl;    
+                            }
+                        }
+                    }
+                }
+
+            }
+
+        }
+        j++;        
     }
 
     std::cout << "iters = " << j << std::endl;
