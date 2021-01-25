@@ -22,7 +22,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d cent
 {
     double x, y, z;
     unsigned int index = 0;
-    _pcl_pointcloud->resize(1000);
+    _pcl_pointcloud->resize(20000);
     _pub = nh.advertise<visualization_msgs::MarkerArray> ( "normals_plane", 1, true);
     for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
     {
@@ -37,20 +37,20 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d cent
             index ++;
         }    
     }
-//    center << 1.0, 0.0, 1.5 + center(2);
-//    for(int i = 1; i <= (int)(side_y/resolution); i++)
-//    {
-//        x = center(0) + 0.0;
-//        y = center(1) - (side_y/2.0) + i*resolution;
-//        for(int j = 1; j <= (int)(side_z/resolution); j++)
-//        {
-//            z = center(2) - (side_z/2.0) + j*resolution;
-//            _pcl_pointcloud->points[index].x = x;
-//            _pcl_pointcloud->points[index].y = y;
-//            _pcl_pointcloud->points[index].z = z;
-//            index ++;
-//        }
-//    }
+    center << 1.9, 0.0, 1.5 + center(2);
+    for(int i = 1; i <= (int)(side_y/resolution); i++)
+    {
+        x = center(0) + 0.0;
+        y = center(1) - (side_y/2.0) + i*resolution;
+        for(int j = 1; j <= (int)(side_z/resolution); j++)
+        {
+            z = center(2) - (side_z/2.0) + j*resolution;
+            _pcl_pointcloud->points[index].x = x;
+            _pcl_pointcloud->points[index].y = y;
+            _pcl_pointcloud->points[index].z = z;
+            index ++;
+        }
+    }
 
     _pointCloud.resize(_pcl_pointcloud->width, 3);
     for(int i = 0; i < _pcl_pointcloud->width; i++)
