@@ -853,7 +853,7 @@ void Planner::run(){
                 bool similar = similarityTest(sigmaNew);
                 bool check_distance = distanceCheck(sigmaNew);
 
-                if(!similar && !check_distance)
+                if(!similar && check_distance)
                 {
                     sigmaListVertex.clear();
                     qListVertex.clear();
@@ -1069,29 +1069,21 @@ Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
     return rot;
 }
 
-bool Planner::distanceCheck ( Stance sigma ) 
+bool Planner::distanceCheck(Stance sigmaNew)
 {
-    Eigen::Affine3d T;
+    Eigen::Vector3d pLFoot = sigmaNew.retrieveContactPose(L_FOOT).translation();
+    Eigen::Vector3d pLHand = sigmaNew.retrieveContactPose(L_HAND).translation();
+    Eigen::Vector3d pRFoot = sigmaNew.retrieveContactPose(R_FOOT).translation();
+    Eigen::Vector3d pRHand = sigmaNew.retrieveContactPose(R_HAND).translation();
 
-    T = sigma.retrieveContactPose(L_FOOT);
-    Eigen::Vector3d pLFoot = T.translation();
-    
-    T = sigma.retrieveContactPose(L_HAND);
-    Eigen::Vector3d pLHand = T.translation();
-    
-    T = sigma.retrieveContactPose(R_FOOT);
-    Eigen::Vector3d pRFoot = T.translation();
-    
-    T = sigma.retrieveContactPose(R_HAND);
-    Eigen::Vector3d pRHand = T.translation();
-    
-    if (euclideanDistance(pLFoot, pLHand) > 0.65)
-        return false;
-    if (euclideanDistance(pRFoot, pRHand) > 0.65)
-        return false;
-    
+     if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND))
+        if(euclideanDistance(pLFoot, pLHand) < DIST_THRES)
+            return false;
+
+    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND))
+        if(euclideanDistance(pRFoot, pRHand) < DIST_THRES) return false;
+
     return true;
-
 }
 
 
