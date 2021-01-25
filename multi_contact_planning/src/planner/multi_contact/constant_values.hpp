@@ -21,6 +21,8 @@ const double FORCE_THRES_FOOT = 65.0;
 const double COM_WEIGHT_CPL = 1000; //100.0; 
 const double COM_REF_HEIGHT = 0.915;
 
+const double DIST_THRES = 0.65; // minimum allowed distance between L_FOOT (R_FOOT) and L_HAND (R_HAND)
+
 #endif
 
 
