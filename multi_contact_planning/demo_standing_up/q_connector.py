@@ -220,32 +220,6 @@ class Connector:
 
         [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference([0., 0., 0., 0., 0., 0.]) for c in non_active_links]
 
-    def setStiffnessAndDamping(self, N_ITER, multiplier):
-        self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
-        K = self.model.robot.getStiffness()
-        D = self.model.robot.getDamping()
-
-        Kd = multiplier * K
-        Dd = multiplier * D
-
-        for k in range(N_ITER):
-            stiff = list()
-            damp = list()
-            for K_start, K_end, D_start, D_end in zip(K, Kd, D, Dd):
-                stiff.append(K_start + float(k) / (N_ITER - 1) * (K_end - K_start))
-                damp.append(D_start + float(k) / (N_ITER - 1) * (D_end - D_start))
-            self.model.robot.setStiffness(stiff)
-            self.model.robot.setDamping(damp)
-
-            # print "Completed: ", float(k) / N_ITER * 100, "%"
-            self.model.robot.move()
-            rospy.sleep(0.01)
-
-        self.model.robot.setControlMode(xbot.ControlMode.Position())
-
-        print "Stiffness of robot is: ", self.model.robot.getStiffness()
-        print "Damping of robot is: ", self.model.robot.getDamping()
-
     def impact_detector(self, turn, magnitude):
 
         task = self.ctrl_tasks[self.__lifted_contact]
@@ -501,7 +475,9 @@ class Connector:
             self.__counter = 0
 
             # double stiffness and damping in order to better track the position reference
-            self.setStiffnessAndDamping(100, 2)
+            # self.setStiffnessAndDamping(100, 2)
+            set_stiffdamp = rospy.ServiceProxy('xbotcore_mode/set_stiffness_damping', StiffnessDamping)
+            # set_stiffdamp(....)
 
             # set start and goal configurations
             [q_start, q_goal] = self.computeStartAndGoal(0.015, i)

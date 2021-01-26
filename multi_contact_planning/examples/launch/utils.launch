@@ -1,0 +1,14 @@
+<launch>
+    <node pkg="multi_contact_planning" 
+          name="xbot_mode_handler" 
+          type="xbot_mode_handler.py" 
+          output="screen">
+    </node>
+
+<!--	<node pkg="xbot_ros"
+	      type="robot_state_logger"
+          name="robot_state_logger_node"
+          output="screen">
+    </node>-->
+
+</launch>

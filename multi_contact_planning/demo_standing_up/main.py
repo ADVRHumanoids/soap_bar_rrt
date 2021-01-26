@@ -90,6 +90,10 @@ if __name__ == '__main__':
     #     initial_pos['orientation'] = [0., 0., 0., 1.]
     #     gzhandler.set_robot_position(initial_pos)
 
+    print 'waiting for xbot_mode...'
+    rospy.wait_for_service('xbot_mode/set_stiffness_damping')
+    print 'done.'
+
     qc = q_connector.Connector(cogimon, q_list, stances)
     # qc.replaySolution()
     # exit()

@@ -1,0 +1,7 @@
+float64[] n_iter
+float64[] multiplier
+---
+
+bool success
+
+
