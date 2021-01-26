@@ -65,7 +65,7 @@ class Cogimon:
 
         self.sol_viz = visual_tools.RobotViz(self.replay_model,
                                              '/cogimon/solution',
-                                             color=[0.5, 0, 0.5, 0.5],
+                                             color=[0.5, 0, 0.5, 0.1],
                                              tf_prefix='ci/')
 
         self.planner_viz = visual_tools.RobotViz(self.replay_model,
@@ -85,16 +85,16 @@ class Cogimon:
                                                    self.ctrl_points.values(),
                                                    0.5*np.sqrt(2),
                                                    optimize_torque=False,
-                                                   xlims_cop=np.array([-0.015, 0.065]),
-                                                   ylims_cop=np.array([-0.015, 0.015]))
+                                                   xlims_cop=np.array([-0.025, 0.065]),
+                                                   ylims_cop=np.array([-0.025, 0.025]))
 
         if self.simulation:
             self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
 
             self.ft_map = self.sensors_init(arm_estimation_flag=True)
 
-            self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
-            self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
+            self.ft_map['LFoot'] = self.ft_map.pop('l_leg_ft')
+            self.ft_map['RFoot'] = self.ft_map.pop('r_leg_ft')
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()

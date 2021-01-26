@@ -12,6 +12,8 @@ import eigenpy
 import os
 import sys
 from moveit_msgs.msg import CollisionObject
+from cartesio_acceleration_support import tasks
+import xbot_interface.xbot_interface as xbot
 from shape_msgs.msg import SolidPrimitive
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Pose
@@ -39,7 +41,7 @@ class Connector:
         self.ik_dt = 0.01
         self.make_cartesian_interface(nspg=True)
         self.make_cartesian_interface(nspg=False)
-        # self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
+        self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
 
         self.ik_solver = planning.PositionCartesianSolver(self.ci_nspg)
         self.planner_client = coman_rising.planner_client()
@@ -53,7 +55,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = True
+        self.__complete_solution = False
 
 
     def callback(self, data):
@@ -205,6 +207,45 @@ class Connector:
             for k in self.model.ctrl_points.values():
                 self.ctrl_tasks.append(self.ci.getTask(k))
 
+    def sendForces(self, i):
+        forces = [j['ref']['force'] for j in self.stance_list[i + 1]]
+        active_ind = [ind['ind'] for ind in self.stance_list[i + 1]]
+        active_links = [self.model.ctrl_points[j] for j in active_ind]
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(f + [0., 0., 0.]) for c, f in zip(active_links, forces)]
+
+        non_active_links = self.model.ctrl_points.values()
+        for link in active_links:
+            if link in non_active_links:
+                non_active_links.remove(link)
+
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference([0., 0., 0., 0., 0., 0.]) for c in non_active_links]
+
+    def setStiffnessAndDamping(self, N_ITER, multiplier):
+        self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+        K = self.model.robot.getStiffness()
+        D = self.model.robot.getDamping()
+
+        Kd = multiplier * K
+        Dd = multiplier * D
+
+        for k in range(N_ITER):
+            stiff = list()
+            damp = list()
+            for K_start, K_end, D_start, D_end in zip(K, Kd, D, Dd):
+                stiff.append(K_start + float(k) / (N_ITER - 1) * (K_end - K_start))
+                damp.append(D_start + float(k) / (N_ITER - 1) * (D_end - D_start))
+            self.model.robot.setStiffness(stiff)
+            self.model.robot.setDamping(damp)
+
+            # print "Completed: ", float(k) / N_ITER * 100, "%"
+            self.model.robot.move()
+            rospy.sleep(0.01)
+
+        self.model.robot.setControlMode(xbot.ControlMode.Position())
+
+        print "Stiffness of robot is: ", self.model.robot.getStiffness()
+        print "Damping of robot is: ", self.model.robot.getDamping()
+
     def impact_detector(self, turn, magnitude):
 
         task = self.ctrl_tasks[self.__lifted_contact]
@@ -290,31 +331,6 @@ class Connector:
 
         return np.dot(Rz, np.dot(Rx, Ry))
 
-    def play_all_poses(self, num_iter):
-        index = 0
-        while index < num_iter:
-            for i in range(len(self.q_list)):
-                self.model.model.setJointPosition(self.q_list[i])
-                self.model.model.update()
-                self.model.rspub.publishTransforms('ci')
-
-                rospy.sleep(1)
-            index = index + 1
-
-    def play_solution(self, iter):
-        index = 0
-        # rospy.sleep(2.)
-        while index < iter:
-            for j in range(len(self.__solution)):
-                self.model.model.setJointPosition(self.__solution[j])
-                self.model.model.update()
-                if self.model.simulation:
-                    self.model.robot.setPositionReference(self.__solution[j][6:])
-                    self.model.robot.move()
-                self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.01)
-            index = index + 1
-
     def NSPGsample(self, q_start, q_postural, active_links, quat_list, optimize_torque, timeout):
         # create NSPG
         vc_context = self.make_vc_context(active_links, quat_list, optimize_torque)
@@ -348,78 +364,11 @@ class Connector:
             self.model.robot.move()
             rospy.sleep(dt)
 
-    def setClearenceObstacle(self, qstart, qgoal, stance_start):
-        if len(stance_start) > 2 and len(stance_start) < 4:
-            # find the lifted contact
-            lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
-                              x not in [j['ind'] for j in stance_start]][0]
-            lifted_contact_link = self.model.ctrl_points[lifted_contact]
-
-            # retrieve start and goal poses for the lifted contact
-            self.model.model.setJointPosition(qstart)
-            self.model.model.update()
-            T = self.model.model.getPose(lifted_contact_link)
-            start_pose = T.translation
-            self.model.model.setJointPosition(qgoal)
-            self.model.model.update()
-            T = self.model.model.getPose(lifted_contact_link)
-            goal_pose = T.translation
-
-            # if start and goal z-axis position is the same, create the clearence obstacle,
-            # otherwise no further action is needed
-            clearence = 0.005
-            if start_pose[2] - goal_pose[2] < clearence:
-                # create Marker
-                marker = Marker()
-                marker.header.frame_id = 'world'
-                marker.header.stamp = rospy.Time.now()
-
-                marker.type = Marker.CUBE
-                marker.action = Marker.ADD
-                marker.pose.position.x = (start_pose[0] + goal_pose[0])/2.
-                marker.pose.position.y = (start_pose[1] + goal_pose[1])/2.
-                marker.pose.position.z = clearence/2
-                marker.pose.orientation.x = 0
-                marker.pose.orientation.y = 0
-                marker.pose.orientation.z = 0
-                marker.pose.orientation.w = 1
-
-                marker.scale.x = 0.01
-                marker.scale.y = 0.2
-                marker.scale.z = clearence
-
-                # create CollisionObject
-                co = CollisionObject()
-                co.header.frame_id = marker.header.frame_id
-                co.id = 'clearence'
-                co.header.stamp = rospy.Time.now()
-                co.operation = CollisionObject.ADD
-
-                primitive = SolidPrimitive()
-                primitive.type = SolidPrimitive.BOX
-                primitive.dimensions.append(marker.scale.x)
-                primitive.dimensions.append(marker.scale.y)
-                primitive.dimensions.append(marker.scale.z)
-                co.primitives.append(primitive)
-
-                pose = Pose()
-                pose.position.x = marker.pose.position.x
-                pose.position.y = marker.pose.position.y
-                pose.position.z = marker.pose.position.z
-                pose.orientation.x = marker.pose.orientation.x
-                pose.orientation.y = marker.pose.orientation.y
-                pose.orientation.z = marker.pose.orientation.z
-                pose.orientation.w = marker.pose.orientation.w
-
-                co.primitive_poses.append(pose)
-
-                self.__marker_pub.publish(co)
-
     def computeStartAndGoal(self, clearence, i):
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3: # and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
             self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
@@ -428,26 +377,26 @@ class Connector:
             self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
             # hardcoded stuff for phase0
-            # if i == 4 and self.__complete_solution:
-            #     q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            # elif i == 4 and not self.__complete_solution:
-            #     # self.model.robot.sense()
-            #     # self.model.model.syncFrom(self.model.robot)
-            #     # q = self.model.model.getJointPosition()
-            #     # q[0:5] = self.q_list[i][0:5]
-            #     q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
-            # elif i != 4 and self.__complete_solution:
-            #     q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            # elif i != 4 and not self.__complete_solution:
-            #     self.model.robot.sense()
-            #     self.model.model.syncFrom(self.model.robot)
-            #     q = self.model.model.getJointPosition()
-            #     # q[0:5] = self.q_list[i][0:5]
-            #     q = self.model.model.getJointPosition()
-            #     q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+            if i == 4 and self.__complete_solution:
+                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+            elif i == 4 and not self.__complete_solution:
+                # self.model.robot.sense()
+                # self.model.model.syncFrom(self.model.robot)
+                # q = self.model.model.getJointPosition()
+                # q[0:5] = self.q_list[i][0:5]
+                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+            elif i != 4 and self.__complete_solution:
+                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+            elif i != 4 and not self.__complete_solution:
+                self.model.robot.sense()
+                self.model.model.syncFrom(self.model.robot)
+                q = self.model.model.getJointPosition()
+                # q[0:5] = self.q_list[i][0:5]
+                q = self.model.model.getJointPosition()
+                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
 
-            q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            self.q_bounder(q_start)
+            # q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+            # self.q_bounder(q_start)
 
             # q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             # self.q_bounder(q_start)
@@ -551,8 +500,11 @@ class Connector:
             # reset the counter
             self.__counter = 0
 
+            # double stiffness and damping in order to better track the position reference
+            self.setStiffnessAndDamping(100, 2)
+
             # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.0, i)
+            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
 
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
@@ -566,8 +518,8 @@ class Connector:
 
             rot_goal = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals_goal]
             quat_list_goal = []
-            quat_goal = [0., 0., 0., 0.]
             for val in range(0, len(rot_goal)):
+                quat_goal = [0., 0., 0., 0.]
                 quat_goal[0] = rot_goal[val].x
                 quat_goal[1] = rot_goal[val].y
                 quat_goal[2] = rot_goal[val].z
@@ -577,13 +529,12 @@ class Connector:
 
             rot_start = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals_start]
             quat_list_start = []
-            quat_start = [0., 0., 0., 0.]
             for val in range(0, len(rot_start)):
+                quat_start = [0., 0., 0., 0.]
                 quat_start[0] = rot_start[val].x
                 quat_start[1] = rot_start[val].y
                 quat_start[2] = rot_start[val].z
                 quat_start[3] = rot_start[val].w
-                map(float, quat_start)
                 quat_list_start.append(quat_start)
 
             # find optimize_torque for start and goal stances
@@ -674,7 +625,6 @@ class Connector:
                 continue
 
             if self.__complete_solution:
-
                 self.__solution = self.__solution + self.solution
             else:
                 for q in self.solution:
@@ -686,12 +636,17 @@ class Connector:
 
             rospy.sleep(0.5)
 
-            if len(active_links_start) == 3: # and i != 3 and i != 2:
+            if len(active_links_start) == 3 and i != 3 and i != 2:
                 if self.__complete_solution:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
                 else:
                     self.surface_reacher(i, 20)
+
+            # forza giusta vez!
+            self.setStiffnessAndDamping(100, 0.5)
+            if self.model.simulation and len(active_links_start) != 2:
+                self.sendForces(i)
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
@@ -709,3 +664,28 @@ class Connector:
         for i in range(np.size(txt, 0)):
             self.__solution.append(txt[i, :])
         self.play_solution(1)
+
+    def play_all_poses(self, num_iter):
+        index = 0
+        while index < num_iter:
+            for i in range(len(self.q_list)):
+                self.model.model.setJointPosition(self.q_list[i])
+                self.model.model.update()
+                self.model.rspub.publishTransforms('ci')
+
+                rospy.sleep(1)
+            index = index + 1
+
+    def play_solution(self, iter):
+        index = 0
+        # rospy.sleep(2.)
+        while index < iter:
+            for j in range(len(self.__solution)):
+                self.model.model.setJointPosition(self.__solution[j])
+                self.model.model.update()
+                if self.model.simulation:
+                    self.model.robot.setPositionReference(self.__solution[j][6:])
+                    self.model.robot.move()
+                self.model.rspub.publishTransforms('solution')
+                rospy.sleep(0.01)
+            index = index + 1

@@ -91,8 +91,8 @@ if __name__ == '__main__':
     #     gzhandler.set_robot_position(initial_pos)
 
     qc = q_connector.Connector(cogimon, q_list, stances)
-    qc.replaySolution()
-    exit()
+    # qc.replaySolution()
+    # exit()
     # qc.play_all_poses(1)
     qc.run()
     raw_input('click to see the whole solution')
