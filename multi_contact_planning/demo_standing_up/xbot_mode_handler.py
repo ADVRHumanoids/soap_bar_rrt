@@ -12,15 +12,6 @@ def is_empty(any_structure):
     else:
         return True
 
-def executeCommand(req) :
-
-    # .... do interpolation #
-    # req.end_effector ...
-    # req.stiffness ...
-    # req.damping ...
-
-    return True
-
 def get_robot() :
 
     np.set_printoptions(precision=3, suppress=True)
@@ -29,7 +20,7 @@ def get_robot() :
     opt = xbot_opt.ConfigOptions()
 
     urdf = rospy.get_param('robot_description')
-    srdf = rospy.get_param('robot_semantic_description')
+    srdf = rospy.get_param('robot_description_semantic')
 
     opt.set_urdf(urdf)
     opt.set_srdf(srdf)
@@ -43,6 +34,38 @@ def get_robot() :
 
     return robot, model
 
+def setStiffnessAndDamping(robot, N_ITER, multiplier):
+
+    K = robot.getStiffness()
+    D = robot.getDamping()
+
+    Kd = multiplier * K
+    Dd = multiplier * D
+
+    for k in range(N_ITER):
+        stiff = list()
+        damp = list()
+        for K_start, K_end, D_start, D_end in zip(K, Kd, D, Dd):
+            stiff.append(K_start + float(k) / (N_ITER - 1) * (K_end - K_start))
+            damp.append(D_start + float(k) / (N_ITER - 1) * (D_end - D_start))
+        robot.setStiffness(stiff)
+        robot.setDamping(damp)
+
+        # print "Completed: ", float(k) / N_ITER * 100, "%"
+        robot.move()
+        rospy.sleep(0.01)
+
+    print "Stiffness of robot is: ", robot.getStiffness()
+    print "Damping of robot is: ", robot.getDamping()
+
+def executeCommand(req) :
+
+    # .... do interpolation #
+    setStiffnessAndDamping(robot, req.n_iter, req.multiplier)
+
+    return True
+
+
 if __name__ == '__main__':
 
     rospy.init_node('xbot_mode_handler')
@@ -55,6 +78,4 @@ if __name__ == '__main__':
     robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
 
     s = rospy.Service('xbot_mode/set_stiffness_damping', StiffnessDamping, executeCommand)
-
-    print("Ready to add two ints.")
     rospy.spin()

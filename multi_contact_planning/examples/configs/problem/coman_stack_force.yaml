@@ -88,15 +88,15 @@ r_sole_F_lims:
     lib_name: libcartesio_acceleration_support.so
     type: "ForceLimits"
     link: "r_sole"
-    min: [-1000, -1000, -1000, 0, 0, 0]
-    max: [1000, 1000, 1000,  0, 0, 0]
+    min: [-1000, -1000, -1000, -1000, -1000, -1000]
+    max: [1000, 1000, 1000, 1000, 1000, 1000]
 
 l_sole_F_lims:
     lib_name: libcartesio_acceleration_support.so
     type: "ForceLimits"
     link: "l_sole"
-    min: [-1000, -1000, -1000, 0, 0, 0]
-    max: [1000, 1000, 1000, 0, 0, 0]
+    min: [-1000, -1000, -1000, -1000, -1000, -1000]
+    max: [1000, 1000, 1000, 1000, 1000, 1000]
 
 r_ball_tip_F_lims:
     lib_name: libcartesio_acceleration_support.so

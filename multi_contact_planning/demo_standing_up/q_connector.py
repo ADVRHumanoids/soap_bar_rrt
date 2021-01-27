@@ -13,11 +13,8 @@ import os
 import sys
 from moveit_msgs.msg import CollisionObject
 from cartesio_acceleration_support import tasks
+from multi_contact_planning.srv import StiffnessDamping
 import xbot_interface.xbot_interface as xbot
-from shape_msgs.msg import SolidPrimitive
-from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Pose
-import roslaunch
 
 # import coman_rising.py from cartesio_planning
 user = os.getenv("ROBOTOLOGY_ROOT")
@@ -56,6 +53,8 @@ class Connector:
         self.__lifted_contact_link = str()
         self.__counter = 0
         self.__complete_solution = False
+
+        self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
 
 
     def callback(self, data):
@@ -211,14 +210,14 @@ class Connector:
         forces = [j['ref']['force'] for j in self.stance_list[i + 1]]
         active_ind = [ind['ind'] for ind in self.stance_list[i + 1]]
         active_links = [self.model.ctrl_points[j] for j in active_ind]
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(f + [0., 0., 0.]) for c, f in zip(active_links, forces)]
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f + [0., 0., 0.])) for c, f in zip(active_links, forces)]
 
         non_active_links = self.model.ctrl_points.values()
         for link in active_links:
             if link in non_active_links:
                 non_active_links.remove(link)
 
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference([0., 0., 0., 0., 0., 0.]) for c in non_active_links]
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array([0., 0., 0., 0., 0., 0.])) for c in non_active_links]
 
     def impact_detector(self, turn, magnitude):
 
@@ -476,8 +475,9 @@ class Connector:
 
             # double stiffness and damping in order to better track the position reference
             # self.setStiffnessAndDamping(100, 2)
-            set_stiffdamp = rospy.ServiceProxy('xbotcore_mode/set_stiffness_damping', StiffnessDamping)
+
             # set_stiffdamp(....)
+
 
             # set start and goal configurations
             [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
@@ -524,6 +524,10 @@ class Connector:
                 optimize_torque_start = True
             else:
                 optimize_torque_start = False
+
+            if len(active_links_start) == 3:
+                self.__set_stiffdamp(100, 2)
+
 
             # check the goal state whether we are adding or removing a contact
             adding = False
@@ -620,9 +624,10 @@ class Connector:
                     self.surface_reacher(i, 20)
 
             # forza giusta vez!
-            self.setStiffnessAndDamping(100, 0.5)
-            if self.model.simulation and len(active_links_start) != 2:
-                self.sendForces(i)
+            if len(active_links_start) == 3:
+                self.__set_stiffdamp(100, 0.25)  # divide by 4 since we first doubled
+                if self.model.simulation and len(active_links_start) != 2:
+                    self.sendForces(i)
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
