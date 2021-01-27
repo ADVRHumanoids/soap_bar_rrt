@@ -1508,13 +1508,24 @@ bool Planner::distanceCheck(Stance sigmaNew)
     Eigen::Vector3d pRFoot = sigmaNew.retrieveContactPose(R_FOOT).translation();
     Eigen::Vector3d pRHand = sigmaNew.retrieveContactPose(R_HAND).translation();
     
+    /*
     if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND))   
         if(euclideanDistance(pLFoot, pLHand) < DIST_THRES)
             return false;
     
     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND))   
         if(euclideanDistance(pRFoot, pRHand) < DIST_THRES) return false;
-
+    */
+    
+    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND))   
+        if(euclideanDistance(pLFoot, pLHand) < 0.6 || euclideanDistance(pLFoot, pLHand) > 1.8) return false; 
+    
+    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND))   
+        if(euclideanDistance(pRFoot, pRHand) < 0.6 || euclideanDistance(pRFoot, pRHand) > 1.8) return false;
+    
+    if(sigmaNew.isActiveEndEffector(L_HAND) && sigmaNew.isActiveEndEffector(R_HAND))   
+        if(euclideanDistance(pLHand, pRHand) > 1.0) return false;
+    
     return true;
 }
 
