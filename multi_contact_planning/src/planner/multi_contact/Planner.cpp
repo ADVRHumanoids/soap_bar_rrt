@@ -598,14 +598,22 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     NSPG->getIKSolver()->solve();
     NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
     
-    NSPG->getIKSolver()->getModel()->getJointPosition(c);
-    q.setFBPosition(c.segment(0,3));
-    q.setFBOrientation(c.segment(3,3));
-    q.setJointValues(c.tail(n_dof-6));    
-
     if(!NSPG->sample(time_budget))
+    {
+        NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        q.setFBPosition(c.segment(0,3));
+        q.setFBOrientation(c.segment(3,3));
+        q.setJointValues(c.tail(n_dof-6));
         return false;
-    return true;
+    }
+    else
+    {
+        NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        q.setFBPosition(c.segment(0,3));
+        q.setFBOrientation(c.segment(3,3));
+        q.setJointValues(c.tail(n_dof-6));
+        return true;
+    }
     
 }
 

@@ -215,20 +215,31 @@ void PlannerExecutor::init_load_model()
     n_dof = _model->getJointNum();
 
     q_init.resize(n_dof);
-//     q_init << 0.241653, -0.100305, 0.52693, 0.000414784, 1.42905, -0.000395218, -0.00387022, -0.556391, -0.00594669, 0, -0.872665, 0.00508346, 0.00454263, -0.556387, 0.00702034, 1.38778e-17, -0.872665, -0.00604698, 0.0221668, -0.0242965, 0.426473, 0.855699, 0.878297, -1.4623, 0.0958207, -0.208411, 1.05876e-05, 0.255248, -0.850543, -0.792886, -1.47237, -0.0789541, -0.195656, 1.75265e-05;
-//     q_init << 0.0817944, -0.0459652, 0.562943, 3.22873, 1.29048, 3.13332, 0.287751, -1.22788, 0.335744, 0.0259489, -0.633213, -0.194167, -0.983884, -1.21671, -1.10644, 0.4062, -0.865606, 0.249889, 0.118649, 0.0118292, -3.32887, 2.05704, -1.67603, -1.81254, 0.959125, 1.478, 0.241725, -3.2857, -0.251944, -1.40935, -1.43088, -1.5163, -1.09998, -0.0285249;
-//     q_init <<  -0.0519934, -0.00367742, 0.622926, 3.11831, 1.17912, 3.2064, 0.448539, -1.50196, 0.489673, 0, -0.452481, -0.0825496, -1.13953, -1.26619, -1.24827, 0, -0.507944, 0.261799, -0.150113, -0.204497, -3.352, 1.04099, -1.75615, -1.1217, 0.994067, 1.478, 0.162285, -3.359, -1.13074, -1.1096, -0.189419, -1.9351, -1.19221, -2.22644,
-
-    // phase 1
-    q_init << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
-    
     q_goal.resize(n_dof);
-//     q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
-
-    // phaase 1
-    q_goal << 0.224122, -0.0630228, 0.681415, 2.839, 1.87921, -2.76584, 0.454997, -1.22762, 0.324562, 0.798218, -0.836835, -0.20195, -0.55206, -1.01035, -0.646522, 0.679781, -0.841541, 0.250388, 0.163728, -0.0791777, -0.802822, 0.738919, 0.200142, -0.710704, 0.444455, 0.433695, 0.00353928, -0.80278, -0.852888, -0.140258, -0.785431, -0.44294, 0.536017, 0.0227472;
     
-    q_goal(0) += 1.0; // aim to make move the robot 0.5 meter forward
+    /*
+    Eigen::VectorXd q0(n_dof); // home
+    Eigen::VectorXd q1(n_dof); // quadruped
+    Eigen::VectorXd q2(n_dof); // after quadrupedal walk
+    Eigen::VectorXd q3(n_dof); // after standing up
+    
+    //q0 << home with feet in q1 //TODO
+    
+    q1 << 0.667735, 0.0883619, 0.728919, 2.72396, 1.63101, -2.78667, 0.0343859, -1.69703, 0.0136503, 0.798518, -0.615841, 0.0638499, -0.533093, -1.49371, -0.553075, 0.489789, -0.49891, 0.102645, 0.417614, 0.0798681, -0.918882, 0.030251, 0.854959, -0.976352, -0.219728, 0.223951, 0.0460971, -0.896905, -0.253557, -0.250631, -1.03687, 0.66272, 0.588262, -0.235464;
+    
+    q2 << 1.58871, 0.0223469, 0.637945, 2.81551, 1.77831, -2.76061, 0.452002, -1.11945, 0.376866, 0.64416, -0.872665, -0.226634, -0.482266, -0.975, -0.58049, 0.55925, -0.872665, 0.256492, 0.0890082, -0.0296354, -1.01587, 1.07963, 0.14952, -0.864876, 0.690062, 0.809135, -0.146463, -0.943517, -1.21241, -0.186094, -0.878702, -0.766646, 0.841216, 0.190342;
+    
+    q3 << 1.60928, 0.0268395, 0.902701, 0.402416, 0.336643, -0.478387, -0.0758205, -0.72895, 0.440415, 0.647168, -0.355169, -0.0206075, -0.278599, -1.08149, 0.397082, 0.881535, -0.31808, 0.261799, -0.333713, 0.305565, -0.262295, 2.40587, -0.0305856, -1.39355, 0.462373, 0.432568, -1.35639, -0.100786, -2.65952, 0.152034, -1.19691, -0.400916, 0.202445, 1.06957;
+    
+    q_init = q1;
+    q_goal = q2;
+    */
+    
+    q_init << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
+   
+    q_goal << 1.224122, -0.0630228, 0.681415, 2.839, 1.87921, -2.76584, 0.454997, -1.22762, 0.324562, 0.798218, -0.836835, -0.20195, -0.55206, -1.01035, -0.646522, 0.679781, -0.841541, 0.250388, 0.163728, -0.0791777, -0.802822, 0.738919, 0.200142, -0.710704, 0.444455, 0.433695, 0.00353928, -0.80278, -0.852888, -0.140258, -0.785431, -0.44294, 0.536017, 0.0227472;
+    
+    /////////////////////////////////////////////////
 
     _model->setJointPosition(q_init);
     _model->update();
@@ -639,122 +650,162 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
                                            multi_contact_planning::CartesioGoal::Response &res)
 {
 
-    std::cout << "CALL TO THE GOAL SAMPLER" << std::endl;
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
-    Eigen::VectorXd q_ref;
-
-//     active_tasks.push_back("com");
+    
     active_tasks.push_back("TCP_L");
     active_tasks.push_back("TCP_R");
     active_tasks.push_back("l_sole");
     active_tasks.push_back("r_sole");
-//     active_tasks.push_back("LHandOrientation");
-//     active_tasks.push_back("RHandOrientation");
-
-    Eigen::MatrixXd normals = _pc_manager->getNormals();
-
-    _goal_model->getJointPosition(q_ref); // for postural task
 
     Eigen::Affine3d T_ref;
     Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_ref;
-
-    // COM
-//     pos_ref << 0.0684087, 0.035729, 0.433894;
-//     T_ref.translation() = pos_ref;
-//     T_ref.linear() = rot_ref;
-//     ref_tasks.push_back(T_ref);
-    //LH
-    //pos_ref << 1.0, 0.2, 1.4;
-    pos_ref << 0.7, 0.2, 0.0; // init
-    T_ref.translation() = pos_ref;
-    T_ref.linear() << -1.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0,
-                    0.0, 0.0, -1.0;
-    ref_tasks.push_back(T_ref);
-    //RH
-//     pos_ref << 1.0, -0.4, 1.4;
-    pos_ref << 0.7, -0.4, 0.0; // init
-    T_ref.translation() = pos_ref;
-    T_ref.linear() << -1.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0,
-                    0.0, 0.0, -1.0;
-    ref_tasks.push_back(T_ref);
-    //LF
-    //pos_ref << 0.0, 0.0, 0.0;
-    pos_ref << -0.3, 0.2, 0.0; // init
-    T_ref.translation() = pos_ref;
-    T_ref.linear() = rot_ref;
-    ref_tasks.push_back(T_ref);
-    //RF
-    //pos_ref << 0.0, -0.2, 0.0;
-    pos_ref << -0.3, -0.4, 0.0; // init
-    T_ref.translation() = pos_ref;
-    T_ref.linear() = rot_ref;
-    ref_tasks.push_back(T_ref);
     
-//     //LH_orientation
-//     pos_ref << 0.0, 0.0, 0.0;
-//     T_ref.translation() = pos_ref;
-//     T_ref.linear() << -1.0, 0.0, 0.0,
-//                        0.0, 1.0, 0.0,
-//                        0.0, 0.0, -1.0;
-//     ref_tasks.push_back(T_ref);
-//     //RH_orientation
-//     pos_ref << 0.0, 0.0, 0.0;
-//     T_ref.translation() = pos_ref;
-//     T_ref.linear() << -1.0, 0.0, 0.0,
-//                        0.0, 1.0, 0.0,
-//                        0.0, 0.0, -1.0;
-//     ref_tasks.push_back(T_ref);
-
-    setReferences( active_tasks, ref_tasks, q_ref );
+    int qIndex = 1;
+   
+    if(qIndex == 0){
+        ///// generation of q0 //////////////////////////////////////////////
+        active_tasks.clear();
+        active_tasks.push_back("l_sole");
+        active_tasks.push_back("r_sole");
+        _NSPG->getIKSolver()->getCI()->setActivationState("TCP_L", XBot::Cartesian::ActivationState::Disabled);
+        _NSPG->getIKSolver()->getCI()->setActivationState("TCP_R", XBot::Cartesian::ActivationState::Disabled);
+        //LF
+        T_ref.translation() << 0.0, 0.15, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+        //RF
+        T_ref.translation() << 0.0, -0.15, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+    }
+    else if(qIndex == 1){
+        ///// generation of q1 //////////////////////////////////////////////
+        //LH
+        T_ref.translation() << 1.0, 0.1, 0.0;
+        T_ref.linear() << -1.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0,
+                            0.0, 0.0, -1.0;
+        ref_tasks.push_back(T_ref);
+        //RH
+        T_ref.translation() << 1.0, -0.1, 0.0;
+        T_ref.linear() << -1.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0,
+                            0.0, 0.0, -1.0;
+        ref_tasks.push_back(T_ref);
+        //LF
+        T_ref.translation() << 0.3, 0.15, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+        //RF
+        T_ref.translation() << 0.3, -0.15, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+    }
+    else if(qIndex == 2){
+        ///// generation of q2 //////////////////////////////////////////////
+        //LH
+        T_ref.translation() << 2.2, 0.4, 0.0;
+        T_ref.linear() << -1.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0,
+                            0.0, 0.0, -1.0;
+        ref_tasks.push_back(T_ref);
+        //RH
+        T_ref.translation() << 2.2, -0.4, 0.0;
+        T_ref.linear() << -1.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0,
+                            0.0, 0.0, -1.0;
+        ref_tasks.push_back(T_ref);
+        //LF
+        T_ref.translation() << 1.0, 0.3, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+        //RF
+        T_ref.translation() << 1.0, -0.3, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+    }
+    else{
+        ///// generation of q3 //////////////////////////////////////////////
+        //LH
+        T_ref.translation() << 2.5, 0.3, 1.4;
+        T_ref.linear() << 0.0, 0.0, 1.0,
+                            0.0, 1.0, 0.0,
+                            1.0, 0.0, 0.0;
+        ref_tasks.push_back(T_ref);
+        //RH
+        T_ref.translation() << 2.5, -0.3, 1.4;
+        T_ref.linear() << 0.0, 0.0, 1.0,
+                            0.0, 1.0, 0.0,
+                            1.0, 0.0, 0.0;
+        ref_tasks.push_back(T_ref);
+        //LF
+        T_ref.translation() << 1.5, 0.2, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+        //RF
+        T_ref.translation() << 1.5, -0.2, 0.0;
+        T_ref.linear() = rot_ref;
+        ref_tasks.push_back(T_ref);
+    }
+   
     
-    _NSPG->getIKSolver()->getModel()->setJointPosition(q_init);
-    _NSPG->getIKSolver()->getModel()->update();
-    _NSPG->getIKSolver()->solve();
+    // set references
+    std::vector<std::string> all_tasks;
+    all_tasks.push_back("com");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
 
-    Eigen::VectorXd q;
-    _NSPG->getIKSolver()->getModel()->getJointPosition(q);
-    _model->setJointPosition(q);
-//     if(!_goal_generator->sample(q, req.time)){
-//         res.status.val = res.status.TIMEOUT;
-//         res.status.msg.data = "TIMEOUT";
-//     }
-//     else
-//     {
-//         res.status.val = res.status.EXACT_SOLUTION;
-//         res.status.msg.data = "EXACT_SOLUTION";
-//
-//         res.sampled_goal.name = _goal_model->getEnabledJointNames();
-//         res.sampled_goal.position.resize(q.size());
-//         Eigen::VectorXd::Map(&res.sampled_goal.position[0], q.size()) = q;
-//         res.sampled_goal.header.stamp = ros::Time::now();
-//     }
-//
-    if(!_vc_context.vc_aggregate.checkAll())
-    {
-        if(_NSPG->sample(req.time))
-            _NSPG->getIKSolver()->getModel()->getJointPosition(q);
-        else
-        std::runtime_error("no solution found!");
+    _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+    for(int i = 1; i < all_tasks.size(); i++){
+        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);               
+        int index = it - active_tasks.begin();
+        _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
     }
 
-    //if(_manifold)
-        //_manifold->project(q);  // not needed in this planner
+    Eigen::VectorXd qHome; 
+    _model->getRobotState("home", qHome);
+    
+    Eigen::VectorXd qQuad(n_dof);
+    qQuad << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
+    
+    Eigen::VectorXd qRand;
+    Eigen::VectorXd qMin, qMax;
+    _model->getJointLimits(qMin, qMax);
+    qRand.setRandom(n_dof); // uniform in -1 < x < 1
+    qRand = (qRand.array() + 1)/2.0; // uniform in 0 < x < 1
+    qRand = qMin + qRand.cwiseProduct(qMax - qMin); // uniform in qmin < x < qmax
+    qRand.head<6>().setRandom(); // we keep virtual joints between -1 and 1 (todo: improve)
+    qRand.head<6>().tail<3>() *= M_PI;
+    
+    if(qIndex == 1 || qIndex == 2) _NSPG->getIKSolver()->getModel()->setJointPosition(qQuad);
+    else _NSPG->getIKSolver()->getModel()->setJointPosition(qHome); 
+    //_NSPG->getIKSolver()->getModel()->setJointPosition(qRand);
+    _NSPG->getIKSolver()->getModel()->update();
 
+    double time_budget = GOAL_SAMPLER_TIME_BUDGET;
+    Eigen::VectorXd c(n_dof);
 
-    _goal_model->setJointPosition(q);
-    _goal_model->update();
+    _NSPG->getIKSolver()->solve();
+    _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+    
+    
+    if(_NSPG->sample(time_budget)){
+        _NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        _goal_model->setJointPosition(c);
+        _goal_model->update();
+    
+        for(int z = 0; z < c.rows(); z++) std::cout << c(z) << ", ";
+        std::cout << " " << std::endl;
+    
+        return true;
+    }    
+    
+    return false;
 
-    for(int z = 0; z < q.rows(); z++) std::cout << q(z) << ", ";
-    std::cout << " " << std::endl;
-
-    return true;
 }
 
 Planning::CartesianConstraint::Ptr PlannerExecutor::make_manifold(std::string problem_description_string)
@@ -950,7 +1001,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = true;
+    bool runPlanner = true; 
 
     if(index_config == -1){
 
