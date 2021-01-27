@@ -346,4 +346,6 @@
     <disable_collisions link1="RThighUpLeg" link2="imu_link" reason="Never"/>
     <disable_collisions link1="RWrMot2" link2="RWrMot3" reason="Adjacent"/>
     <disable_collisions link1="Waist" link2="imu_link" reason="Adjacent"/>
+    <disable_collisions link1="DWL" link2="LHipMot" reason="Adjacent"/>
+    <disable_collisions link1="DWL" link2="RHipMot" reason="Adjacent"/>
 </robot>
