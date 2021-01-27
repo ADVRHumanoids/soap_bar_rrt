@@ -1,5 +1,5 @@
-float64[] n_iter
-float64[] multiplier
+int32 n_iter
+float64 multiplier
 ---
 
 bool success
