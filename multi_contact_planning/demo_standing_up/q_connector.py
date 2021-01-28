@@ -419,7 +419,7 @@ class Connector:
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3: #and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
             self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
@@ -439,11 +439,11 @@ class Connector:
             elif i != 4 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             elif i != 4 and not self.__complete_solution:
-                self.model.robot.sense()
-                self.model.model.syncFrom(self.model.robot)
-                q = self.model.model.getJointPosition()
+                # self.model.robot.sense()
+                # self.model.model.syncFrom(self.model.robot)
+                # q = self.model.model.getJointPosition()
                 # q[0:5] = self.q_list[i][0:5]
-                q = self.model.model.getJointPosition()
+                # q = self.model.model.getJointPosition()
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             self.q_bounder(q_start)
 
@@ -458,8 +458,8 @@ class Connector:
                 q_start = self.q_list[i]
                 self.q_bounder(q_start)
             else:
-                self.model.robot.sense()
-                self.model.model.syncFrom(self.model.robot)
+                # self.model.robot.sense()
+                # self.model.model.syncFrom(self.model.robot)
                 # q_start = self.model.model.getJointPosition()
                 # q_start[0:5] = self.q_list[i][0:5]
                 q_start = self.q_list[i]
@@ -542,50 +542,13 @@ class Connector:
 
     def run(self):
         s = len(self.q_list) - 1
-        i = 0
+        i = 16
         while i < s:
             # reset the counter
             self.__counter = 0
 
             # set start and goal configurations
             [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
-
-            # self.model.model.setJointPosition(q_start)
-            # self.model.model.update()
-            # for index in range(len(self.model.ctrl_points.values())):
-            #     T = self.model.model.getPose(self.model.ctrl_points.values()[index])
-            #     print self.model.ctrl_points.values()[index]
-            #     print T
-            # self.model.start_viz.publishMarkers([])
-            # # self.ci_nspg.reset(0)
-            # T = self.model.model.getPose('l_ball_tip')
-            # T.translation = [0.6818, 0.06725, 0.]
-            # [self.ci_nspg.getTask(c).setPoseReference(self.model.model.getPose(c)) for c in
-            #  self.model.ctrl_points.values()]
-            # self.ci_nspg.getTask('l_ball_tip').setPoseReference(T)
-            # print '\n'
-            # print self.model.ctrl_points.values()
-            # print [self.ci_nspg.getTask(c).getPoseReference() for c in self.model.ctrl_points.values()]
-            # raw_input('click')
-            # if not self.ci_nspg.update(0, self.ik_dt):
-            #     print 'unable to find a solution'
-            #     exit()
-            # q = self.model.model.getJointPosition()
-            # qdot = self.model.model.getJointVelocity()
-            #
-            # q += qdot * self.ik_dt
-            #
-            # self.model.model.setJointPosition(q)
-            # self.model.model.update()
-            # for index in range(len(self.model.ctrl_points.values())):
-            #     T = self.model.model.getPose(self.model.ctrl_points.values()[index])
-            #     print self.model.ctrl_points.values()[index]
-            #     print T
-            #     print map(float,q)
-            # self.model.goal_viz.publishMarkers([])
-            # exit()
-
-
 
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
@@ -715,7 +678,7 @@ class Connector:
 
             rospy.sleep(0.5)
 
-            if len(active_links_start) == 3 and i != 3 and i != 2:
+            if len(active_links_start) == 3: # and i != 3 and i != 2:
                 if self.__complete_solution:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector

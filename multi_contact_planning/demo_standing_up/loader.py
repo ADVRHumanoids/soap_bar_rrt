@@ -106,6 +106,22 @@ def checkStability(model, stances, qlist):
 
     return check
 
+def checkPaolo(model, stance_list, q_list):
+    check = []
+    for i in range(1, len(stance_list)):
+        active_ind = [ind['ind'] for ind in stance_list[i-1]]
+        active_links = [model.ctrl_points[j] for j in active_ind]
+        model.cs.setContactLinks(active_links)
+
+        normals = [j['ref']['normal'] for j in stance_list[i-1]]
+        [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
+
+        model.cs.setOptimizeTorque(False)
+        check.append(model.state_vc(q_list[i]))
+
+    return check
+
+
 if __name__ == '__main__':
 
     stances = readFromFileStances("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/sigmaList.txt")
