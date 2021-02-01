@@ -38,7 +38,9 @@ class Connector:
         self.ik_dt = 0.01
         self.make_cartesian_interface(nspg=True)
         self.make_cartesian_interface(nspg=False)
-        self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
+
+        if self.model.simulation:
+            self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
 
         self.ik_solver = planning.PositionCartesianSolver(self.ci_nspg)
         self.planner_client = coman_rising.planner_client()
@@ -52,7 +54,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = False
+        self.__complete_solution = True
 
         self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
 
@@ -341,7 +343,7 @@ class Connector:
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3: # and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
             self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
@@ -351,13 +353,13 @@ class Connector:
 
             # hardcoded stuff for phase0
             if i == 4 and self.__complete_solution:
-                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             elif i == 4 and not self.__complete_solution:
                 # self.model.robot.sense()
                 # self.model.model.syncFrom(self.model.robot)
                 # q = self.model.model.getJointPosition()
                 # q[0:5] = self.q_list[i][0:5]
-                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             elif i != 4 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             elif i != 4 and not self.__complete_solution:
@@ -420,7 +422,7 @@ class Connector:
         if state == 'touch':
             p = self.model.model.getPose(self.__lifted_contact_link).translation
             step = np.array(final) - np.array(p)
-            clearence = - np.dot(step, [abs(ele) for ele in normal])
+            clearence = - np.dot([abs(ele) for ele in step], [abs(ele) for ele in normal])
 
         w_p_d = clearence * np.array(normal)
         t_p_d = np.dot(np.linalg.inv(w_R_t), w_p_d.transpose())
@@ -525,7 +527,7 @@ class Connector:
             else:
                 optimize_torque_start = False
 
-            if len(active_links_start) == 3:
+            if len(active_links_start) == 3 and not self.__complete_solution:
                 self.__set_stiffdamp(100, 2)
 
 
@@ -596,13 +598,28 @@ class Connector:
             print 'Contacts published'
             rospy.sleep(2.)
 
-            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
+            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(0.5)
 
-            if not res:
+            if not res[1]:
                 for deleter in range(self.__counter):
                     del self.__solution[-1]
                 continue
+            elif res[0] == 5:
+                counter = 0
+                while res[0] == 5 and counter < 2:
+                    print 'Modifying the goal...'
+                    rospy.sleep(2.)
+                    q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
+                    self.planner_client.updateManifold(active_links_start)
+                    print 'Planner reset'
+                    rospy.sleep(2.)
+                    self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
+                    print 'Start and goal poses reset'
+                    rospy.sleep(2.)
+                    res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
+                    counter = counter + 1
+                rospy.sleep(0.5)
 
             if self.__complete_solution:
                 self.__solution = self.__solution + self.solution
@@ -616,7 +633,7 @@ class Connector:
 
             rospy.sleep(0.5)
 
-            if len(active_links_start) == 3 and i != 3 and i != 2:
+            if len(active_links_start) == 3: # and i != 3 and i != 2:
                 if self.__complete_solution:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
@@ -624,7 +641,7 @@ class Connector:
                     self.surface_reacher(i, 20)
 
             # forza giusta vez!
-            if len(active_links_start) == 3:
+            if len(active_links_start) == 3 and not self.__complete_solution:
                 self.__set_stiffdamp(100, 0.25)  # divide by 4 since we first doubled
                 if self.model.simulation and len(active_links_start) != 2:
                     self.sendForces(i)
@@ -641,7 +658,7 @@ class Connector:
 
     def replaySolution(self):
         self.__solution = []
-        txt = np.loadtxt('solution_phase1.csv', delimiter=',')
+        txt = np.loadtxt('solution.csv', delimiter=',')
         for i in range(np.size(txt, 0)):
             self.__solution.append(txt[i, :])
         self.play_solution(1)
