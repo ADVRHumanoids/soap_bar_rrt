@@ -536,25 +536,27 @@ class Connector:
             if len(active_links_goal) > len(active_links_start):                             # adding a contact
                 adding = True
                 self.model.cs.setContactLinks(active_links_start)                            # active_links
-                print('active_links_goal set')
-                rospy.sleep(2.)
-                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
-                 zip(active_links_start, [self.rotation(elem) for elem in normals_start])]   # rotations
-                print('rotations_goal set')
+                print('active_links_start set')
                 rospy.sleep(2.)
                 self.model.cs.setOptimizeTorque(optimize_torque_start)                       # optimize_torque
-                print('optimize_torque_goal set')
+                print('optimize_torque_start set')
+                rospy.sleep(2.)
+                r_start = [self.rotation(elem) for elem in normals_start]
+                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
+                 zip(active_links_start, r_start)]  # rotations
+                print('rotations_start set')
                 rospy.sleep(2.)
             else:                                                                            # removing a contact
                 self.model.cs.setContactLinks(active_links_goal)                             # active_links
-                print('active_links_start set')
-                rospy.sleep(2.)
-                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
-                 zip(active_links_goal, [self.rotation(elem) for elem in normals_goal])]     # rotations
-                print('rotations_start set')
+                print('active_links_goal set')
                 rospy.sleep(2.)
                 self.model.cs.setOptimizeTorque(optimize_torque_goal)                        # optimize_torque
-                print('optimize_torque_start set')
+                print('optimize_torque_goal set')
+                rospy.sleep(2.)
+                r_goal = [self.rotation(elem) for elem in normals_goal]
+                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
+                 zip(active_links_goal, r_goal)]  # rotations
+                print('rotations_goal set')
                 rospy.sleep(2.)
 
             if not self.model.state_vc(q_goal):
@@ -568,6 +570,10 @@ class Connector:
                 else:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
                     self.q_list[i+1] = q_goal
+
+            for index in range(len(self.model.cs.getContactLinks())):
+                print self.model.cs.getContactLinks()[index]
+                print self.model.cs.getContactFrame(self.model.cs.getContactLinks()[index])
 
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
