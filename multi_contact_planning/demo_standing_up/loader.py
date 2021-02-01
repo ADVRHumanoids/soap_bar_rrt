@@ -42,10 +42,9 @@ def readFromFileConfigs(path):
     return q_list
 
 def rotation(normal):
-
-    if normal == [0., 0., 1.]:
+    if normal[2] > 0.01:
         theta = [0, 0, 0]
-    elif normal == [-1., 0., 0.]:
+    elif normal[0] < -0.01:
         theta = [0, -np.pi / 2, 0]
     else:
         raise Exception('wrong normal')
@@ -67,8 +66,7 @@ def checkStability(model, stances, qlist):
         model.cs.setContactLinks(active_links)
         get_contact_links = model.cs.getContactLinks()
 
-        normals = [j['ref']['normal'] for j in stance]
-        [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
+
 
         # print 'active links are \n', model.cs.getContactLinks()
         # print 'rotation matrices are: \n', [rotation(elem) for elem in normals]
@@ -98,6 +96,9 @@ def checkStability(model, stances, qlist):
             optimize_torque = True
 
         model.cs.setOptimizeTorque(optimize_torque)
+
+        normals = [j['ref']['normal'] for j in stance]
+        [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
 
         check.append(model.state_vc(q))
 
