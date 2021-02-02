@@ -25,6 +25,7 @@
 #include "goal/NSPG.h"
 #include <cartesian_interface/CartesianInterfaceImpl.h>
 #include <multi_contact_planning/SetContactFrames.h>
+#include "validity_checker/stability/centroidal_statics.h"
 
 #include <fstream>
 

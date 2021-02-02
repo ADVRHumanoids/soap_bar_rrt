@@ -387,7 +387,8 @@ EndEffector Planner::getTaskEndEffectorName(std::string ee_str){
 }
 
 bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev){
-
+    
+    std::cout << "-------IK INVOCATION (refCoM = " << refCoM << ")-------" << std::endl;
     // build references
     Eigen::VectorXd q_postural(n_dof);
     q_postural << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
@@ -504,8 +505,14 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     // search IK solution
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
-
-    NSPG->getIKSolver()->solve();
+    
+    std::cout << "pre" << std::endl;
+    if (!NSPG->getIKSolver()->solve())
+    {
+        std::cout << "post" << std::endl;
+        return false;
+    }
+    std::cout << "post" << std::endl;
     NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
 
     if(!NSPG->sample(time_budget))
@@ -853,7 +860,7 @@ void Planner::run(){
                 bool similar = similarityTest(sigmaNew);
                 bool check_distance = distanceCheck(sigmaNew);
 
-                if(!similar && check_distance)
+                if(!similar)
                 {
                     sigmaListVertex.clear();
                     qListVertex.clear();
@@ -901,9 +908,35 @@ void Planner::run(){
 
                                 if(resIK_CoM)
                                 {
-                                    qListVertex.push_back(qNew);
-                                    sigmaListVertex.push_back(sigmaNew);
+                                    std::vector<std::string> active_links;
+                                    std::vector<Eigen::Affine3d> ref_tasks;
+                                    for(int i = 0; i < sigmaNew.getSize(); i++)
+                                    {
+                                        EndEffector ee = sigmaNew.getContact(i)->getEndEffectorName();
+                                        active_links.push_back(getTaskStringName(ee));
+                                        ref_tasks.push_back(sigmaNew.retrieveContactPose(ee));
+                                    }
+                                    XBot::Cartesian::Planning::CentroidalStatics cs (NSPG->getIKSolver()->getModel(), active_links, 0.5*sqrt(2));
+                                    
+                                    for (int i = 0; i < sigmaNew.getContacts().size(); i ++)
+                                    {
+                                        auto nC_i = getNormalAtPoint(ref_tasks[i].translation().transpose());
+                                        Eigen::Matrix3d rot = generateRotationFrictionCone(nC_i);
+                                        cs.setContactRotationMatrix(active_links[i], rot);
+                                    }
+                                    
+                                    if (cs.checkStability(5*1e-2))
+                                    {
+                                        foutLogMCP << "----------STABILITY CHECK PASSED----------" << std::endl;
+                                        qListVertex.push_back(qNew);
+                                        sigmaListVertex.push_back(sigmaNew);
+                                    }
+                                    else
+                                        foutLogMCP << "----------STABILITY CHECK NOT PASSED----------" << std::endl;
+                                    
                                 }
+                                
+                                
 //                             if(resIK_CoM && !sigmaNear.isActiveEndEffector(pk)){
 // 
 //                                 resIK_CoM_check = computeIKSolution(sigmaNear, false, Eigen::Vector3d(0.0, 0.0, 0.0), qCheck, qNew);

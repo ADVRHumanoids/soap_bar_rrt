@@ -31,6 +31,7 @@ PositionCartesianSolver::Ptr NSPG::getIKSolver () const
 
 bool NSPG::sample ( double timeout ) 
 {
+    std::cout << "[NSPG]: start" << std::endl;
     // BE SURE THAT _ik_solver AND _vc_context HAS THE SAME MODEL
     Eigen::VectorXd x, dqlimits;
     XBot::JointNameMap chain_map, joint_map, velocity_map, random_map;
@@ -52,6 +53,8 @@ bool NSPG::sample ( double timeout )
     
     while(!_vc_context.vc_aggregate.checkAll())
     {
+        if (iter == 0)
+            std::cout << "[NSPG]: start sampling" << std::endl;
         auto tic = std::chrono::high_resolution_clock::now();
        
         // Acquire colliding chains
@@ -72,7 +75,18 @@ bool NSPG::sample ( double timeout )
         iter ++;
      
         _ik_solver->getCI()->setReferencePosture(joint_map);
-        _ik_solver->solve();
+        if (!_ik_solver->solve())
+        { 
+            auto toc = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<float> fsec = toc-tic;
+            T += fsec.count();
+            if(T >= timeout)
+            {
+                std::cout << "[NSPG]: timeout" <<std::endl;
+                return false;
+            }
+            continue;
+        }
         
         _rspub->publishTransforms(ros::Time::now(), "/planner");
                         
@@ -81,11 +95,12 @@ bool NSPG::sample ( double timeout )
         T += fsec.count();
         if(T >= timeout)
         {
-            std::cout << "timeout" <<std::endl;
+            std::cout << "[NSPG]: timeout" <<std::endl;
             return false;
         }
     }
     
+    std::cout << "[NSPG]: done!" << std::endl;
     return true;
 }
 
