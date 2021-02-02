@@ -151,7 +151,7 @@ class Connector:
                     'type': 'Cartesian',
                     'distal_link': c,
                     'lambda': 1.,
-                    'weight': [1., 1., 1., 0.1, 0.1, 0.1]
+                    'weight': [1., 1., 1., 0.00001, 0.00001, 0.00001]
                 }
             else:
                 ik_cfg[c] = {
@@ -475,12 +475,6 @@ class Connector:
             # reset the counter
             self.__counter = 0
 
-            # double stiffness and damping in order to better track the position reference
-            # self.setStiffnessAndDamping(100, 2)
-
-            # set_stiffdamp(....)
-
-
             # set start and goal configurations
             [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
 
@@ -571,10 +565,6 @@ class Connector:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
                     self.q_list[i+1] = q_goal
 
-            for index in range(len(self.model.cs.getContactLinks())):
-                print self.model.cs.getContactLinks()[index]
-                print self.model.cs.getContactFrame(self.model.cs.getContactLinks()[index])
-
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
             print 'Manifold updated'
@@ -616,7 +606,10 @@ class Connector:
                 while res[0] == 5 and counter < 2:
                     print 'Modifying the goal...'
                     rospy.sleep(2.)
-                    q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
+                    if adding:
+                        q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
+                    else:
+                        q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
                     self.planner_client.updateManifold(active_links_start)
                     print 'Planner reset'
                     rospy.sleep(2.)
