@@ -232,7 +232,8 @@ void PlannerExecutor::init_load_model()
 //    q_goal << 1.224122, -0.0630228, 0.681415, 2.839, 1.87921, -2.76584, 0.454997, -1.22762, 0.324562, 0.798218, -0.836835, -0.20195, -0.55206, -1.01035, -0.646522, 0.679781, -0.841541, 0.250388, 0.163728, -0.0791777, -0.802822, 0.738919, 0.200142, -0.710704, 0.444455, 0.433695, 0.00353928, -0.80278, -0.852888, -0.140258, -0.785431, -0.44294, 0.536017, 0.0227472;
     
     // phase 2
-    q_goal << 1.032443, -0.0918475, 0.907542, 3.03656, 2.90808, -2.98959, -0.00567854, -0.805206, -0.176562, 1.07157, -0.508745, -0.0196531, 0.0193149, -0.700716, -0.159769, 0.960109, -0.503352, -0.0202674, 0.114893, -0.108938, -1.40264, 0.908857, 0.111407, -0.915065, 0.330357, 0.651742, -0.0650259, -1.38746, -0.959735, -0.0782563, -0.964487, -0.327691, 0.689738, 0.0304397;
+    q_goal << 1.037825, -0.10218, 0.792776, 3.81559, 2.63391, -3.72342, 0.41261, -1.38592, 1.02834, 0.785805, -0.0499996, 0.0278244, -1.44385, -1.73248, -0.795075, 0.776028, 0.163324, 0.0913316, -0.523599, 0.466621, -2.80883, 0.519239, -1.24552, -0.0505774, 1.09863, 0.521841, 0.00353678, -2.93988, -0.20334, -1.01627, -0.246607, 1.74217, 0.755969, 0.0834862; 
+
 
 
     _model->setJointPosition(q_init);
@@ -677,7 +678,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 //     T_ref.linear() = rot_ref;
 //     ref_tasks.push_back(T_ref);
     //LH
-    pos_ref << 1.0, 0.1, 1.4;
+    pos_ref << 1.9, 0.1, 1.4;
 //    pos_ref << 0.7, 0.2, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() << 0.0, 0.0, 1.0,
@@ -685,7 +686,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
            -1.0, 0.0, 0.0;
     ref_tasks.push_back(T_ref);
     //RH
-     pos_ref << 1.0, -0.3, 1.4;
+     pos_ref << 1.9, -0.3, 1.4;
 //    pos_ref << 0.7, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() << 0.0, 0.0, 1.0,
@@ -693,13 +694,13 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
            -1.0, 0.0, 0.0;
     ref_tasks.push_back(T_ref);
     //LF
-    pos_ref << 0.0, 0.0, 0.0;
+    pos_ref << 1.1, 0.1, 0.0;
 //    pos_ref << -0.3, 0.2, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RF
-    pos_ref << 0.0, -0.2, 0.0;
+    pos_ref << 1.1, -0.3, 0.0;
 //    pos_ref << -0.3, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
@@ -722,7 +723,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 
     setReferences( active_tasks, ref_tasks, q_ref );
     
-    _NSPG->getIKSolver()->getModel()->setJointPosition(q_init);
+    _NSPG->getIKSolver()->getModel()->setJointPosition(q_goal);
     _NSPG->getIKSolver()->getModel()->update();
     _NSPG->getIKSolver()->solve();
 
