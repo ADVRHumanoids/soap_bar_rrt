@@ -72,8 +72,20 @@ if __name__ == '__main__':
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-    q_list = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/qList.txt")
-    stances = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/sigmaList.txt")
+    q_list0 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/qList.txt")
+    stances0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
+    q_list1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/qList.txt")
+    stances1 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/sigmaList.txt")
+    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/qList.txt")
+    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/sigmaList.txt")
+
+    q_list = q_list0 + q_list1 + q_list2
+    stances = stances0 + stances1 + stances2
+
+    qhome = cogimon.model.getRobotState("home")
+    qhome[2] = 0.96
+    q_list.insert(0, qhome)
+    stances.insert(0, stances[0])
 
     # flag = loader.checkStability(cogimon, stances, q_list)
     # print flag
@@ -96,13 +108,16 @@ if __name__ == '__main__':
         print 'done.'
 
     qc = q_connector.Connector(cogimon, q_list, stances)
-    # qc.replaySolution()
-    # exit()
     # qc.play_all_poses(1)
+    # qc.replaySolution('solution_phase0.csv')
+    # qc.replaySolution('solution_phase1.csv')
+    # qc.replaySolution('solution_phase2.csv')
+    # exit()
+
     qc.run()
-    raw_input('click to see the whole solution')
-    qc.play_solution(1)
-    qc.saveSolution()
+    # raw_input('click to see the whole solution')
+    # qc.play_solution(1)
+    # qc.saveSolution()
 
     # cogimon.robot.sense()
     # cogimon.model.syncFrom(cogimon.robot)

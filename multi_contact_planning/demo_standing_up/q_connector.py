@@ -608,8 +608,10 @@ class Connector:
                     rospy.sleep(2.)
                     if adding:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
+                        self.q_list[i+1] = q_goal
                     else:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
+                        self.q_list[i+1] = q_goal
                     self.planner_client.updateManifold(active_links_start)
                     print 'Planner reset'
                     rospy.sleep(2.)
@@ -618,6 +620,9 @@ class Connector:
                     rospy.sleep(2.)
                     res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
+                    if counter == 2:
+                        print '[Error]: unable to connect start and goal poses'
+                        exit()
                 rospy.sleep(0.5)
 
             if self.__complete_solution:
@@ -655,9 +660,9 @@ class Connector:
         np.savetxt('solution.csv', self.__solution, delimiter=',')
         print 'Solution saved!'
 
-    def replaySolution(self):
+    def replaySolution(self, filename):
         self.__solution = []
-        txt = np.loadtxt('solution.csv', delimiter=',')
+        txt = np.loadtxt(filename, delimiter=',')
         for i in range(np.size(txt, 0)):
             self.__solution.append(txt[i, :])
         self.play_solution(1)
@@ -665,12 +670,16 @@ class Connector:
     def play_all_poses(self, num_iter):
         index = 0
         while index < num_iter:
-            for i in range(len(self.q_list)):
-                self.model.model.setJointPosition(self.q_list[i])
-                self.model.model.update()
-                self.model.rspub.publishTransforms('ci')
+            for i in range(0, len(self.q_list), 2):
+                # self.model.model.setJointPosition(self.q_list[i])
+                # self.model.model.update()
+                # self.model.rspub.publishTransforms('ci')
 
-                rospy.sleep(1)
+                self.model.replay_model.setJointPosition(self.q_list[i])
+                self.model.replay_model.update()
+                self.model.sol_viz.publishMarkers([], True)
+
+                rospy.sleep(0.2)
             index = index + 1
 
     def play_solution(self, iter):
@@ -684,5 +693,5 @@ class Connector:
                     self.model.robot.setPositionReference(self.__solution[j][6:])
                     self.model.robot.move()
                 self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.01)
+                rospy.sleep(0.001)
             index = index + 1
