@@ -31,7 +31,6 @@ PositionCartesianSolver::Ptr NSPG::getIKSolver () const
 
 bool NSPG::sample ( double timeout ) 
 {
-    std::cout << "[NSPG]: start" << std::endl;
     // BE SURE THAT _ik_solver AND _vc_context HAS THE SAME MODEL
     Eigen::VectorXd x, dqlimits;
     XBot::JointNameMap chain_map, joint_map, velocity_map, random_map;
@@ -48,13 +47,11 @@ bool NSPG::sample ( double timeout )
     _ik_solver->getModel()->eigenToMap(dqlimits, velocity_map);
     
     float T = 0.0;
-    double dt = 0.01;
+    double dt = 0.001;
     int iter = 0;
     
     while(!_vc_context.vc_aggregate.checkAll())
     {
-        if (iter == 0)
-            std::cout << "[NSPG]: start sampling" << std::endl;
         auto tic = std::chrono::high_resolution_clock::now();
        
         // Acquire colliding chains
