@@ -141,6 +141,9 @@ _nh(nh)
     Eigen::Quaternion<double> quat(rot);
     foutLogMCP << "ROTATION CHECK: \n " << quat.coeffs() << std::endl;
 
+    std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L"};
+    _cs = std::make_unique<XBot::Cartesian::Planning::CentroidalStatics>(NSPG->getIKSolver()->getModel(), links, 0.5*sqrt(2));
+
 }
 
 Planner::~Planner(){ }
@@ -506,13 +509,9 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
     
-    std::cout << "pre" << std::endl;
     if (!NSPG->getIKSolver()->solve())
-    {
-        std::cout << "post" << std::endl;
         return false;
-    }
-    std::cout << "post" << std::endl;
+
     NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
 
     if(!NSPG->sample(time_budget))
@@ -916,23 +915,30 @@ void Planner::run(){
                                         active_links.push_back(getTaskStringName(ee));
                                         ref_tasks.push_back(sigmaNew.retrieveContactPose(ee));
                                     }
-                                    XBot::Cartesian::Planning::CentroidalStatics cs (NSPG->getIKSolver()->getModel(), active_links, 0.5*sqrt(2));
+
+                                    _cs->setContactLinks(active_links);
                                     
                                     for (int i = 0; i < sigmaNew.getContacts().size(); i ++)
                                     {
                                         auto nC_i = getNormalAtPoint(ref_tasks[i].translation().transpose());
                                         Eigen::Matrix3d rot = generateRotationFrictionCone(nC_i);
-                                        cs.setContactRotationMatrix(active_links[i], rot);
+                                        _cs->setContactRotationMatrix(active_links[i], rot);
                                     }
                                     
-                                    if (cs.checkStability(5*1e-2))
+                                    if (_cs->checkStability(5*1e-2))
                                     {
                                         foutLogMCP << "----------STABILITY CHECK PASSED----------" << std::endl;
+                                        for (auto i : _cs->getContactLinks())
+                                            foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
                                         qListVertex.push_back(qNew);
                                         sigmaListVertex.push_back(sigmaNew);
                                     }
                                     else
+                                    {
                                         foutLogMCP << "----------STABILITY CHECK NOT PASSED----------" << std::endl;
+                                        for (auto i : _cs->getContactLinks())
+                                            foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
+                                    }
                                     
                                 }
                                 
@@ -1094,9 +1100,9 @@ Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
                    0.0, 0.0, 1.0;
     }
     else{
-            rot <<  0.0, 0.0, 1.0,
+            rot <<  0.0, 0.0, -1.0,
                     0.0, 1.0, 0.0,
-                   -1.0, 0.0, 0.0;
+                    1.0, 0.0, 0.0;
     }
 
     return rot;

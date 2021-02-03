@@ -28,6 +28,7 @@
 #include "validity_checker/stability/centroidal_statics.h"
 
 #include <fstream>
+#include <memory>
 
 
 class Planner {
@@ -89,6 +90,7 @@ class Planner {
                 XBot::Cartesian::Planning::NSPG::Ptr _NSPG,
                 XBot::Cartesian::Planning::ValidityCheckContext _vc_context,
                 ros::NodeHandle& nh);
+        std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics> _cs;
         ~Planner();
         void run();
         bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
