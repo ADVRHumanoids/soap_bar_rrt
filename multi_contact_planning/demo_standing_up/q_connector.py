@@ -151,7 +151,7 @@ class Connector:
                     'type': 'Cartesian',
                     'distal_link': c,
                     'lambda': 1.,
-                    'weight': [1., 1., 1., 0.00001, 0.00001, 0.00001]
+                    'weight': [1., 1., 1., 0.1, 0.1, 0.1]
                 }
             else:
                 ik_cfg[c] = {
@@ -476,7 +476,7 @@ class Connector:
             self.__counter = 0
 
             # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
+            [q_start, q_goal] = self.computeStartAndGoal(0.0, i)
 
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
