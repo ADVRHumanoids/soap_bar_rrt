@@ -343,7 +343,7 @@ class Connector:
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3: # and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
             self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
@@ -392,6 +392,7 @@ class Connector:
                 self.q_bounder(q_start)
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
+            self.planner_client.publishGroundCheck(self.model.ctrl_points.values()[0], [0, 0, 1], False)
 
         return q_start, q_goal
 
@@ -408,12 +409,12 @@ class Connector:
         if state == 'start':
             for iterator in range(len(self.stance_list[i - 1])):
                 if self.stance_list[i - 1][iterator]['ind'] == self.__lifted_contact:
-                    normal = self.stance_list[i - 1][iterator]['ref']['normal']
+                    self.normal = self.stance_list[i - 1][iterator]['ref']['normal']
                     break
         elif state == 'goal' or state == 'touch':
             for iterator in range(len(self.stance_list[i])):
                 if self.stance_list[i][iterator]['ind'] == self.__lifted_contact:
-                    normal = self.stance_list[i][iterator]['ref']['normal']
+                    self.normal = self.stance_list[i][iterator]['ref']['normal']
                     final = self.stance_list[i][iterator]['ref']['pose']
                     break
 
@@ -422,9 +423,9 @@ class Connector:
         if state == 'touch':
             p = self.model.model.getPose(self.__lifted_contact_link).translation
             step = np.array(final) - np.array(p)
-            clearence = - np.dot([abs(ele) for ele in step], [abs(ele) for ele in normal])
+            clearence = - np.dot([abs(ele) for ele in step], [abs(ele) for ele in self.normal])
 
-        w_p_d = clearence * np.array(normal)
+        w_p_d = clearence * np.array(self.normal)
         t_p_d = np.dot(np.linalg.inv(w_R_t), w_p_d.transpose())
 
         # set pose target for the lifted link
@@ -470,13 +471,13 @@ class Connector:
 
     def run(self):
         s = len(self.q_list) - 1
-        i = 0
+        i = 3
         while i < s:
             # reset the counter
             self.__counter = 0
 
             # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.0, i)
+            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
 
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
@@ -579,6 +580,12 @@ class Connector:
                 self.model.sol_viz.publishMarkers([], True)
             rospy.sleep(2.)
 
+            # update GroundCollisionCheck
+            if len(active_links_start) == 3 and i != 3 and i != 2:
+                self.planner_client.publishGroundCheck(self.__lifted_contact_link, self.normal, True)
+                print 'GroundCollision check updated!'
+                rospy.sleep(2.)
+
             if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
                 print 'Start and Goal poses are the same, skipping!'
                 s = len(self.q_list) - 1
@@ -637,7 +644,7 @@ class Connector:
 
             rospy.sleep(0.5)
 
-            if len(active_links_start) == 3: # and i != 3 and i != 2:
+            if len(active_links_start) == 3 and i != 3 and i != 2:
                 if self.__complete_solution:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
