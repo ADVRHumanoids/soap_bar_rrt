@@ -15,6 +15,7 @@ from moveit_msgs.msg import CollisionObject
 from cartesio_acceleration_support import tasks
 from multi_contact_planning.srv import StiffnessDamping
 import xbot_interface.xbot_interface as xbot
+import roslaunch
 
 # import coman_rising.py from cartesio_planning
 user = os.getenv("ROBOTOLOGY_ROOT")
@@ -39,9 +40,6 @@ class Connector:
         self.make_cartesian_interface(nspg=True)
         self.make_cartesian_interface(nspg=False)
 
-        if self.model.simulation:
-            self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
-
         self.ik_solver = planning.PositionCartesianSolver(self.ci_nspg)
         self.planner_client = coman_rising.planner_client()
         self.ci_time = 0
@@ -54,7 +52,9 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = True
+        self.__complete_solution = False
+        self.__node_counter = 0
+        self.__sleep = 0.5
 
         self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
 
@@ -166,6 +166,20 @@ class Connector:
 
     def ci_solve_integrate(self, t):
         if not self.ci.update(t, self.ik_dt):
+            return False
+
+        q = self.model.model.getJointPosition()
+        qdot = self.model.model.getJointVelocity()
+
+        q += qdot * self.ik_dt
+
+        self.model.model.setJointPosition(q)
+        self.model.model.update()
+
+        return True
+
+    def ci_solve_integrate_nspg(self, t):
+        if not self.ci_nspg.update(t, self.ik_dt):
             return False
 
         q = self.model.model.getJointPosition()
@@ -325,7 +339,7 @@ class Connector:
             exit()
         else:
             print '[NSPG]: feasible goal pose found!'
-            rospy.sleep(2.)
+            rospy.sleep(self.__sleep)
 
         # set nspg solution as new goal state
         new_q_goal = nspg.getModel().getJointPosition()
@@ -471,10 +485,16 @@ class Connector:
 
     def run(self):
         s = len(self.q_list) - 1
-        i = 3
+        i = 0
         while i < s:
             # reset the counter
             self.__counter = 0
+
+            # set Position ControlMode for planning phase
+            if not self.__complete_solution:
+                self.model.robot.setControlMode(xbot.ControlMode.Position())
+
+            # self.surface_reacher(i, 20)
 
             # set start and goal configurations
             [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
@@ -522,7 +542,7 @@ class Connector:
             else:
                 optimize_torque_start = False
 
-            if len(active_links_start) == 3 and not self.__complete_solution:
+            if len(active_links_start) == 3 and not self.__complete_solution and i != 3 and i != 2:
                 self.__set_stiffdamp(100, 2)
 
 
@@ -532,31 +552,31 @@ class Connector:
                 adding = True
                 self.model.cs.setContactLinks(active_links_start)                            # active_links
                 print('active_links_start set')
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
                 self.model.cs.setOptimizeTorque(optimize_torque_start)                       # optimize_torque
                 print('optimize_torque_start set')
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
                 r_start = [self.rotation(elem) for elem in normals_start]
                 [self.model.cs.setContactRotationMatrix(k, j) for k, j in
                  zip(active_links_start, r_start)]  # rotations
                 print('rotations_start set')
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
             else:                                                                            # removing a contact
                 self.model.cs.setContactLinks(active_links_goal)                             # active_links
                 print('active_links_goal set')
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
                 self.model.cs.setOptimizeTorque(optimize_torque_goal)                        # optimize_torque
                 print('optimize_torque_goal set')
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
                 r_goal = [self.rotation(elem) for elem in normals_goal]
                 [self.model.cs.setContactRotationMatrix(k, j) for k, j in
                  zip(active_links_goal, r_goal)]  # rotations
                 print('rotations_goal set')
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
 
             if not self.model.state_vc(q_goal):
                 print ['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one']
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
 
                 if adding:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
@@ -569,7 +589,7 @@ class Connector:
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
             print 'Manifold updated'
-            rospy.sleep(2.)
+            rospy.sleep(self.__sleep)
 
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
@@ -578,19 +598,19 @@ class Connector:
                 self.model.replay_model.setJointPosition(self.q_list[i-1])
                 self.model.replay_model.update()
                 self.model.sol_viz.publishMarkers([], True)
-            rospy.sleep(2.)
+            rospy.sleep(self.__sleep)
 
             # update GroundCollisionCheck
             if len(active_links_start) == 3 and i != 3 and i != 2:
                 self.planner_client.publishGroundCheck(self.__lifted_contact_link, self.normal, True)
                 print 'GroundCollision check updated!'
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
 
             if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
                 print 'Start and Goal poses are the same, skipping!'
                 s = len(self.q_list) - 1
                 i = i + 1
-                rospy.sleep(2.)
+                rospy.sleep(self.__sleep)
                 continue
 
             # publish the contacts
@@ -599,10 +619,10 @@ class Connector:
             print contacts
             # raw_input("Contacts published")
             print 'Contacts published'
-            rospy.sleep(2.)
+            rospy.sleep(self.__sleep)
 
             res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
-            rospy.sleep(0.5)
+            rospy.sleep(self.__sleep)
 
             if not res[1]:
                 for deleter in range(self.__counter):
@@ -612,7 +632,7 @@ class Connector:
                 counter = 0
                 while res[0] == 5 and counter < 2:
                     print 'Modifying the goal...'
-                    rospy.sleep(2.)
+                    rospy.sleep(self.__sleep)
                     if adding:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
                         self.q_list[i+1] = q_goal
@@ -621,16 +641,16 @@ class Connector:
                         self.q_list[i+1] = q_goal
                     self.planner_client.updateManifold(active_links_start)
                     print 'Planner reset'
-                    rospy.sleep(2.)
+                    rospy.sleep(self.__sleep)
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
                     print 'Start and goal poses reset'
-                    rospy.sleep(2.)
+                    rospy.sleep(self.__sleep)
                     res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
                     if counter == 2:
                         print '[Error]: unable to connect start and goal poses'
                         exit()
-                rospy.sleep(0.5)
+                rospy.sleep(self.__sleep)
 
             if self.__complete_solution:
                 self.__solution = self.__solution + self.solution
@@ -642,17 +662,34 @@ class Connector:
                     self.model.robot.move()
                     rospy.sleep(0.01)
 
-            rospy.sleep(0.5)
+            rospy.sleep(self.__sleep)
 
             if len(active_links_start) == 3 and i != 3 and i != 2:
-                if self.__complete_solution:
+                if self.__complete_solution or self.normal[2] > 0.01:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
                 else:
                     self.surface_reacher(i, 20)
 
             # forza giusta vez!
-            if len(active_links_start) == 3 and not self.__complete_solution:
+            if len(active_links_start) == 3 and not self.__complete_solution and i != 2 and i != 3:
+                if self.__node_counter == 0:
+                    path = os.getenv('ROBOTOLOGY_ROOT')
+                    file = open(path+"/external/soap_bar_rrt/multi_contact_planning/examples/configs/problem/coman_stack_force.yaml")
+                    problem_description = file.read()
+                    rospy.set_param("~problem_description", problem_description)
+                    raw_input('click')
+                    rospy.sleep(self.__sleep)
+                    package = 'cartesio_acceleration_support'
+                    executable = 'force_optimization_node'
+                    node = roslaunch.core.Node(package, executable)
+                    launch = roslaunch.scriptapi.ROSLaunch()
+                    launch.start()
+                    process = launch.launch(node)
+                    self.__node_counter = self.__node_counter + 1
+                    rospy.sleep(self.__sleep)
+                    self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
+                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping() + xbot.ControlMode.Effort())
                 self.__set_stiffdamp(100, 0.25)  # divide by 4 since we first doubled
                 if self.model.simulation and len(active_links_start) != 2:
                     self.sendForces(i)
@@ -661,7 +698,7 @@ class Connector:
             s = len(self.q_list) - 1
             i = i + 1
             print 'next config'
-            rospy.sleep(2.)
+            rospy.sleep(self.__sleep)
 
     def saveSolution(self):
         np.savetxt('solution.csv', self.__solution, delimiter=',')
@@ -700,5 +737,5 @@ class Connector:
                     self.model.robot.setPositionReference(self.__solution[j][6:])
                     self.model.robot.move()
                 self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.001)
+                rospy.sleep(0.01)
             index = index + 1

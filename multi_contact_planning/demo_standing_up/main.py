@@ -69,7 +69,7 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'), (1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
     q_list0 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/qList.txt")
@@ -94,12 +94,13 @@ if __name__ == '__main__':
 
     # if cogimon.simulation:
     #     gzhandler = grh.GazeboRobotHandler()
-    #     gzhandler.set_robot_posture(np.array(q_list[0])[6:])
+    #     gzhandler.set_robot_posture(np.array(q_list[4])[6:])
     #
     #     initial_pos = dict()
-    #     initial_pos['position'] = [q_list[0][0:2]]
-    #     # initial_pos['orientation'] = [-0.03, -0.8, -0.03, -0.6]
-    #     initial_pos['orientation'] = [0., 0., 0., 1.]
+    #     initial_pos['position'] = q_list[4][0:3]
+    #     initial_pos['position'][2] += 0.1
+    #     initial_pos['orientation'] = [-0.03, -0.6, -0.03, -0.6]
+    #     # initial_pos['orientation'] = [0., 0., 0., 1.]
     #     gzhandler.set_robot_position(initial_pos)
 
     if cogimon.simulation:
@@ -109,6 +110,7 @@ if __name__ == '__main__':
 
     qc = q_connector.Connector(cogimon, q_list, stances)
     # qc.play_all_poses(1)
+    # qc.replaySolution('solution.csv')
     # qc.replaySolution('solution_phase0.csv')
     # qc.replaySolution('solution_phase1.csv')
     # qc.replaySolution('solution_phase2.csv')
