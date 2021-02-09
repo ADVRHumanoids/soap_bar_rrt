@@ -79,8 +79,8 @@ if __name__ == '__main__':
     q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/qList.txt")
     stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/sigmaList.txt")
 
-    q_list = q_list0# + q_list1 + q_list2
-    stances = stances0# + stances1 + stances2
+    q_list = q_list0 + q_list1 + q_list2
+    stances = stances0 + stances1 + stances2
 
     # qhome = cogimon.model.getRobotState("home")
     # qhome[2] = 0.96

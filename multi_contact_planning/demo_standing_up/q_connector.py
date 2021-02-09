@@ -303,6 +303,17 @@ class Connector:
             elif q[i] < self.model.qmin[i]:
                 q[i] = self.model.qmin[i]
 
+    def computeForces(self, q):
+        # we suppose that the right active_links and rotations have already been set
+        self.model.model.setJointPosition(q)
+        self.model.model.update()
+
+        self.model.cs.checkStability(5*1e-2)
+        forces = self.model.cs.getForces()
+
+        return forces
+
+
     def rotation(self, normal):
 
         if normal[2] > 0.01:
@@ -580,11 +591,15 @@ class Connector:
 
                 if adding:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
+                    forces = self.computeForces(q_goal)
                     self.q_list.insert(i + 1, q_goal)
                     self.stance_list.insert(i + 1, self.stance_list[i + 1])
+                    self.stance_list[i+1]['ref']['forces'] = forces
                 else:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
+                    forces = self.computeForces(q_goal)
                     self.q_list[i+1] = q_goal
+                    self.stance_list[i+1]['ref']['forces'] = forces
 
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
@@ -636,9 +651,13 @@ class Connector:
                     if adding:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
                         self.q_list[i+1] = q_goal
+                        forces = self.computeForces(q_goal)
+                        self.stance_list[i+1]['ref']['forces'] = forces
                     else:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
                         self.q_list[i+1] = q_goal
+                        forces = self.computeForces(q_goal)
+                        self.stance_list[i+1]['ref']['forces'] = forces
                     self.planner_client.updateManifold(active_links_start)
                     print 'Planner reset'
                     rospy.sleep(self.__sleep)
@@ -675,17 +694,10 @@ class Connector:
             if len(active_links_start) == 3 and not self.__complete_solution and i != 2 and i != 3:
                 if self.__node_counter == 0:
                     path = os.getenv('ROBOTOLOGY_ROOT')
-                    file = open(path+"/external/soap_bar_rrt/multi_contact_planning/examples/configs/problem/coman_stack_force.yaml")
-                    problem_description = file.read()
-                    rospy.set_param("~problem_description", problem_description)
-                    raw_input('click')
-                    rospy.sleep(self.__sleep)
-                    package = 'cartesio_acceleration_support'
-                    executable = 'force_optimization_node'
-                    node = roslaunch.core.Node(package, executable)
-                    launch = roslaunch.scriptapi.ROSLaunch()
+                    uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+                    roslaunch.configure_logging(uuid)
+                    launch = roslaunch.parent.ROSLaunchParent(uuid, [path + '/external/cartesio_planning/examples/launch/forza_giusta.launch'])
                     launch.start()
-                    process = launch.launch(node)
                     self.__node_counter = self.__node_counter + 1
                     rospy.sleep(self.__sleep)
                     self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
