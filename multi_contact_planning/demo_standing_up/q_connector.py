@@ -55,6 +55,7 @@ class Connector:
         self.__complete_solution = False
         self.__node_counter = 0
         self.__sleep = 0.5
+        self.__half = False
 
         self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
 
@@ -303,16 +304,45 @@ class Connector:
             elif q[i] < self.model.qmin[i]:
                 q[i] = self.model.qmin[i]
 
-    def computeForces(self, q):
-        # we suppose that the right active_links and rotations have already been set
+    def setForces(self, q, iterator):
+        # set active_links and rotations depending on stance_list[i+1]
+        active_ind = [ind['ind'] for ind in self.stance_list[iterator + 1]]
+        active_links = [self.model.ctrl_points[j] for j in active_ind]
+        self.model.cs.setContactLinks(active_links)
+
+        normals = [j['ref']['normal'] for j in self.stance_list[iterator + 1]]
+        rot = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+        quat_list_goal = []
+        for val in range(0, len(rot)):
+            quat_goal = [0., 0., 0., 0.]
+            quat_goal[0] = rot[val].x
+            quat_goal[1] = rot[val].y
+            quat_goal[2] = rot[val].z
+            quat_goal[3] = rot[val].w
+            map(float, quat_goal)
+            quat_list_goal.append(quat_goal)
+
+        r_goal = [self.rotation(elem) for elem in normals]
+        [self.model.cs.setContactRotationMatrix(k, j) for k, j in
+         zip(active_links, r_goal)]
+
+        self.model.cs.setOptimizeTorque(False)
+
         self.model.model.setJointPosition(q)
         self.model.model.update()
 
         self.model.cs.checkStability(5*1e-2)
         forces = self.model.cs.getForces()
 
-        return forces
+        indices = {}
+        for m in forces:
+            index = {ind: m for ind in self.model.ctrl_points.keys() if self.model.ctrl_points[ind] == m}
+            indices[index.keys()[0]] = index.values()[0]
 
+        for ind in indices:
+            for index in range(len(self.stance_list[iterator + 1])):
+                if self.stance_list[iterator+1][index]['ind'] == ind:
+                    self.stance_list[iterator+1][index]['ref']['force'] = forces[indices[ind]][0:3]
 
     def rotation(self, normal):
 
@@ -553,7 +583,7 @@ class Connector:
             else:
                 optimize_torque_start = False
 
-            if len(active_links_start) == 3 and not self.__complete_solution and i != 3 and i != 2:
+            if len(active_links_start) == 3 and not self.__complete_solution and self.__half:
                 self.__set_stiffdamp(100, 2)
 
 
@@ -591,15 +621,13 @@ class Connector:
 
                 if adding:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
-                    forces = self.computeForces(q_goal)
                     self.q_list.insert(i + 1, q_goal)
                     self.stance_list.insert(i + 1, self.stance_list[i + 1])
-                    self.stance_list[i+1]['ref']['forces'] = forces
+                    self.setForces(q_goal, i)
                 else:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
-                    forces = self.computeForces(q_goal)
                     self.q_list[i+1] = q_goal
-                    self.stance_list[i+1]['ref']['forces'] = forces
+                    self.setForces(q_goal, i)
 
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
@@ -651,13 +679,11 @@ class Connector:
                     if adding:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
                         self.q_list[i+1] = q_goal
-                        forces = self.computeForces(q_goal)
-                        self.stance_list[i+1]['ref']['forces'] = forces
+                        self.setForces(q_goal, i)
                     else:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
                         self.q_list[i+1] = q_goal
-                        forces = self.computeForces(q_goal)
-                        self.stance_list[i+1]['ref']['forces'] = forces
+                        self.setForces(q_goal, i)
                     self.planner_client.updateManifold(active_links_start)
                     print 'Planner reset'
                     rospy.sleep(self.__sleep)
@@ -691,7 +717,10 @@ class Connector:
                     self.surface_reacher(i, 20)
 
             # forza giusta vez!
-            if len(active_links_start) == 3 and not self.__complete_solution and i != 2 and i != 3:
+            if len(active_links_start) == 3 and not self.__complete_solution and i != 2 and i != 3 and self.model.simulation:
+                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+                self.__set_stiffdamp(100, 0.125)
+                self.__half = True
                 if self.__node_counter == 0:
                     path = os.getenv('ROBOTOLOGY_ROOT')
                     uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
@@ -701,10 +730,10 @@ class Connector:
                     self.__node_counter = self.__node_counter + 1
                     rospy.sleep(self.__sleep)
                     self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
-                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping() + xbot.ControlMode.Effort())
-                self.__set_stiffdamp(100, 0.25)  # divide by 4 since we first doubled
-                if self.model.simulation and len(active_links_start) != 2:
-                    self.sendForces(i)
+                self.model.robot.setControlMode(xbot.ControlMode.Effort() + xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+                self.sendForces(i)
+
+                raw_input('click')
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
