@@ -40,7 +40,7 @@ def setStiffnessAndDamping(robot, N_ITER, multiplier):
     D = robot.getDamping()
 
     Kd = multiplier * K
-    Dd = multiplier * D
+    Dd = 1 * D
 
     for k in range(N_ITER):
         stiff = list()
