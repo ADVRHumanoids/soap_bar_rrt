@@ -14,6 +14,7 @@ import sys
 from moveit_msgs.msg import CollisionObject
 from cartesio_acceleration_support import tasks
 from multi_contact_planning.srv import StiffnessDamping
+from std_srvs.srv import Empty
 import xbot_interface.xbot_interface as xbot
 import roslaunch
 
@@ -227,6 +228,9 @@ class Connector:
         forces = [j['ref']['force'] for j in self.stance_list[i + 1]]
         active_ind = [ind['ind'] for ind in self.stance_list[i + 1]]
         active_links = [self.model.ctrl_points[j] for j in active_ind]
+        print forces
+        print [f + [0., 0., 0.,] for f in forces]
+        print [np.array(f + [0., 0., 0.,]) for f in forces]
         [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f + [0., 0., 0.])) for c, f in zip(active_links, forces)]
 
         non_active_links = self.model.ctrl_points.values()
@@ -342,7 +346,7 @@ class Connector:
         for ind in indices:
             for index in range(len(self.stance_list[iterator + 1])):
                 if self.stance_list[iterator+1][index]['ind'] == ind:
-                    self.stance_list[iterator+1][index]['ref']['force'] = forces[indices[ind]][0:3]
+                    self.stance_list[iterator+1][index]['ref']['force'] = list(forces[indices[ind]][0:3])
 
     def rotation(self, normal):
 
@@ -583,8 +587,10 @@ class Connector:
             else:
                 optimize_torque_start = False
 
-            if len(active_links_start) == 3 and not self.__complete_solution and self.__half:
-                self.__set_stiffdamp(100, 2)
+            if not self.__complete_solution and self.__half:
+                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+                self.__set_stiffdamp(100, 4)
+                self.model.robot.setControlMode(xbot.ControlMode.Position())
 
 
             # check the goal state whether we are adding or removing a contact
@@ -593,31 +599,31 @@ class Connector:
                 adding = True
                 self.model.cs.setContactLinks(active_links_start)                            # active_links
                 print('active_links_start set')
-                rospy.sleep(self.__sleep)
+                # rospy.sleep(self.__sleep)
                 self.model.cs.setOptimizeTorque(optimize_torque_start)                       # optimize_torque
                 print('optimize_torque_start set')
-                rospy.sleep(self.__sleep)
+                # rospy.sleep(self.__sleep)
                 r_start = [self.rotation(elem) for elem in normals_start]
                 [self.model.cs.setContactRotationMatrix(k, j) for k, j in
                  zip(active_links_start, r_start)]  # rotations
                 print('rotations_start set')
-                rospy.sleep(self.__sleep)
+                # rospy.sleep(self.__sleep)
             else:                                                                            # removing a contact
                 self.model.cs.setContactLinks(active_links_goal)                             # active_links
                 print('active_links_goal set')
-                rospy.sleep(self.__sleep)
+                # rospy.sleep(self.__sleep)
                 self.model.cs.setOptimizeTorque(optimize_torque_goal)                        # optimize_torque
                 print('optimize_torque_goal set')
-                rospy.sleep(self.__sleep)
+                # rospy.sleep(self.__sleep)
                 r_goal = [self.rotation(elem) for elem in normals_goal]
                 [self.model.cs.setContactRotationMatrix(k, j) for k, j in
                  zip(active_links_goal, r_goal)]  # rotations
-                print('rotations_goal set')
+                # print('rotations_goal set')
                 rospy.sleep(self.__sleep)
 
             if not self.model.state_vc(q_goal):
                 print ['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one']
-                rospy.sleep(self.__sleep)
+                # rospy.sleep(self.__sleep)
 
                 if adding:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
@@ -632,7 +638,7 @@ class Connector:
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
             print 'Manifold updated'
-            rospy.sleep(self.__sleep)
+            # rospy.sleep(self.__sleep)
 
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
@@ -641,19 +647,20 @@ class Connector:
                 self.model.replay_model.setJointPosition(self.q_list[i-1])
                 self.model.replay_model.update()
                 self.model.sol_viz.publishMarkers([], True)
-            rospy.sleep(self.__sleep)
+            # rospy.sleep(self.__sleep)
 
             # update GroundCollisionCheck
             if len(active_links_start) == 3 and i != 3 and i != 2:
                 self.planner_client.publishGroundCheck(self.__lifted_contact_link, self.normal, True)
                 print 'GroundCollision check updated!'
-                rospy.sleep(self.__sleep)
+                # rospy.sleep(self.__sleep)
 
             if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
                 print 'Start and Goal poses are the same, skipping!'
                 s = len(self.q_list) - 1
                 i = i + 1
-                rospy.sleep(self.__sleep)
+                self.__half = False
+                # rospy.sleep(self.__sleep)
                 continue
 
             # publish the contacts
@@ -662,7 +669,7 @@ class Connector:
             print contacts
             # raw_input("Contacts published")
             print 'Contacts published'
-            rospy.sleep(self.__sleep)
+            # rospy.sleep(self.__sleep)
 
             res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(self.__sleep)
@@ -670,12 +677,13 @@ class Connector:
             if not res[1]:
                 for deleter in range(self.__counter):
                     del self.__solution[-1]
+                    self.__half = False
                 continue
             elif res[0] == 5:
                 counter = 0
                 while res[0] == 5 and counter < 2:
                     print 'Modifying the goal...'
-                    rospy.sleep(self.__sleep)
+                    # rospy.sleep(self.__sleep)
                     if adding:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
                         self.q_list[i+1] = q_goal
@@ -686,10 +694,10 @@ class Connector:
                         self.setForces(q_goal, i)
                     self.planner_client.updateManifold(active_links_start)
                     print 'Planner reset'
-                    rospy.sleep(self.__sleep)
+                    # rospy.sleep(self.__sleep)
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
                     print 'Start and goal poses reset'
-                    rospy.sleep(self.__sleep)
+                    # rospy.sleep(self.__sleep)
                     res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
                     if counter == 2:
@@ -707,7 +715,7 @@ class Connector:
                     self.model.robot.move()
                     rospy.sleep(0.01)
 
-            rospy.sleep(self.__sleep)
+            # rospy.sleep(self.__sleep)
 
             if len(active_links_start) == 3 and i != 3 and i != 2:
                 if self.__complete_solution or self.normal[2] > 0.01:
@@ -717,9 +725,11 @@ class Connector:
                     self.surface_reacher(i, 20)
 
             # forza giusta vez!
-            if len(active_links_start) == 3 and not self.__complete_solution and i != 2 and i != 3 and self.model.simulation:
+            if not self.__complete_solution and i != 2 and i != 3 and i != 0 and i != 1 and self.model.simulation:
                 self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
-                self.__set_stiffdamp(100, 0.125)
+                print 'reducing stiffness...'
+                self.__set_stiffdamp(100, 0.25)
+                print 'done!'
                 self.__half = True
                 if self.__node_counter == 0:
                     path = os.getenv('ROBOTOLOGY_ROOT')
@@ -728,12 +738,23 @@ class Connector:
                     launch = roslaunch.parent.ROSLaunchParent(uuid, [path + '/external/cartesio_planning/examples/launch/forza_giusta.launch'])
                     launch.start()
                     self.__node_counter = self.__node_counter + 1
-                    rospy.sleep(self.__sleep)
+                    # rospy.sleep(5.)
+                    print 'waiting for set_activation service...'
+                    rospy.wait_for_service('force_opt/set_activation')
+                    print 'done!'
+                    self.__set_fopt_active = rospy.ServiceProxy('force_opt/set_activation', Empty)
+                    self.__set_fopt_active()
+                    # rospy.sleep(self.__sleep)
                     self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
+                self.__set_fopt_active()
+                # rospy.sleep(self.__sleep)
                 self.model.robot.setControlMode(xbot.ControlMode.Effort() + xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
                 self.sendForces(i)
+                rospy.sleep(2.)
+                # rospy.sleep(self.__sleep)
+                self.__set_fopt_active()
+                self.model.robot.setControlMode(xbot.ControlMode.Position())
 
-                raw_input('click')
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
