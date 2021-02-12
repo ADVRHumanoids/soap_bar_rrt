@@ -536,6 +536,12 @@ class Connector:
             self.__counter = 0
 
             # set Position ControlMode for planning phase
+            if not self.__complete_solution and self.__half:
+                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+                self.__set_stiffdamp(100, 4)
+                self.model.robot.setControlMode(xbot.ControlMode.Position())
+                # raw_input('stiffness and damping increased!')
+
             if not self.__complete_solution:
                 self.model.robot.setControlMode(xbot.ControlMode.Position())
 
@@ -586,12 +592,6 @@ class Connector:
                 optimize_torque_start = True
             else:
                 optimize_torque_start = False
-
-            if not self.__complete_solution and self.__half:
-                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
-                self.__set_stiffdamp(100, 4)
-                self.model.robot.setControlMode(xbot.ControlMode.Position())
-
 
             # check the goal state whether we are adding or removing a contact
             adding = False
@@ -671,7 +671,7 @@ class Connector:
             print 'Contacts published'
             # rospy.sleep(self.__sleep)
 
-            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
+            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(self.__sleep)
 
             if not res[1]:
@@ -698,7 +698,7 @@ class Connector:
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
                     print 'Start and goal poses reset'
                     # rospy.sleep(self.__sleep)
-                    res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=10, interpolation_time=0.01, goal_threshold=0.05)
+                    res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
                     if counter == 2:
                         print '[Error]: unable to connect start and goal poses'
@@ -730,6 +730,7 @@ class Connector:
                 print 'reducing stiffness...'
                 self.__set_stiffdamp(100, 0.25)
                 print 'done!'
+                # raw_input('stiffness and damping decreased!')
                 self.__half = True
                 if self.__node_counter == 0:
                     path = os.getenv('ROBOTOLOGY_ROOT')
@@ -751,16 +752,16 @@ class Connector:
                 self.model.robot.setControlMode(xbot.ControlMode.Effort() + xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
                 self.sendForces(i)
                 rospy.sleep(2.)
+                # raw_input('torque control done!')
                 # rospy.sleep(self.__sleep)
                 self.__set_fopt_active()
-                self.model.robot.setControlMode(xbot.ControlMode.Position())
+                # self.model.robot.setControlMode(xbot.ControlMode.Position())
 
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
             i = i + 1
             print 'next config'
-            rospy.sleep(self.__sleep)
 
     def saveSolution(self):
         np.savetxt('solution.csv', self.__solution, delimiter=',')
