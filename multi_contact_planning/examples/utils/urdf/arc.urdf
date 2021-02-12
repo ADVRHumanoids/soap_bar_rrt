@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<robot name="arc">
+    <link name="world"/>
+    <link name="base_link"/>
+    <joint name="j_wb" type="fixed">
+        <parent link="world"/>
+        <child link="base_link"/>
+        <axis xyz="1 0 0"/>
+        <origin xyz="0.8 0.0 0.0"/>
+    </joint>
+    <link name="right_wall">
+        <inertial>
+          <origin rpy="0.0 0.0 0.0" xyz="-0.056796324 0.00045196345 -0.038136153"/>
+          <mass value="3.4599462"/>
+          <inertia ixx="0.038130318" ixy="9.5451056e-05" ixz="-8.2481481e-05" iyy="0.0089760596" iyz="9.1637353e-06" izz="0.039650845"/>
+        </inertial>
+        <visual>
+            <material name="dark_grey"/>
+            <geometry>
+                <box size="0.3 0.05 1.0"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.3 0.05 1.0"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_br" type="fixed">
+        <parent link="base_link"/>
+        <child link="right_wall"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.55 0.5"/>
+    </joint>
+    <link name="left_wall">
+        <inertial>
+          <origin rpy="0.0 0.0 0.0" xyz="-0.056796324 0.00045196345 -0.038136153"/>
+          <mass value="3.4599462"/>
+          <inertia ixx="0.038130318" ixy="9.5451056e-05" ixz="-8.2481481e-05" iyy="0.0089760596" iyz="9.1637353e-06" izz="0.039650845"/>
+        </inertial>
+        <visual>
+            <material name="dark_grey"/>
+            <geometry>
+                <box size="0.3 0.05 1.0"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.3 0.05 1.0"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_bl" type="fixed">
+        <parent link="base_link"/>
+        <child link="left_wall"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.55 0.5"/>
+    </joint>
+    <link name="top_wall">
+        <inertial>
+          <origin rpy="0.0 0.0 0.0" xyz="-0.056796324 0.00045196345 -0.038136153"/>
+          <mass value="3.4599462"/>
+          <inertia ixx="0.038130318" ixy="9.5451056e-05" ixz="-8.2481481e-05" iyy="0.0089760596" iyz="9.1637353e-06" izz="0.039650845"/>
+        </inertial>
+        <visual>
+            <material name="dark_grey"/>
+            <geometry>
+                <box size="0.3 1.15 0.05"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.3 1.15 0.05"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_bt" type="fixed">
+        <parent link="base_link"/>
+        <child link="top_wall"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 1.025"/>
+    </joint>
+</robot>
