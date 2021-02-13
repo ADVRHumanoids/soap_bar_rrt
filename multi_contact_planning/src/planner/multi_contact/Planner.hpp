@@ -13,8 +13,8 @@
 #include "enum.h"
 #include <Eigen/Dense>
 #include "constant_values.hpp"
-#include <CentroidalPlanner/CentroidalPlanner.h>
-#include <CentroidalPlanner/CoMPlanner.h>
+//#include <CentroidalPlanner/CentroidalPlanner.h>
+//#include <CentroidalPlanner/CoMPlanner.h>
 #include "Contact.hpp"
 #include "Configuration.hpp"
 #include "Vertex.hpp"
@@ -77,6 +77,8 @@ class Planner {
 
         ros::NodeHandle _nh;
         ros::Publisher _pub;
+        
+        bool computeIKSolution(Stance sigmaNear, Stance sigmaNew, Configuration qNear, Configuration &qNew);
 
     public:
 
@@ -92,6 +94,8 @@ class Planner {
         void run();
         bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
         int getTreeSize();
+        
+        void checkSolution(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
 
 };
 

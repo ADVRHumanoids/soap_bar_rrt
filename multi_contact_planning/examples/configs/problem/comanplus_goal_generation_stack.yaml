@@ -52,7 +52,7 @@ TorsoRPY:
 Com:
     type: "Com"
     lambda: 0.1
-
+    
 Head:
     type: "Cartesian"
     distal_link: "Head"

@@ -52,7 +52,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d cent
             index ++;
         }
     }
-    
+    /*
     ///////////////////////////////////////////////////////////////////////
     //center << 1.0, 0.0, 1.0;
     //side_x = 1.0;
@@ -72,7 +72,8 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d cent
         }    
     }
     ///////////////////////////////////////////////////////////////////////
-
+    */
+    
     _pointCloud.resize(_pcl_pointcloud->width, 3);
     for(int i = 0; i < _pcl_pointcloud->width; i++)
     {
