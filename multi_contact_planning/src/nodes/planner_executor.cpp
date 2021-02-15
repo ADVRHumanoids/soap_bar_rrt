@@ -1043,11 +1043,13 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             readFromFileStances(sigmaList, "sigmaList");
             sol_found = true;
             
+            
             /////////////////////////////////////
-            // create/initialize the planner
+            // create/initialize the planner  
             Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
             std::cout << "planner created!" << std::endl;
-            planner->checkSolution(sigmaList, qList);
+            planner->checkSolutionCS(sigmaList, qList);
+           
         }
 
 /*        _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);

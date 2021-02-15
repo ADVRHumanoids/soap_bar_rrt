@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <map>
-#include <iostream>
+#include <iostream>   
 #include <chrono>
 #include <fstream>
 #include <random>
@@ -13,8 +13,8 @@
 #include "enum.h"
 #include <Eigen/Dense>
 #include "constant_values.hpp"
-//#include <CentroidalPlanner/CentroidalPlanner.h>
-//#include <CentroidalPlanner/CoMPlanner.h>
+#include <CentroidalPlanner/CentroidalPlanner.h>
+#include <CentroidalPlanner/CoMPlanner.h>
 #include "Contact.hpp"
 #include "Configuration.hpp"
 #include "Vertex.hpp"
@@ -25,8 +25,10 @@
 #include "goal/NSPG.h"
 #include <cartesian_interface/CartesianInterfaceImpl.h>
 #include <multi_contact_planning/SetContactFrames.h>
+#include "validity_checker/stability/centroidal_statics.h"
 
 #include <fstream>
+#include <memory>
 
 
 class Planner {
@@ -68,17 +70,18 @@ class Planner {
         Eigen::Vector3d getNormalAtPointByIndex(int index);
         Eigen::Vector3d computeCoM(Configuration q);
         Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
-        bool similarityCheck(Stance sigmaNew);
-        bool distanceCheck(Stance sigmaNew);
         double computeHrange(Configuration q);
         double computeHtorso(Configuration q);
-                Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
-                Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis);
+        Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
+        Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis);
 
         ros::NodeHandle _nh;
         ros::Publisher _pub;
         
-        bool computeIKSolution(Stance sigmaNear, Stance sigmaNew, Configuration qNear, Configuration &qNew);
+        bool similarityCheck(Stance sigmaNew);
+        bool distanceCheck(Stance sigmaNew);
+        
+        
 
     public:
 
@@ -90,16 +93,16 @@ class Planner {
                 XBot::Cartesian::Planning::NSPG::Ptr _NSPG,
                 XBot::Cartesian::Planning::ValidityCheckContext _vc_context,
                 ros::NodeHandle& nh);
+        std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics> _cs;
         ~Planner();
         void run();
         bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
         int getTreeSize();
         
         void checkSolution(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
+        void checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
 
 };
 
 #endif
-
-
 
