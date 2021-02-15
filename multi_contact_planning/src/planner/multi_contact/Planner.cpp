@@ -907,6 +907,14 @@ void Planner::run(){
 
                                 if(resIK_CoM)
                                 {
+                                    Eigen::VectorXd q(n_dof);
+                                    q.segment(0,3) = qNew.getFBPosition();
+                                    q.segment(3,3) = qNew.getFBOrientation();
+                                    q.tail(n_dof-6) = qNew.getJointValues();
+
+                                    NSPG->getIKSolver()->getModel()->setJointPosition(q);
+                                    NSPG->getIKSolver()->getModel()->update();
+
                                     std::vector<std::string> active_links;
                                     std::vector<Eigen::Affine3d> ref_tasks;
                                     for(int i = 0; i < sigmaNew.getSize(); i++)
@@ -917,6 +925,7 @@ void Planner::run(){
                                     }
 
                                     _cs->setContactLinks(active_links);
+                                    _cs->init(false);
                                     
                                     for (int i = 0; i < sigmaNew.getContacts().size(); i ++)
                                     {
