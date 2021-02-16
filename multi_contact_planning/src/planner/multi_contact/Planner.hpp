@@ -81,6 +81,7 @@ class Planner {
         bool similarityCheck(Stance sigmaNew);
         bool distanceCheck(Stance sigmaNew);
         
+        bool balanceCheck(Configuration q, Stance sigma);
         
 
     public:
