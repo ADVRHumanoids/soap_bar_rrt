@@ -1,6 +1,6 @@
 solver_options:
     regularization: 1e-3
-    back_end: "osqp"
+    back_end: "qpoases"
 
 stack:
     - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"]
@@ -15,46 +15,48 @@ constraints:
     - "r_sole_F_lims"
     - "l_ball_tip_F_lims"
     - "r_ball_tip_F_lims"
+    - "LeftCoP"
+    - "RightCoP"
 
 
-#LeftCoP:
-#    lib_name: libcartesio_acceleration_support.so
-#    type: "CoP"
-#    link: "l_sole"
-#    x_limits: [-0.05, 0.1]
-#    y_limits: [-0.05, 0.05]
+LeftCoP:
+    lib_name: libcartesio_acceleration_support.so
+    type: "CoP"
+    link: "l_sole"
+    x_limits: [-0.05, 0.1]
+    y_limits: [-0.05, 0.05]
 
-#RightCoP:
-#    lib_name: libcartesio_acceleration_support.so
-#    type: "CoP"
-#    link: "r_sole"
-#    x_limits: [-0.05, 0.1]
-#    y_limits: [-0.05, 0.05]
+RightCoP:
+    lib_name: libcartesio_acceleration_support.so
+    type: "CoP"
+    link: "r_sole"
+    x_limits: [-0.05, 0.1]
+    y_limits: [-0.05, 0.05]
 
 
 r_sole_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "r_sole"
-    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+    weight: [1, 1, 1, 1, 1, 1]
 
 l_sole_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "l_sole"
-    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+    weight: [1, 1, 1, 1, 1, 1]
 
 r_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "r_ball_tip"
-    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+    weight: [1, 1, 1, 1, 1, 1]
 
 l_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "l_ball_tip"
-    weight: [1, 1, 1, 1e3, 1e3, 1e3]
+    weight: [1, 1, 1, 1, 1, 1]
 
 r_sole_fc:
     lib_name: libcartesio_acceleration_support.so

@@ -16,6 +16,7 @@ from cartesio_acceleration_support import tasks
 from multi_contact_planning.srv import StiffnessDamping
 from std_srvs.srv import Empty
 import xbot_interface.xbot_interface as xbot
+from xbot_msgs.msg import JointCommand
 import roslaunch
 
 # import coman_rising.py from cartesio_planning
@@ -59,6 +60,8 @@ class Connector:
         self.__half = False
 
         self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
+
+        self.__stiffness_pub = rospy.Publisher('xbotcore/command', JointCommand, queue_size=10, latch=True)
 
 
     def callback(self, data):
@@ -527,10 +530,55 @@ class Connector:
 
         return self.model.model.getJointPosition()
 
+    def init(self):
+        # set control mode
+        self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+
+        # launch forza giusta
+        # path = os.getenv('ROBOTOLOGY_ROOT')
+        # uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        # roslaunch.configure_logging(uuid)
+        # launch = roslaunch.parent.ROSLaunchParent(uuid, [path + '/external/cartesio_planning/examples/launch/forza_giusta.launch'])
+        # launch.start()
+        print 'waiting for set_activation service...'
+        rospy.wait_for_service('force_opt/set_activation')
+        print 'done!'
+        self.__set_fopt_active = rospy.ServiceProxy('force_opt/set_activation', Empty)
+
+        # create ci_client
+        self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
+
+        # set initial contacts
+        init_ind = [ind['ind'] for ind in self.stance_list[0]]
+        init_links = [self.model.ctrl_points[j] for j in init_ind]
+
+        fmin = np.zeros(6)
+        fmax = np.zeros(6)
+        if len(init_links) == 2:
+            fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
+            fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
+        else:
+            fmin = np.array([-1000, -1000, -1000, 0, 0, 0])
+            fmax = np.array([1000, 1000, 1000, 0, 0, 0])
+
+        [self.ci_ff.getTask('force_lims_'+link).setLimits(fmin, fmax) for link in init_links]
+
+        non_active_links = self.model.ctrl_points.values()
+        for link in init_links:
+            if link in non_active_links:
+                non_active_links.remove(link)
+
+        [self.ci_ff.getTask('force_lims_'+link).setLimits(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                                                          np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])) for link in non_active_links]
+
+        rospy.sleep(self.__sleep)
+        self.model.robot.setControlMode(xbot.ControlMode.Effort())
+        self.__set_fopt_active()
 
     def run(self):
         s = len(self.q_list) - 1
         i = 0
+        self.init()
         while i < s:
             # reset the counter
             self.__counter = 0
@@ -726,27 +774,20 @@ class Connector:
 
             # forza giusta vez!
             if not self.__complete_solution and i != 2 and i != 3 and i != 0 and i != 1 and self.model.simulation:
-                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+
                 print 'reducing stiffness...'
                 self.__set_stiffdamp(100, 0.25)
                 print 'done!'
                 # raw_input('stiffness and damping decreased!')
                 self.__half = True
                 if self.__node_counter == 0:
-                    path = os.getenv('ROBOTOLOGY_ROOT')
-                    uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-                    roslaunch.configure_logging(uuid)
-                    launch = roslaunch.parent.ROSLaunchParent(uuid, [path + '/external/cartesio_planning/examples/launch/forza_giusta.launch'])
-                    launch.start()
+
                     self.__node_counter = self.__node_counter + 1
                     # rospy.sleep(5.)
-                    print 'waiting for set_activation service...'
-                    rospy.wait_for_service('force_opt/set_activation')
-                    print 'done!'
-                    self.__set_fopt_active = rospy.ServiceProxy('force_opt/set_activation', Empty)
+
                     self.__set_fopt_active()
                     # rospy.sleep(self.__sleep)
-                    self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
+
                 self.__set_fopt_active()
                 # rospy.sleep(self.__sleep)
                 self.model.robot.setControlMode(xbot.ControlMode.Effort() + xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())

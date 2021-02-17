@@ -66,29 +66,13 @@ def checkStability(model, stances, qlist):
         model.cs.setContactLinks(active_links)
         get_contact_links = model.cs.getContactLinks()
 
-
-
-        # print 'active links are \n', model.cs.getContactLinks()
-        # print 'rotation matrices are: \n', [rotation(elem) for elem in normals]
-        # print 'rotation matrices are: \n', [model.cs.getContactFrame(j) for j in active_links]
-        # print 'configuration \n', q
         model.model.setJointPosition(q)
         model.model.update()
         model.rspub.publishTransforms('/ci')
 
-        # print 'poses: \n', [model.model.getPose(i) for i in active_links]
 
         forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
-
         model.cs.setForces(forces)
-        # print 'com: \n', model.model.getCOM()
-        # print active_links
-        # print 'contact:\n', [j['ref']['pose'] for j in stance]
-        # print 'forces:\n', [j['ref']['force'] for j in stance]
-        # print 'normals:\n', [j['ref']['normal'] for j in stance]
-        # print 'forces computed \n', model.cs.getForces()
-
-        # print 'cop',  sum([np.array(j['ref']['pose'])*j['ref']['force'][2]/686.7003 for j in stance])
 
         optimize_torque = False
         active_ind = [ind['ind'] for ind in stance]
@@ -103,7 +87,6 @@ def checkStability(model, stances, qlist):
         check.append(model.state_vc(q))
 
         get_forces = model.cs.getForces()
-        # print 'forces computed \n', model.cs.getForces()
 
     return check
 
