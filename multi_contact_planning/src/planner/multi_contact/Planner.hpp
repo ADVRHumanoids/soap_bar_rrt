@@ -2,7 +2,7 @@
 #define PLANNER_H
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>   
 #include <vector>
 #include <map>
 #include <iostream>   
@@ -41,7 +41,7 @@ class Planner {
         Stance sigmaGoal;
         Eigen::MatrixXd pointCloud;
         Eigen::MatrixXd pointNormals;
-        Tree* tree;
+        std::shared_ptr<Tree> tree;
         std::vector<EndEffector> endEffectorsList;
 
         XBot::ModelInterface::Ptr planner_model;
@@ -55,12 +55,12 @@ class Planner {
         int n_dof;
         Eigen::VectorXd qmin, qmax;
 
-        bool isGoalStance(Vertex* v);
+        bool isGoalStance(std::shared_ptr<Vertex> v);
         Eigen::Vector3d pickRandomPoint();
         bool nonEmptyReachableWorkspace(EndEffector pk, Configuration q);
         Eigen::Vector3d pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index);
         EndEffector pickRandomEndEffector();
-        Contact* pickRandomContactFromGoalStance();
+        std::shared_ptr<Contact> pickRandomContactFromGoalStance();
         int findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r);
         std::string getTaskStringName(EndEffector ee);
         EndEffector getTaskEndEffectorName(std::string ee_str);
@@ -82,6 +82,8 @@ class Planner {
         bool distanceCheck(Stance sigmaNew);
         
         bool balanceCheck(Configuration q, Stance sigma);
+        
+        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, Eigen::Vector3d rCoM);
         
 
     public:

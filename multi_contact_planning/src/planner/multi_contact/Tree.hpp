@@ -7,17 +7,19 @@
 #include "Vertex.hpp"
 #include "utils.hpp"  
 
+#include <memory>
+
 class Tree {
 
-	private:		
-		std::vector<Vertex*> verticesList;
+	private:	
+        std::vector<std::shared_ptr<Vertex>> verticesList;
 
 	public:
 		Tree();
 		~Tree();
 
-		Vertex* getVertex(int i);
-		void addVertex(Vertex* v);
+		std::shared_ptr<Vertex> getVertex(int i);
+		void addVertex(std::shared_ptr<Vertex> v);
 		int getSize();
 		void clear();
 

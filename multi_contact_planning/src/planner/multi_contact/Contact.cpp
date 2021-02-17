@@ -7,6 +7,8 @@ Contact::Contact(EndEffector _name, Eigen::Affine3d _pose, Eigen::Vector3d _forc
     normal = _normal;
 }
 
+Contact::~Contact(){}
+
 EndEffector Contact::getEndEffectorName(){
     return name;
 }

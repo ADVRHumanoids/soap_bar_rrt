@@ -67,7 +67,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
         Stance sigma = sigmaList.at(i);
         fileOut << sigma.getSize() << std::endl;
         for(int j = 0; j < sigma.getSize(); j++){
-            Contact* c = sigma.getContact(j);
+            std::shared_ptr<Contact> c = sigma.getContact(j);
             EndEffector ee = c->getEndEffectorName();
             Eigen::Affine3d T = c->getPose();
             Eigen::Vector3d F = c->getForce();
@@ -128,7 +128,8 @@ void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::s
                 index++;
             }
 
-            Contact* c = new Contact(ee, T, F, n);
+            //Contact* c = new Contact(ee, T, F, n);
+            std::shared_ptr<Contact> c = std::make_shared<Contact>(ee, T, F, n);
             sigma.addContact(c);
         }
 

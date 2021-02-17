@@ -4,15 +4,15 @@ Stance::Stance(){
     contactsList.clear();
 }
 
-Contact* Stance::getContact(int i){
+std::shared_ptr<Contact> Stance::getContact(int i){
     return contactsList.at(i);
 }
 
-std::vector<Contact*> Stance::getContacts(){
+std::vector<std::shared_ptr<Contact>> Stance::getContacts(){
     return contactsList;
 }
 
-void Stance::addContact(Contact* c){
+void Stance::addContact(std::shared_ptr<Contact> c){
     contactsList.push_back(c);
 }
 

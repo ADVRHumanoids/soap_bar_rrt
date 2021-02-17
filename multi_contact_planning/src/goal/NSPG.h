@@ -11,6 +11,10 @@
 #include "utils/robot_viz.h"  
 #include <cartesian_interface/utils/RobotStatePublisher.h>
 
+#include <planner/multi_contact/Stance.hpp>
+#include <multi_contact_planning/SetContactFrames.h>
+#include "validity_checker/stability/centroidal_statics.h"
+
 namespace XBot { namespace Cartesian { namespace Planning {
     
     class NSPG {
@@ -34,11 +38,17 @@ namespace XBot { namespace Cartesian { namespace Planning {
 
         std::shared_ptr<XBot::Cartesian::Utils::RobotStatePublisher> _rspub;
         
+        bool sample(double timeout, Stance sigmaSmall, Stance sigmaLarge); 
+        bool balanceCheck(Stance sigma);
+        XBot::JointNameMap generateRandomVelocities(bool collisionCheckRes, bool balanceCheckRes, std::vector<XBot::ModelChain> colliding_chains);
+        
     private:        
         
         PositionCartesianSolver::Ptr _ik_solver;
         
         Planning::ValidityCheckContext _vc_context;
+        
+        std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics> _cs;
         
 
     };

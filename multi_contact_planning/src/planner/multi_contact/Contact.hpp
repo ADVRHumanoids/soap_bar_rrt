@@ -7,6 +7,8 @@
 #include <Eigen/Dense>
 #include "constant_values.hpp"
 
+#include <memory>
+
 class Contact {
 
     public:
