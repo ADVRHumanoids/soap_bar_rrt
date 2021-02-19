@@ -15,8 +15,8 @@ constraints:
     - "r_sole_F_lims"
     - "l_ball_tip_F_lims"
     - "r_ball_tip_F_lims"
-    - "LeftCoP"
-    - "RightCoP"
+    #- "LeftCoP"
+    #- "RightCoP"
 
 
 LeftCoP:
