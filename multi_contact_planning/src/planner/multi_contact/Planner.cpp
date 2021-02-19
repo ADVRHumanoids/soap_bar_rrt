@@ -140,6 +140,10 @@ _nh(nh)
 
     Eigen::Quaternion<double> quat(rot);
     foutLogMCP << "ROTATION CHECK: \n " << quat.coeffs() << std::endl;
+    foutLogMCP << "sizeof(Vertex) = " << sizeof(Vertex) << std::endl;
+    foutLogMCP << "sizeof(Configuration) = " << sizeof(Configuration) << std::endl;
+    foutLogMCP << "sizeof(Stance) = " << sizeof(Stance) << std::endl;
+    foutLogMCP << "sizeof(Contact) = " << sizeof(Contact) << std::endl;
 
     std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L"};
     //_cs = std::make_unique<XBot::Cartesian::Planning::CentroidalStatics>(NSPG->getIKSolver()->getModel(), links, 0.5*sqrt(2));
@@ -831,6 +835,11 @@ Eigen::Affine3d Planner::computeForwardKinematics(Configuration q, EndEffector e
 void Planner::run(){
 
     foutLogMCP << "********************************* PLANNING STARTED *********************************" << std::endl;
+    
+    float timeIKandCS = 0.0;
+    float timeTotal = 0.0;
+    
+    auto tic_timeTotal = std::chrono::high_resolution_clock::now();
 
     tree->clear();
     std::shared_ptr<Vertex> vInit = std::make_shared<Vertex>(sigmaInit, qInit, -1);
@@ -890,11 +899,28 @@ void Planner::run(){
                 std::vector<EndEffector> activeEEsDes;
                 Eigen::Affine3d T_k;
                 Eigen::Vector3d n_k;
+                Eigen::Vector3d dir;
                 if(sigmaNear.isActiveEndEffector(pk))
                 {
                     foutLogMCP << "REMOVING A CONTACT" << std::endl;
-                    for(int i = 0; i < activeEEsNear.size(); i++) if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
-                }
+                    //for(int i = 0; i < activeEEsNear.size(); i++) if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
+                    
+                    for(int i = 0; i < activeEEsNear.size(); i++){
+                        if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
+                        else{
+                            //DIRECTION FOR THE RANDOM VELOCITIES
+                            Eigen::Vector3d pRem = sigmaNear.retrieveContactPose(activeEEsNear.at(i)).translation();
+                            Eigen::Vector3d pCoM = computeCoM(qNear);
+                            dir = pCoM - pRem;
+                            double dir_norm = dir.norm();
+                            dir = (1.0/dir_norm)*dir;
+                            foutLogMCP << "pRem = " << pRem.transpose() << std::endl;
+                            foutLogMCP << "pCoM = " << pCoM.transpose() << std::endl;
+                            foutLogMCP << "dir = " << dir.transpose() << std::endl;
+                        }
+                        
+                    }
+                }   
                 else
                 {
                     foutLogMCP << "ADDING A CONTACT" << std::endl;
@@ -902,9 +928,21 @@ void Planner::run(){
                     activeEEsDes.push_back(pk);
                     int pointIndex;
                     T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);
-// 				T_k.linear() = Eigen::Matrix3d::Identity(3,3);
                     T_k.linear() = generateRotationAroundAxis(pk, getNormalAtPointByIndex(pointIndex));
                     n_k = getNormalAtPointByIndex(pointIndex);
+                  
+                    //DIRECTION FOR THE RANDOM VELOCITIES 
+                    Eigen::Vector3d pAdd = T_k.translation();
+                    Eigen::Vector3d pCoM = computeCoM(qNear);
+                    dir = pCoM - pAdd;
+                    double dir_norm = dir.norm();
+                    dir = (1.0/dir_norm)*dir;
+                    foutLogMCP << "pAdd = " << pAdd.transpose() << std::endl;
+                    foutLogMCP << "pCoM = " << pCoM.transpose() << std::endl;
+                    foutLogMCP << "dir = " << dir.transpose() << std::endl;
+                    
+                    //dir.setZero(); //TODO
+                    
                 }
 
                 foutLogMCP << "activeEEsDes.size() = " << activeEEsDes.size() << std::endl;
@@ -921,13 +959,13 @@ void Planner::run(){
                 for(int i = 0; i < activeEEsDes.size(); i++){
                     if(sigmaNear.isActiveEndEffector(activeEEsDes.at(i)))
                     {
-                            T_i = sigmaNear.retrieveContactPose(activeEEsDes.at(i));
-                            n_i = sigmaNear.retrieveContactNormal(activeEEsDes.at(i));
+                        T_i = sigmaNear.retrieveContactPose(activeEEsDes.at(i));
+                        n_i = sigmaNear.retrieveContactNormal(activeEEsDes.at(i));
                     }
                     else
                     {
-                            T_i = T_k;
-                            n_i = n_k;
+                        T_i = T_k;
+                        n_i = n_k;
                     }
                     
                     std::shared_ptr<Contact> c = std::make_shared<Contact>(activeEEsDes.at(i), T_i, F_i, n_i);
@@ -937,11 +975,12 @@ void Planner::run(){
                 bool similarityCheckRes = similarityCheck(sigmaNew); // true if a similar stance already exists in the tree
                 bool distanceCheckRes = distanceCheck(sigmaNew); // true if distance between ees is in range 
 
-                distanceCheckRes = true;
+                //distanceCheckRes = true;
                 
                 if(!similarityCheckRes && distanceCheckRes) 
                 {
                     Configuration qNew;
+                    
                     
                     ///////////////////////////////////////////////////////////////////////////////////////////////////////
                     Stance sigmaLarge, sigmaSmall;
@@ -965,23 +1004,40 @@ void Planner::run(){
                         nCSmall.row(i) = sigmaSmall.getContact(i)->getNormal().transpose();
                     }
                     
+                    /*
                     Eigen::Vector3d rCoMCand = computeCoM(qNear);
                     
                     bool resCPL = computeCentroidalStatics(activeEEsSmall, rCoMCand, rCSmall, nCSmall, rCoMCand, rCSmall, FCSmall); // rC not used!!!
                     if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
                     else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;
                     foutLogMCP << "rCoMCand = " << rCoMCand.transpose() << std::endl;
+                    */
+                    
+                    Eigen::Vector3d rCoMCand = computeCoM(qNear);
+                    foutLogMCP << "rCoMCand = " << rCoMCand.transpose() << std::endl;
                     ///////////////////////////////////////////////////////////////////////////////////////////////////////
                     
+                    auto tic = std::chrono::high_resolution_clock::now();
                     
                     //bool resIKCS = computeIKandCS(qNear, sigmaNear, qNew, sigmaNew);
-                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, rCoMCand);
+                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, rCoMCand, dir);
                     if(resIKCS) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
                     else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
-
+                    
+                    auto toc = std::chrono::high_resolution_clock::now();
+                    std::chrono::duration<float> fsec = toc-tic;
+                    float t_fsec = fsec.count();
+                    foutLogMCP << "GS TIME = " << t_fsec << std::endl;
+                    timeIKandCS += t_fsec;
+                    
+                    
+    
                     // set forces in sigmaNew
                     
                     if(resIKCS){
+                        Eigen::Vector3d rCoMNew = computeCoM(qNew);
+                        foutLogMCP << "rCoMNew = " << rCoMNew.transpose() << std::endl;
+                
                         vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
                         tree->addVertex(vNew);
                         solutionFound = isGoalStance(vNew);
@@ -1004,7 +1060,18 @@ void Planner::run(){
 
     std::cout << "iters = " << j << std::endl;
     std::cout << "tree size = " << tree->getSize() << std::endl;
-
+    
+    auto toc_timeTotal = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> fsec_timeTotal = toc_timeTotal-tic_timeTotal;
+    timeTotal += fsec_timeTotal.count();
+    
+    foutLogMCP << "---------- DATA ----------" << std::endl;
+    
+    foutLogMCP << "timeTotal = " << timeTotal << std::endl;
+    foutLogMCP << "timeIKandCS = " << timeIKandCS << std::endl;
+    foutLogMCP << "iters = " << j << std::endl;
+    foutLogMCP << "tree size =  = " << tree->getSize() << std::endl;
+    
 }
 
 
@@ -1158,8 +1225,8 @@ bool Planner::distanceCheck(Stance sigmaNew)
     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND))   
         if(euclideanDistance(pRFoot, pRHand) < 0.6 || euclideanDistance(pRFoot, pRHand) > 1.8) return false;
     
-    if(sigmaNew.isActiveEndEffector(L_HAND) && sigmaNew.isActiveEndEffector(R_HAND))   
-        if(euclideanDistance(pLHand, pRHand) > 1.0) return false;
+    //if(sigmaNew.isActiveEndEffector(L_HAND) && sigmaNew.isActiveEndEffector(R_HAND))   
+        //if(euclideanDistance(pLHand, pRHand) > 1.0) return false;
     
     return true;
 }
@@ -1270,11 +1337,10 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
             _cs->setContactRotationMatrix(active_links[i], rot);
         }
 
-        
-        
         if (_cs->checkStability(5*1e-2)) foutLogMCP << "CS CHECK TRUE" << std::endl;
         else foutLogMCP << "CS CHECK FALSE" << std::endl;  
         
+        /*
         if(sigmaCurr.getSize() == 3){
             bool geometricCheck; // true if CoM ground projection is in the triangle defined by the contacts: WORKS ONLY ON FLAT GROUND
             Eigen::Vector2d comPos = rCoMCurr.head(2);
@@ -1294,6 +1360,50 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
             
             if(geometricCheck) foutLogMCP << "GEOMETRIC CHECK TRUE" << std::endl;
             else foutLogMCP << "GEOMETRIC CHECK FALSE" << std::endl;
+        }
+        */
+        
+        /////////////////////// TRANSITION CHECK
+        if(i == 0) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+        else{
+            Stance sigmaPrev = sigmaList.at(i-1);
+            Stance sigmaLarge, sigmaSmall;
+            if(sigmaCurr.getSize() > sigmaPrev.getSize())
+            {
+                sigmaLarge = sigmaCurr;
+                sigmaSmall = sigmaPrev;
+            }
+            else
+            {
+                sigmaLarge = sigmaPrev;
+                sigmaSmall = sigmaCurr;
+            }
+            
+            std::vector<std::string> active_links;
+            std::vector<Eigen::Affine3d> ref_tasks;
+            for(int i = 0; i < sigmaSmall.getSize(); i++)
+            {
+                EndEffector ee = sigmaSmall.getContact(i)->getEndEffectorName();
+                active_links.push_back(getTaskStringName(ee));
+                ref_tasks.push_back(sigmaSmall.retrieveContactPose(ee));
+                
+                //foutLogMCP << sigmaSmall.retrieveContactPose(ee).translation().transpose() << std::endl;
+            }
+
+            _cs->setContactLinks(active_links);
+
+            _cs->init(false); //FIXME
+
+            for (int i = 0; i < sigmaSmall.getContacts().size(); i ++)
+            {
+                auto nC_i = getNormalAtPoint(ref_tasks[i].translation().transpose());
+                Eigen::Matrix3d rot = generateRotationFrictionCone(nC_i);
+                _cs->setContactRotationMatrix(active_links[i], rot);
+            }
+
+            if (_cs->checkStability(5*1e-2)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+            else foutLogMCP << "TRANSITION CHECK FALSE" << std::endl; 
+            
         }
     }
 }
@@ -1355,10 +1465,19 @@ bool Planner::balanceCheck(Configuration q, Stance sigma){
     
 }
 
-bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, Eigen::Vector3d rCoM){
+bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, Eigen::Vector3d rCoM, Eigen::Vector3d dir){
     
         bool refCoM = true; //FIXME
-        
+    
+        /*
+        // TODO ///////////////////////////////////////////////////////
+        bool refCoM = false; 
+        if(dir.norm() < 1e-2){
+            foutLogMCP << "ADDING..." << std::endl;
+            refCoM = true;
+        }
+        ///////////////////////////////////////////////////////////////
+        */
         
     // build references
     std::vector<std::string> active_tasks;
@@ -1424,14 +1543,43 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
     
+    
+     
     if (!NSPG->getIKSolver()->solve()){
         foutLogMCP << "STOP BEFORE NSPG" << std::endl;
         return false;
     }
     
     NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+    
+        /*
+       // TODO ///////////////////////////////////////////////////////
+        if(dir.norm() < 1e-2){
+            foutLogMCP << "ADDING..." << std::endl;
+            NSPG->getIKSolver()->getModel()->getJointPosition(c);
+            qNew.setFBPosition(c.segment(0,3));
+            qNew.setFBOrientation(c.segment(3,3));
+            qNew.setJointValues(c.tail(n_dof-6));
+            
+            Eigen::Vector3d rCoMCurr = computeCoM(qNew);
+            dir = rCoMCurr - rCoM;
+            double dir_norm = dir.norm();
+            dir = (1.0/dir_norm)*dir;
+            foutLogMCP << "rCoMCurr = " << rCoMCurr.transpose() << std::endl;
+            foutLogMCP << "rCoM = " << rCoM.transpose() << std::endl;
+            foutLogMCP << "dir = " << dir.transpose() << std::endl;
+        
+            ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+             
+        }
+        ///////////////////////////////////////////////////////////////
+        */
+        
+        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled); // TODO
+        
+    auto tic = std::chrono::high_resolution_clock::now();
 
-    if(!NSPG->sample(time_budget, sigmaSmall, sigmaLarge))
+    if(!NSPG->sample(time_budget, sigmaSmall, sigmaLarge, dir))
     {
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
         qNew.setFBPosition(c.segment(0,3));
@@ -1439,6 +1587,10 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
         qNew.setJointValues(c.tail(n_dof-6));
         
         //ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled); //FIXME
+        
+        auto toc = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> fsec = toc - tic;
+        foutLogMCP << "SAMPLE = " << fsec.count() << std::endl;
         
         return false;
     }
@@ -1450,6 +1602,10 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
         qNew.setJointValues(c.tail(n_dof-6));
         
         //ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled); //FIXME
+        
+        auto toc = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> fsec = toc - tic;
+        foutLogMCP << "SAMPLE = " << fsec.count() << std::endl;
         
         return true;
     }

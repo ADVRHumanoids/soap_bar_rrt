@@ -83,7 +83,7 @@ class Planner {
         
         bool balanceCheck(Configuration q, Stance sigma);
         
-        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, Eigen::Vector3d rCoM);
+        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, Eigen::Vector3d rCoM, Eigen::Vector3d dir);
         
 
     public:

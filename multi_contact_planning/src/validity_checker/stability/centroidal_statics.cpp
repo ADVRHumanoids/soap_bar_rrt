@@ -157,7 +157,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
     }
 
     yaml << YAML::EndMap;
-    std::cout<<yaml.c_str()<<std::endl;
+    //std::cout<<yaml.c_str()<<std::endl;
 
     return YAML::Load(yaml.c_str());
 }
