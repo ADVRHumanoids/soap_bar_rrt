@@ -859,7 +859,7 @@ void Planner::run(){
                 bool similar = similarityTest(sigmaNew);
                 bool check_distance = distanceCheck(sigmaNew);
 
-                if(!similar)
+                if(!similar && check_distance)
                 {
                     sigmaListVertex.clear();
                     qListVertex.clear();
