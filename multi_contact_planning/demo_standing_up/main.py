@@ -108,7 +108,7 @@ if __name__ == '__main__':
         rospy.wait_for_service('xbot_mode/set_stiffness_damping')
         print 'done.'
 
-    qc = q_connector.Connector(cogimon, q_list, stances)
+    qc = q_connector.Connector(cogimon, q_list0, stances0)
     # qc.play_all_poses(1)
     # qc.replaySolution('solution.csv')
     # qc.replaySolution('solution_phase0.csv')

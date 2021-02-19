@@ -52,6 +52,7 @@ class Cogimon:
 
         # visualization tools
         self.rspub = pyci.RobotStatePublisher(self.model)
+        self.rspub_replay = pyci.RobotStatePublisher(self.replay_model)
 
         self.start_viz = visual_tools.RobotViz(self.model,
                                                '/cogimon/start',
@@ -122,7 +123,7 @@ class Cogimon:
     # validity checker
     def is_model_state_valid(self):
         self.ps.update()
-        self.rspub.publishTransforms('ci')
+        # self.rspub.publishTransforms('ci')
 
         in_collision = self.ps.checkCollisions()
         stable = self.cs.checkStability(5 * 1e-2)

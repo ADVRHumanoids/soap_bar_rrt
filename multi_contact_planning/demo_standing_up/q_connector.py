@@ -14,7 +14,7 @@ import sys
 from moveit_msgs.msg import CollisionObject
 from cartesio_acceleration_support import tasks
 from multi_contact_planning.srv import StiffnessDamping
-from std_srvs.srv import Empty
+from std_srvs.srv import SetBool
 import xbot_interface.xbot_interface as xbot
 from xbot_msgs.msg import JointCommand
 import roslaunch
@@ -56,7 +56,7 @@ class Connector:
         self.__counter = 0
         self.__complete_solution = False
         self.__node_counter = 0
-        self.__sleep = 0.5
+        self.__sleep = 0.1
         self.__half = False
 
         self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
@@ -532,7 +532,7 @@ class Connector:
 
     def init(self):
         # set control mode
-        self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+        self.model.robot.setControlMode(xbot.ControlMode.Position())
 
         # launch forza giusta
         # path = os.getenv('ROBOTOLOGY_ROOT')
@@ -543,7 +543,7 @@ class Connector:
         print 'waiting for set_activation service...'
         rospy.wait_for_service('force_opt/set_activation')
         print 'done!'
-        self.__set_fopt_active = rospy.ServiceProxy('force_opt/set_activation', Empty)
+        self.__set_fopt_active = rospy.ServiceProxy('force_opt/set_activation', SetBool)
 
         # create ci_client
         self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
@@ -551,49 +551,42 @@ class Connector:
         # set initial contacts
         init_ind = [ind['ind'] for ind in self.stance_list[0]]
         init_links = [self.model.ctrl_points[j] for j in init_ind]
+        self.set_limits(init_links)
 
+        # activate fopt_node
+        self.__set_fopt_active(True)
+
+    def set_limits(self, links):
         fmin = np.zeros(6)
         fmax = np.zeros(6)
-        if len(init_links) == 2:
+        if len(links) == 2:
             fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
             fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
         else:
             fmin = np.array([-1000, -1000, -1000, 0, 0, 0])
             fmax = np.array([1000, 1000, 1000, 0, 0, 0])
 
-        [self.ci_ff.getTask('force_lims_'+link).setLimits(fmin, fmax) for link in init_links]
+        [self.ci_ff.getTask('force_lims_' + link).setLimits(fmin, fmax) for link in links]
 
         non_active_links = self.model.ctrl_points.values()
-        for link in init_links:
+        for link in links:
             if link in non_active_links:
                 non_active_links.remove(link)
 
-        [self.ci_ff.getTask('force_lims_'+link).setLimits(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                                                          np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])) for link in non_active_links]
+        [self.ci_ff.getTask('force_lims_' + link).setLimits(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                                                            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])) for link in non_active_links]
 
         rospy.sleep(self.__sleep)
-        self.model.robot.setControlMode(xbot.ControlMode.Effort())
-        self.__set_fopt_active()
 
     def run(self):
         s = len(self.q_list) - 1
         i = 0
         self.init()
+        raw_input('Initialization done! click to start planning!')
+
         while i < s:
             # reset the counter
             self.__counter = 0
-
-            # set Position ControlMode for planning phase
-            if not self.__complete_solution and self.__half:
-                self.model.robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
-                self.__set_stiffdamp(100, 4)
-                self.model.robot.setControlMode(xbot.ControlMode.Position())
-                # raw_input('stiffness and damping increased!')
-
-            if not self.__complete_solution:
-                self.model.robot.setControlMode(xbot.ControlMode.Position())
-
-            # self.surface_reacher(i, 20)
 
             # set start and goal configurations
             [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
@@ -603,6 +596,10 @@ class Connector:
             active_links_goal = [self.model.ctrl_points[j] for j in active_ind_goal]
             active_ind_start = [ind['ind'] for ind in self.stance_list[i]]
             active_links_start = [self.model.ctrl_points[j] for j in active_ind_start]  # names
+
+            # set active_links_start for fopt_node
+            if not self.__complete_solution and self.model.simulation:
+                self.set_limits(active_links_start)
 
             # find rotation matrices and quaternions for start and goal active_links
             normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
@@ -773,31 +770,8 @@ class Connector:
                     self.surface_reacher(i, 20)
 
             # forza giusta vez!
-            if not self.__complete_solution and i != 2 and i != 3 and i != 0 and i != 1 and self.model.simulation:
-
-                print 'reducing stiffness...'
-                self.__set_stiffdamp(100, 0.25)
-                print 'done!'
-                # raw_input('stiffness and damping decreased!')
-                self.__half = True
-                if self.__node_counter == 0:
-
-                    self.__node_counter = self.__node_counter + 1
-                    # rospy.sleep(5.)
-
-                    self.__set_fopt_active()
-                    # rospy.sleep(self.__sleep)
-
-                self.__set_fopt_active()
-                # rospy.sleep(self.__sleep)
-                self.model.robot.setControlMode(xbot.ControlMode.Effort() + xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
-                self.sendForces(i)
-                rospy.sleep(2.)
-                # raw_input('torque control done!')
-                # rospy.sleep(self.__sleep)
-                self.__set_fopt_active()
-                # self.model.robot.setControlMode(xbot.ControlMode.Position())
-
+            if not self.__complete_solution and self.model.simulation:
+                self.set_limits(active_links_goal)
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
