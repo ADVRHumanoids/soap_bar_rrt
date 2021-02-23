@@ -110,10 +110,10 @@ class Cogimon:
         self.qmax = qmax
 
         # state validity checker
-        def is_state_valid(q):
+        def is_state_valid(q, collision_only=False):
             self.model.setJointPosition(q)
             self.model.update()
-            return self.is_model_state_valid()
+            return self.is_model_state_valid(collision_only)
 
         self.state_vc = is_state_valid
 
@@ -121,11 +121,13 @@ class Cogimon:
         self.rspub.publishTransforms('ci')
 
     # validity checker
-    def is_model_state_valid(self):
+    def is_model_state_valid(self, collision_only):
         self.ps.update()
         # self.rspub.publishTransforms('ci')
 
         in_collision = self.ps.checkCollisions()
+        if collision_only:
+            return not in_collision
         stable = self.cs.checkStability(5 * 1e-2)
 
         if in_collision:

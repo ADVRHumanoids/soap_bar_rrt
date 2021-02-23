@@ -8,6 +8,7 @@ import cartesio_planning.planning as planning
 import cartesio_planning.validity_check as vc
 from cartesio_planning import NSPG
 from trajectory_msgs.msg import JointTrajectory
+import manifold
 import eigenpy
 import os
 import sys
@@ -17,6 +18,7 @@ from multi_contact_planning.srv import StiffnessDamping
 from std_srvs.srv import SetBool
 import xbot_interface.xbot_interface as xbot
 from xbot_msgs.msg import JointCommand
+import time
 import roslaunch
 
 # import coman_rising.py from cartesio_planning
@@ -54,7 +56,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = False
+        self.__complete_solution = True
         self.__node_counter = 0
         self.__sleep = 0.1
         self.__half = False
@@ -389,7 +391,6 @@ class Connector:
             exit()
         else:
             print '[NSPG]: feasible goal pose found!'
-            rospy.sleep(self.__sleep)
 
         # set nspg solution as new goal state
         new_q_goal = nspg.getModel().getJointPosition()
@@ -402,6 +403,19 @@ class Connector:
             self.model.robot.setPositionReference(solution[index][6:])
             self.model.robot.move()
             rospy.sleep(dt)
+
+    def normalsToQuat(self, normals):
+        rot = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+        quat_list = []
+        for val in range(0, len(rot)):
+            quat_goal = [0., 0., 0., 0.]
+            quat_goal[0] = rot[val].x
+            quat_goal[1] = rot[val].y
+            quat_goal[2] = rot[val].z
+            quat_goal[3] = rot[val].w
+            map(float, quat_goal)
+            quat_list.append(quat_goal)
+        return quat_list
 
     def computeStartAndGoal(self, clearence, i):
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
@@ -462,8 +476,11 @@ class Connector:
 
     def setClearence(self, i, start, clearence, state):
         # find the rotation matrices
+
         self.model.model.setJointPosition(start)
         self.model.model.update()
+        proj = manifold.make_constraint_from_param_server(self.model.model)
+
         # self.ci.reset(self.ik_dt)
 
         w_R_t = self.model.model.getPose('torso').linear
@@ -504,16 +521,39 @@ class Connector:
         # solve
         q = np.empty(shape=[self.model.model.getJointNum(), 0])
         while self.ctrl_tasks[self.__lifted_contact_ind].getTaskState() == pyci.State.Reaching:
-            q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
-
             if not self.ci_solve_integrate(self.ci_time):
                 print('Unable to solve!!!')
                 unable_to_solve += 1
                 print(unable_to_solve)
             else:
                 unable_to_solve = 0
-
+                q_proj = proj.project(self.model.model.getJointPosition())
+            q = np.hstack((q, q_proj.reshape(self.model.model.getJointNum(), 1)))
             self.ci_time += self.ik_dt
+
+        # check for any self-collision
+        if not self.model.state_vc(q[:, -1], True):
+            raw_input('pose not valid!')
+            active_ind = [ind['ind'] for ind in self.stance_list[i]]
+            active_links = [self.model.ctrl_points[j] for j in active_ind]
+            normals = [j['ref']['normal'] for j in self.stance_list[i]]
+            quat_list = self.normalsToQuat(normals)
+            q_new = self.NSPGsample(q[:, -1], q[:, -1], active_links, quat_list, False, 20.)
+            if state == 'goal':
+                return q_new
+            self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), self.q_list[i], q_new)
+            contacts = {c: r for c, r in zip(active_links, quat_list)}
+            self.planner_client.publishContacts(contacts, False)
+            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=1, planner_type='RRTstar', plan_time=2,
+                                            interpolation_time=0.01, goal_threshold=0.05)
+            rospy.sleep(self.__sleep)
+            if self.__complete_solution:
+                self.__solution = self.__solution + self.solution
+                self.__counter = self.__counter + len(self.solution)
+
+            self.planner_client.updateManifold(active_links)
+            return q_new
+
 
         # if self.__complete_solution, save the cartesian solution
         if (state == 'start' or state == 'touch') and self.__complete_solution:
@@ -530,7 +570,7 @@ class Connector:
                 self.model.robot.move()
                 rospy.sleep(0.01)
 
-        return self.model.model.getJointPosition()
+        return list(q[:, -1])
 
     def init(self):
         # set control mode
@@ -576,22 +616,26 @@ class Connector:
 
     def run(self):
         s = len(self.q_list) - 1
-        i = 0
-        self.init()
-        raw_input('Initialization done! click to start planning!')
+        i = 33
+        if self.model.simulation:
+            self.init()
 
         while i < s:
             # reset the counter
             self.__counter = 0
-
-            # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
-
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
             active_links_goal = [self.model.ctrl_points[j] for j in active_ind_goal]
             active_ind_start = [ind['ind'] for ind in self.stance_list[i]]
             active_links_start = [self.model.ctrl_points[j] for j in active_ind_start]  # names
+
+            self.planner_client.updateManifold(active_links_start)
+            # raw_input('Manifold updated')
+            print 'Manifold updated'
+            # rospy.sleep(self.__sleep)
+
+            # set start and goal configurations
+            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
 
             # change stiffness
             if i > 4 and len(active_links_start) == 3 and self.model.simulation:
@@ -604,28 +648,10 @@ class Connector:
 
             # find rotation matrices and quaternions for start and goal active_links
             normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
+            quat_list_goal = self.normalsToQuat(normals_goal)
+
             normals_start = [j['ref']['normal'] for j in self.stance_list[i]]
-
-            rot_goal = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals_goal]
-            quat_list_goal = []
-            for val in range(0, len(rot_goal)):
-                quat_goal = [0., 0., 0., 0.]
-                quat_goal[0] = rot_goal[val].x
-                quat_goal[1] = rot_goal[val].y
-                quat_goal[2] = rot_goal[val].z
-                quat_goal[3] = rot_goal[val].w
-                map(float, quat_goal)
-                quat_list_goal.append(quat_goal)
-
-            rot_start = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals_start]
-            quat_list_start = []
-            for val in range(0, len(rot_start)):
-                quat_start = [0., 0., 0., 0.]
-                quat_start[0] = rot_start[val].x
-                quat_start[1] = rot_start[val].y
-                quat_start[2] = rot_start[val].z
-                quat_start[3] = rot_start[val].w
-                quat_list_start.append(quat_start)
+            quat_list_start = self.normalsToQuat(normals_start)
 
             # find optimize_torque for start and goal stances
             optimize_torque_goal = False
@@ -681,11 +707,6 @@ class Connector:
                     self.q_list[i+1] = q_goal
                     self.setForces(q_goal, i)
 
-            self.planner_client.updateManifold(active_links_start)
-            # raw_input('Manifold updated')
-            print 'Manifold updated'
-            # rospy.sleep(self.__sleep)
-
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
             print 'Start and Goal poses set'
@@ -717,7 +738,7 @@ class Connector:
             print 'Contacts published'
             # rospy.sleep(self.__sleep)
 
-            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
+            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=1, planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(self.__sleep)
 
             if not res[1]:
@@ -744,10 +765,11 @@ class Connector:
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
                     print 'Start and goal poses reset'
                     # rospy.sleep(self.__sleep)
-                    res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
+                    res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=1, planner_type='RRTConnect', plan_time=2 + counter + 1, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
                     if counter == 5:
                         print '[Error]: unable to connect start and goal poses'
+                        self.saveSolution()
                         exit()
                 rospy.sleep(self.__sleep)
 
@@ -778,7 +800,6 @@ class Connector:
             s = len(self.q_list) - 1
             i = i + 1
             if self.__half:
-                raw_input('click to reset stiffness')
                 self.__reset_stiffness(100, 2, '')
             print 'next config'
 
