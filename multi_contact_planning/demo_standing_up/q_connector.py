@@ -59,8 +59,10 @@ class Connector:
         self.__sleep = 0.1
         self.__half = False
 
-        self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
+        self.__chain_map = {"l_ball_tip": "left_arm", "r_ball_tip": "right_arm", "l_sole": "left_leg", "r_sole": "right_leg"}
 
+        self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
+        self.__reset_stiffness = rospy.ServiceProxy('xbot_mode/reset_stiffness', StiffnessDamping)
         self.__stiffness_pub = rospy.Publisher('xbotcore/command', JointCommand, queue_size=10, latch=True)
 
 
@@ -534,12 +536,6 @@ class Connector:
         # set control mode
         self.model.robot.setControlMode(xbot.ControlMode.Position())
 
-        # launch forza giusta
-        # path = os.getenv('ROBOTOLOGY_ROOT')
-        # uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-        # roslaunch.configure_logging(uuid)
-        # launch = roslaunch.parent.ROSLaunchParent(uuid, [path + '/external/cartesio_planning/examples/launch/forza_giusta.launch'])
-        # launch.start()
         print 'waiting for set_activation service...'
         rospy.wait_for_service('force_opt/set_activation')
         print 'done!'
@@ -597,7 +593,12 @@ class Connector:
             active_ind_start = [ind['ind'] for ind in self.stance_list[i]]
             active_links_start = [self.model.ctrl_points[j] for j in active_ind_start]  # names
 
-            # set active_links_start for fopt_node
+            # change stiffness
+            if i > 4 and len(active_links_start) == 3 and self.model.simulation:
+                self.__set_stiffdamp(100, 2, self.__chain_map[self.__lifted_contact_link])
+                self.__half = True
+                self.model.robot.sense()
+            # # set active_links_start for fopt_node
             if not self.__complete_solution and self.model.simulation:
                 self.set_limits(active_links_start)
 
@@ -726,7 +727,7 @@ class Connector:
                 continue
             elif res[0] == 5:
                 counter = 0
-                while res[0] == 5 and counter < 2:
+                while res[0] == 5 and counter < 5:
                     print 'Modifying the goal...'
                     # rospy.sleep(self.__sleep)
                     if adding:
@@ -745,7 +746,7 @@ class Connector:
                     # rospy.sleep(self.__sleep)
                     res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
-                    if counter == 2:
+                    if counter == 5:
                         print '[Error]: unable to connect start and goal poses'
                         exit()
                 rospy.sleep(self.__sleep)
@@ -776,6 +777,9 @@ class Connector:
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
             i = i + 1
+            if self.__half:
+                raw_input('click to reset stiffness')
+                self.__reset_stiffness(100, 2, '')
             print 'next config'
 
     def saveSolution(self):
@@ -793,10 +797,6 @@ class Connector:
         index = 0
         while index < num_iter:
             for i in range(0, len(self.q_list), 2):
-                # self.model.model.setJointPosition(self.q_list[i])
-                # self.model.model.update()
-                # self.model.rspub.publishTransforms('ci')
-
                 self.model.replay_model.setJointPosition(self.q_list[i])
                 self.model.replay_model.update()
                 self.model.sol_viz.publishMarkers([], True)

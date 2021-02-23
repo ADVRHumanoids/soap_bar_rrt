@@ -5,6 +5,7 @@ import rospy
 from multi_contact_planning.srv import StiffnessDamping
 import numpy as np
 from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
+from std_srvs.srv import Empty
 
 def is_empty(any_structure):
     if any_structure:
@@ -34,37 +35,80 @@ def get_robot() :
 
     return robot, model
 
-def setStiffnessAndDamping(robot, N_ITER, multiplier):
+def setStiffnessAndDamping(robot, N_ITER, multiplier, chain):
 
-    K = robot.getStiffness()
-    D = robot.getDamping()
+    K0 = robot.arm(0).getStiffness()
+    K1 = robot.arm(1).getStiffness()
+    K2 = robot.leg(0).getStiffness()
+    K3 = robot.leg(1).getStiffness()
 
-    Kd = multiplier * K
-    Dd = 1 * D
+    Kd0 = list()
+    Kd1 = list()
+    Kd2 = list()
+    Kd3 = list()
+    if chain == "left_arm":
+        Kd0 = multiplier * K0
+        Kd1 = K1
+        Kd2 = K2
+        Kd3 = K3
+    elif chain == "right_arm":
+        Kd0 = K0
+        Kd1 = multiplier * K1
+        Kd2 = K2
+        Kd3 = K3
+    elif chain == "left_leg":
+        Kd0 = K0
+        Kd1 = K1
+        Kd2 = multiplier * K2
+        Kd3 = K3
+    elif chain == "right_leg":
+        Kd0 = K0
+        Kd1 = K1
+        Kd2 = K2
+        Kd3 = multiplier * K3
 
     for k in range(N_ITER):
-        stiff = list()
-        damp = list()
-        for K_start, K_end, D_start, D_end in zip(K, Kd, D, Dd):
-            stiff.append(K_start + float(k) / (N_ITER - 1) * (K_end - K_start))
-            damp.append(D_start + float(k) / (N_ITER - 1) * (D_end - D_start))
-        robot.setStiffness(stiff)
-        robot.setDamping(damp)
-
-        # print "Completed: ", float(k) / N_ITER * 100, "%"
+        stiff0 = list()
+        stiff1 = list()
+        stiff2 = list()
+        stiff3 = list()
+        for K_s0, K_e0 in zip(K0, Kd0):
+            stiff0.append(K_s0 + float(k) / (N_ITER - 1) * (K_e0 - K_s0))
+        for K_s1, K_e1 in zip(K1, Kd1):
+            stiff1.append(K_s1 + float(k) / (N_ITER - 1) * (K_e1 - K_s1))
+        for K_s2, K_e2 in zip(K2, Kd2):
+            stiff2.append(K_s2 + float(k) / (N_ITER - 1) * (K_e2 - K_s2))
+        for K_s3, K_e3 in zip(K3, Kd3):
+            stiff3.append(K_s3 + float(k) / (N_ITER - 1) * (K_e3 - K_s3))
+        robot.arm(0).setStiffness(stiff0)
+        robot.arm(1).setStiffness(stiff1)
+        robot.leg(0).setStiffness(stiff2)
+        robot.leg(1).setStiffness(stiff3)
         robot.move()
-        rospy.sleep(0.01)
+        rospy.sleep(1.0/N_ITER)
 
     print "Stiffness of robot is: ", robot.getStiffness()
-    print "Damping of robot is: ", robot.getDamping()
 
 def executeCommand(req) :
 
     # .... do interpolation #
-    setStiffnessAndDamping(robot, req.n_iter, req.multiplier)
-
+    setStiffnessAndDamping(robot, req.n_iter, req.multiplier, req.chain)
     return True
 
+def resetCommand(req):
+    resetStiffness(robot, req.n_iter)
+    return True
+
+def resetStiffness(robot, N_ITER):
+    K = robot.getStiffness()
+    Kd = init_stiff
+    for k in range(N_ITER):
+        stiff = list()
+        for K_s, K_e in zip(K, Kd):
+            stiff.append(K_s + float(k) / (N_ITER - 1) * (K_e - K_s))
+        robot.setStiffness(stiff)
+        robot.move()
+        rospy.sleep(1.0/N_ITER)
 
 if __name__ == '__main__':
 
@@ -75,7 +119,11 @@ if __name__ == '__main__':
     robot.sense()
     model.syncFrom(robot)
 
-    robot.setControlMode(xbot.ControlMode.Stiffness() + xbot.ControlMode.Damping())
+    robot.setControlMode(xbot.ControlMode.Stiffness())
+    init_stiff = robot.getStiffness()
 
     s = rospy.Service('xbot_mode/set_stiffness_damping', StiffnessDamping, executeCommand)
-    rospy.spin()
+    r = rospy.Service('xbot_mode/reset_stiffness', StiffnessDamping, resetCommand)
+    while not rospy.is_shutdown():
+        robot.sense()
+        rospy.spin()
