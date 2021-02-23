@@ -39,9 +39,12 @@ namespace XBot { namespace Cartesian { namespace Planning {
         std::shared_ptr<XBot::Cartesian::Utils::RobotStatePublisher> _rspub;
         
         bool sample(double timeout, Stance sigmaSmall, Stance sigmaLarge, Eigen::Vector3d dir); 
+        //bool sample2(double timeout, Stance sigmaSmall, Stance sigmaLarge, Eigen::Vector3d dir); 
         bool balanceCheck(Stance sigma);
         XBot::JointNameMap generateRandomVelocities(bool collisionCheckRes, bool balanceCheckRes, std::vector<XBot::ModelChain> colliding_chains);
         XBot::JointNameMap generateRandomVelocities(bool collisionCheckRes, bool balanceCheckRes, std::vector<XBot::ModelChain> colliding_chains, Eigen::Vector3d dir);
+        
+        XBot::JointNameMap generateRandomVelocities2(bool collisionCheckRes, bool balanceCheckRes, std::vector<XBot::ModelChain> colliding_chains, Eigen::Vector3d dir);
         
     private:        
         
