@@ -1,12 +1,12 @@
 solver_options:
-    regularization: 1e-3
+    regularization: 1e-1
     back_end: "qpoases"
 
 stack:
-    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"]
+    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench", "UnderactuatedDyn"]
 
 constraints:
-    - "UnderactuatedDyn"
+    #- "UnderactuatedDyn"
     - "l_sole_fc"
     - "r_sole_fc"
     - "l_ball_tip_fc"
@@ -62,28 +62,28 @@ r_sole_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "r_sole"
-    friction_coeff: 0.5
+    friction_coeff: 0.71
 #    local: true
 
 l_sole_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "l_sole"
-    friction_coeff: 0.5
+    friction_coeff: 0.71
 #    local: true
 
 r_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "r_ball_tip"
-    friction_coeff: 0.5
+    friction_coeff: 0.71
 #    local: true
 
 l_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "l_ball_tip"
-    friction_coeff: 0.5
+    friction_coeff: 0.71
 #    local: true
 
 r_sole_F_lims:
@@ -138,6 +138,7 @@ UnderactuatedDyn:
     type: "DynamicFeasibility"
     contacts: ["l_sole", "r_sole", "l_ball_tip", "r_ball_tip"]
     dynamics: false
+    weight: [100, 100, 100, 100, 100, 100]
 
 postural:
     lib_name: libcartesio_acceleration_support.so
