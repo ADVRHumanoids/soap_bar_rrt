@@ -69,7 +69,7 @@ if __name__ == '__main__':
     log_path = '/tmp'
     ctrl_points = collections.OrderedDict(((0, 'l_ball_tip'), (1, 'r_ball_tip'), (4, 'l_sole'), (5, 'r_sole')))
 
-    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=False)
+    cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
     q_list0 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/qList.txt")
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # q_list.insert(0, qhome)
     # stances.insert(0, stances[0])
 
-    # flag = loader.checkStability(cogimon, stances, q_list)
+    # flag = loader.checkStability(cogimon, stances1, q_list1)
     # print flag
     # rospy.sleep(2.)
     # exit()
@@ -109,7 +109,7 @@ if __name__ == '__main__':
         rospy.wait_for_service('xbot_mode/reset_stiffness')
         print 'done.'
 
-    qc = q_connector.Connector(cogimon, q_list1, stances1)
+    qc = q_connector.Connector(cogimon, q_list0 + q_list1, stances0 + stances1)
     # qc.play_all_poses(1)
     # qc.replaySolution('solution.csv')
     # qc.replaySolution('solution_phase0.csv')

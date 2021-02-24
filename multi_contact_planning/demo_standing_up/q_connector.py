@@ -56,7 +56,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = True
+        self.__complete_solution = False
         self.__node_counter = 0
         self.__sleep = 0.1
         self.__half = False
@@ -424,10 +424,7 @@ class Connector:
         if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
-            self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
-                              x not in [j['ind'] for j in self.stance_list[i]]][0]
-            self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
-            self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
+
 
             # hardcoded stuff for phase0
             if i == 4 and self.__complete_solution:
@@ -544,7 +541,7 @@ class Connector:
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), self.q_list[i], q_new)
             contacts = {c: r for c, r in zip(active_links, quat_list)}
             self.planner_client.publishContacts(contacts, False)
-            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=1, planner_type='RRTstar', plan_time=2,
+            res = self.planner_client.solve(planner_type='RRTstar', plan_time=2,
                                             interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(self.__sleep)
             if self.__complete_solution:
@@ -616,7 +613,7 @@ class Connector:
 
     def run(self):
         s = len(self.q_list) - 1
-        i = 33
+        i = 0
         if self.model.simulation:
             self.init()
 
@@ -634,8 +631,11 @@ class Connector:
             print 'Manifold updated'
             # rospy.sleep(self.__sleep)
 
-            # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
+            if len(active_links_start) < 4:
+                self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
+                                         x not in [j['ind'] for j in self.stance_list[i]]][0]
+                self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
+                self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
             # change stiffness
             if i > 4 and len(active_links_start) == 3 and self.model.simulation:
@@ -645,6 +645,9 @@ class Connector:
             # # set active_links_start for fopt_node
             if not self.__complete_solution and self.model.simulation:
                 self.set_limits(active_links_start)
+
+            # set start and goal configurations
+            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
 
             # find rotation matrices and quaternions for start and goal active_links
             normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
@@ -738,7 +741,7 @@ class Connector:
             print 'Contacts published'
             # rospy.sleep(self.__sleep)
 
-            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=1, planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
+            res = self.planner_client.solve(planner_type='RRTConnect', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(self.__sleep)
 
             if not res[1]:
@@ -765,7 +768,7 @@ class Connector:
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
                     print 'Start and goal poses reset'
                     # rospy.sleep(self.__sleep)
-                    res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=1, planner_type='RRTConnect', plan_time=2 + counter + 1, interpolation_time=0.01, goal_threshold=0.05)
+                    res = self.planner_client.solve(planner_type='RRTConnect', plan_time=2 + counter + 1, interpolation_time=0.01, goal_threshold=0.5)
                     counter = counter + 1
                     if counter == 5:
                         print '[Error]: unable to connect start and goal poses'
