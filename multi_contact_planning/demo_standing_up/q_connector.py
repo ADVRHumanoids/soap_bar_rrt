@@ -18,6 +18,7 @@ from multi_contact_planning.srv import StiffnessDamping
 from std_srvs.srv import SetBool
 import xbot_interface.xbot_interface as xbot
 from xbot_msgs.msg import JointCommand
+import json
 import time
 import roslaunch
 
@@ -56,7 +57,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = False
+        self.__complete_solution = True
         self.__node_counter = 0
         self.__sleep = 0.1
         self.__half = False
@@ -529,7 +530,7 @@ class Connector:
             self.ci_time += self.ik_dt
 
         # check for any self-collision
-        if not self.model.state_vc(q[:, -1], True):
+        if not self.model.state_vc(q[:, -1]):
             raw_input('pose not valid!')
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]
@@ -553,10 +554,15 @@ class Connector:
 
 
         # if self.__complete_solution, save the cartesian solution
-        if (state == 'start' or state == 'touch') and self.__complete_solution:
-            q_list = list(q.transpose())
-            self.__solution = self.__solution + q_list
-            self.__counter = self.__counter + len(q_list)
+        if state == 'start' and self.__complete_solution:
+            for index in range(np.size(q, 1)):
+                self.__solution[i]['q'].append(list(q[:, index]))
+                self.__counter = self.__counter + 1
+
+        if state == 'touch' and self.__complete_solution:
+            for index in range(np.size(q, 1)):
+                self.__solution[i-1]['q'].append(list(q[:, index]))
+                self.__counter = self.__counter + 1
 
         # else play the solution as soon as it is calculated
         elif (state == 'start' or state == 'touch') and not self.__complete_solution:
@@ -614,10 +620,8 @@ class Connector:
     def run(self):
         s = len(self.q_list) - 1
         i = 0
-        if self.model.simulation:
-            self.init()
 
-        while i < s:
+        while i < 7:
             # reset the counter
             self.__counter = 0
             # find active_links for start and goal
@@ -625,6 +629,10 @@ class Connector:
             active_links_goal = [self.model.ctrl_points[j] for j in active_ind_goal]
             active_ind_start = [ind['ind'] for ind in self.stance_list[i]]
             active_links_start = [self.model.ctrl_points[j] for j in active_ind_start]  # names
+
+            if self.__complete_solution:
+                self.__solution.append({'indices': active_links_start, 'q': []})
+                x = len(self.__solution)
 
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
@@ -777,7 +785,8 @@ class Connector:
                 rospy.sleep(self.__sleep)
 
             if self.__complete_solution:
-                self.__solution = self.__solution + self.solution
+                for q in self.solution:
+                    self.__solution[i]['q'].append(q)
             else:
                 for q in self.solution:
                     self.model.model.setJointPosition(q)
@@ -807,15 +816,18 @@ class Connector:
             print 'next config'
 
     def saveSolution(self):
-        np.savetxt('solution.csv', self.__solution, delimiter=',')
+        with open('solution.txt', 'w') as fout:
+            json.dump(self.__solution, fout)
         print 'Solution saved!'
 
-    def replaySolution(self, filename):
+    def openSolution(self, filename):
+        with open(filename) as json_file:
+            self.__solution = json.load(json_file)
+
+    def replaySolution(self, filename, frequency):
         self.__solution = []
-        txt = np.loadtxt(filename, delimiter=',')
-        for i in range(np.size(txt, 0)):
-            self.__solution.append(txt[i, :])
-        self.play_solution(1)
+        self.openSolution(filename)
+        self.play_solution(frequency)
 
     def play_all_poses(self, num_iter):
         index = 0
@@ -828,16 +840,31 @@ class Connector:
                 rospy.sleep(0.2)
             index = index + 1
 
-    def play_solution(self, iter):
-        index = 0
-        # rospy.sleep(2.)
-        while index < iter:
-            for j in range(len(self.__solution)):
-                self.model.model.setJointPosition(self.__solution[j])
+    def play_solution(self, frequency):
+        self.init()
+        for i in range(len(self.__solution)):
+            # set active contacts
+            all_links = self.model.ctrl_points.values()
+            active_links = self.__solution[i]['indices']
+
+            if len(active_links) == 3:
+                [all_links.remove(active) for active in active_links]
+                lifted_link = all_links[0]
+
+                self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
+
+            self.set_limits(active_links)
+
+            # move the robot
+            for q in self.__solution[i]['q']:
+                self.model.model.setJointPosition(q)
                 self.model.model.update()
-                if self.model.simulation:
-                    self.model.robot.setPositionReference(self.__solution[j][6:])
-                    self.model.robot.move()
                 self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.01)
-            index = index + 1
+
+                self.model.robot.setPositionReference(q[6:])
+                self.model.robot.move()
+                rospy.sleep(1/frequency)
+
+
+
+

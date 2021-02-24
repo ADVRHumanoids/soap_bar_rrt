@@ -109,18 +109,18 @@ if __name__ == '__main__':
         rospy.wait_for_service('xbot_mode/reset_stiffness')
         print 'done.'
 
-    qc = q_connector.Connector(cogimon, q_list0 + q_list1, stances0 + stances1)
+    qc = q_connector.Connector(cogimon, q_list0, stances0)
     # qc.play_all_poses(1)
-    # qc.replaySolution('solution.csv')
+    qc.replaySolution('solution.txt', 10)
     # qc.replaySolution('solution_phase0.csv')
     # qc.replaySolution('solution_phase1.csv')
     # qc.replaySolution('solution_phase2.csv')
-    # exit()
+    exit()
 
     qc.run()
     # raw_input('click to see the whole solution')
     # qc.play_solution(1)
-    # qc.saveSolution()
+    qc.saveSolution()
 
     # cogimon.robot.sense()
     # cogimon.model.syncFrom(cogimon.robot)
