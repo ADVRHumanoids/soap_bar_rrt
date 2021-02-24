@@ -41,6 +41,11 @@
     <link name="RFootmot"/>
     <link name="RFoot"/>
   </group>
+
+  <group name="legs">
+    <group name="left_leg"/>
+    <group name="right_leg"/>
+  </group>
   
   <group name="torso">
     <chain base_link="Waist" tip_link="DWYTorso"/>
@@ -77,6 +82,11 @@
     <link name="RWrMot3"/>
     <link name="r_wrist"/>
     <link name="RBall"/>
+  </group>
+
+  <group name="arms">
+    <group name="left_arm"/>
+    <group name="right_arm"/>
   </group>
   
   <group name="chains">
