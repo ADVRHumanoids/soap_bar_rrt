@@ -530,7 +530,7 @@ class Connector:
             self.ci_time += self.ik_dt
 
         # check for any self-collision
-        if not self.model.state_vc(q[:, -1]):
+        if not self.model.state_vc(q[:, -1], True):
             raw_input('pose not valid!')
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]
@@ -621,7 +621,7 @@ class Connector:
         s = len(self.q_list) - 1
         i = 0
 
-        while i < 7:
+        while i < s:
             # reset the counter
             self.__counter = 0
             # find active_links for start and goal
@@ -749,7 +749,7 @@ class Connector:
             print 'Contacts published'
             # rospy.sleep(self.__sleep)
 
-            res = self.planner_client.solve(planner_type='RRTConnect', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
+            res = self.planner_client.solve(planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(self.__sleep)
 
             if not res[1]:
@@ -776,7 +776,7 @@ class Connector:
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
                     print 'Start and goal poses reset'
                     # rospy.sleep(self.__sleep)
-                    res = self.planner_client.solve(planner_type='RRTConnect', plan_time=2 + counter + 1, interpolation_time=0.01, goal_threshold=0.5)
+                    res = self.planner_client.solve(planner_type='RRTstar', plan_time=2 + counter + 1, interpolation_time=0.01, goal_threshold=0.5)
                     counter = counter + 1
                     if counter == 5:
                         print '[Error]: unable to connect start and goal poses'
@@ -824,10 +824,10 @@ class Connector:
         with open(filename) as json_file:
             self.__solution = json.load(json_file)
 
-    def replaySolution(self, filename, frequency):
+    def replaySolution(self, filename):
         self.__solution = []
         self.openSolution(filename)
-        self.play_solution(frequency)
+        self.play_solution()
 
     def play_all_poses(self, num_iter):
         index = 0
@@ -840,8 +840,10 @@ class Connector:
                 rospy.sleep(0.2)
             index = index + 1
 
-    def play_solution(self, frequency):
-        self.init()
+    def play_solution(self):
+        if self.model.simulation:
+            self.init()
+        raw_input('init done. click to continue...')
         for i in range(len(self.__solution)):
             # set active contacts
             all_links = self.model.ctrl_points.values()
@@ -853,7 +855,8 @@ class Connector:
 
                 self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
 
-            self.set_limits(active_links)
+            if self.model.simulation:
+                self.set_limits(active_links)
 
             # move the robot
             for q in self.__solution[i]['q']:
@@ -861,9 +864,12 @@ class Connector:
                 self.model.model.update()
                 self.model.rspub.publishTransforms('solution')
 
-                self.model.robot.setPositionReference(q[6:])
-                self.model.robot.move()
-                rospy.sleep(1/frequency)
+                if self.model.simulation:
+                    self.model.robot.setPositionReference(q[6:])
+                    self.model.robot.move()
+                rospy.sleep(0.01)
+
+            self.__reset_stiffness(100, 2, '')
 
 
 
