@@ -3,10 +3,10 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench", "UnderactuatedDyn"]
+    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"]#, "UnderactuatedDyn"]
 
 constraints:
-    #- "UnderactuatedDyn"
+    - "UnderactuatedDyn"
     - "l_sole_fc"
     - "r_sole_fc"
     - "l_ball_tip_fc"
@@ -138,7 +138,6 @@ UnderactuatedDyn:
     type: "DynamicFeasibility"
     contacts: ["l_sole", "r_sole", "l_ball_tip", "r_ball_tip"]
     dynamics: false
-    weight: [100, 100, 100, 100, 100, 100]
 
 postural:
     lib_name: libcartesio_acceleration_support.so
