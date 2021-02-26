@@ -227,9 +227,11 @@ void PlannerExecutor::init_load_model()
 
     q_goal.resize(n_dof);
 //     q_goal << 0.407528, -0.0968841, 0.883148, -0.00162774, 0.15692, -0.00292443, -0.00648968, 0.00966607, 0.00195202, 0.542779, -0.70941, 0.00817249, 0.00155724, 0.00922317, 0.00320325, 0.541962, -0.708126, 3.98585e-05, 0.00581766, -0.0013043, -0.0521013, 0.898862, 0.717268, -1.80036, 0.104449, -0.309487, 0.000464595, -0.0829701, -0.892037, -0.702099, -1.79818, -0.0774796, -0.295238, -0.000545319;
-
+    
+    // enlarging contacts (before phase1)
+    q_goal << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
     // phase 1
-    q_goal << 0.986644, -0.0689876, 0.730468, 4.81223, 1.92886, -4.83846, 0.901131, -1.50075, 1.26024, 0.444407, -0.510022, -0.0484451, -1.32393, -1.34398, -0.988884, -2.92409e-16, -0.171052, 0.207485, -0.310936, 0.0713556, -2.18814, 0.880422, -1.1882, -0.0882927, 1.26092, 0.614341, -0.204787, -2.33533, -0.784864, -1.42958, -0.0572487, 1.5463, 0.683304, 0.248535;
+//     q_goal << 0.986644, -0.0689876, 0.730468, 4.81223, 1.92886, -4.83846, 0.901131, -1.50075, 1.26024, 0.444407, -0.510022, -0.0484451, -1.32393, -1.34398, -0.988884, -2.92409e-16, -0.171052, 0.207485, -0.310936, 0.0713556, -2.18814, 0.880422, -1.1882, -0.0882927, 1.26092, 0.614341, -0.204787, -2.33533, -0.784864, -1.42958, -0.0572487, 1.5463, 0.683304, 0.248535;
 
     // phase 2
 //    q_goal << 1.037825, -0.10218, 0.792776, 3.81559, 2.63391, -3.72342, 0.41261, -1.38592, 1.02834, 0.785805, -0.0499996, 0.0278244, -1.44385, -1.73248, -0.795075, 0.776028, 0.163324, 0.0913316, -0.523599, 0.466621, -2.80883, 0.519239, -1.24552, -0.0505774, 1.09863, 0.521841, 0.00353678, -2.93988, -0.20334, -1.01627, -0.246607, 1.74217, 0.755969, 0.0834862;
@@ -246,7 +248,9 @@ void PlannerExecutor::init_load_model()
     _goal_model->update();
     Eigen::Affine3d T_l_ball;
     _goal_model->getPose("l_ball_tip", T_l_ball);
-    std::cout << "LEFT HAND POSITION: \n" << T_l_ball.translation() << std::endl;
+    std::cout << "LEFT HAND POSITION: \n" << T_l_ball.translation().transpose() << std::endl;
+    _goal_model->getPose("l_sole", T_l_ball);
+    std::cout << "LEFT FOOT POSITION: \n" << T_l_ball.translation().transpose() << std::endl;
     //////////////////////////////////////////////////////////////////////////////////////////
 
     //_pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, "filtered_cloud2");
@@ -602,7 +606,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
 //     all_tasks.push_back("LHandOrientation");
 //     all_tasks.push_back("RHandOrientation");
 
-    ik->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
+//     ik->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
 
     for(int i = 1; i < all_tasks.size(); i++){
 
@@ -667,8 +671,10 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     Eigen::MatrixXd normals = _pc_manager->getNormals();
 
     _goal_model->getJointPosition(q_ref); // for postural task
+    _goal_model->setJointPosition(q_init);
+    _goal_model->update();
 
-    Eigen::Affine3d T_ref;
+    Eigen::Affine3d T_ref, T;
     Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_ref;
 
@@ -678,29 +684,33 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 //     T_ref.linear() = rot_ref;
 //     ref_tasks.push_back(T_ref);
     //LH
-    pos_ref << 1.9, 0.1, 1.4;
+    _goal_model->getPose("TCP_L", T);
+    pos_ref << T.translation()(0), T.translation()(1) + 0.1, 0.0;
 //    pos_ref << 0.7, 0.2, 0.0; // init
     T_ref.translation() = pos_ref;
-    T_ref.linear() << 0.0, 0.0, 1.0,
-            0.0, 1.0, 0.0,
-           -1.0, 0.0, 0.0;
+    T_ref.linear() << -1.0, 0.0, 0.0,
+                       0.0, 1.0, 0.0,
+                       0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref);
     //RH
-     pos_ref << 1.9, -0.3, 1.4;
+    _goal_model->getPose("TCP_R", T);
+     pos_ref << T.translation()(0), T.translation()(1) - 0.1, 0.0;
 //    pos_ref << 0.7, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
-    T_ref.linear() << 0.0, 0.0, 1.0,
-            0.0, 1.0, 0.0,
-           -1.0, 0.0, 0.0;
+    T_ref.linear() << -1.0, 0.0, 0.0,
+                       0.0, 1.0, 0.0,
+                       0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref);
     //LF
-    pos_ref << 1.1, 0.1, 0.0;
+    _goal_model->getPose("l_sole", T);
+    pos_ref << T.translation()(0), T.translation()(1) + 0.2, 0.0;
 //    pos_ref << -0.3, 0.2, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
     ref_tasks.push_back(T_ref);
     //RF
-    pos_ref << 1.1, -0.3, 0.0;
+    _goal_model->getPose("r_sole", T);
+    pos_ref << T.translation()(0), T.translation()(1) - 0.2, 0.0;
 //    pos_ref << -0.3, -0.4, 0.0; // init
     T_ref.translation() = pos_ref;
     T_ref.linear() = rot_ref;
@@ -723,8 +733,14 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 
     setReferences( active_tasks, ref_tasks, q_ref );
     
-    _NSPG->getIKSolver()->getModel()->setJointPosition(q_goal);
+    _NSPG->getIKSolver()->getModel()->setJointPosition(q_init);
     _NSPG->getIKSolver()->getModel()->update();
+    XBot::JointNameMap jmap;
+    _NSPG->getIKSolver()->getModel()->eigenToMap(q_init, jmap);
+    _NSPG->getIKSolver()->getCI()->setReferencePosture(jmap);
+    Eigen::Vector3d com;
+    _NSPG->getIKSolver()->getModel()->getCOM(com);
+    _NSPG->getIKSolver()->getCI()->setComPositionReference(com);
     _NSPG->getIKSolver()->solve();
 
     Eigen::VectorXd q;

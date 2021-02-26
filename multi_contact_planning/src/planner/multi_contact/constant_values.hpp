@@ -21,7 +21,8 @@ const double FORCE_THRES_FOOT = 65.0;
 const double COM_WEIGHT_CPL = 1000; //100.0; 
 const double COM_REF_HEIGHT = 0.915;
 
-const double DIST_THRES = 0.65;
+const double L_DIST_THRES = 0.6;
+const double U_DIST_THRES = 0.95;
 
 #endif
 
