@@ -38,26 +38,108 @@ inline EndEffector getTaskEndEffectorName(std::string ee_str){
     return ee;
 }
 
-inline Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis)
-{
+inline Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis){
     Eigen::Matrix3d rot;
+    
+    Eigen::Vector3d n1(0.0, 0.0, +1.0);
+    Eigen::Vector3d n2(0.0, -1.0, 0.0);
+    Eigen::Vector3d n3(-1.0, 0.0, 0.0);
+    Eigen::Vector3d n4(0.0, +1.0, 0.0);
 
-    bool vertical = false;
-    Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0);
-    if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
-
-    if(vertical){
-            rot << 1.0, 0.0, 0.0,
-                   0.0, 1.0, 0.0,
-                   0.0, 0.0, 1.0;
+    Eigen::Vector3d d1 = axis - n1;
+    Eigen::Vector3d d2 = axis - n2;
+    Eigen::Vector3d d3 = axis - n3;
+    Eigen::Vector3d d4 = axis - n4;
+    
+    if(d1.norm() < 1e-3){
+        rot << 1.0, 0.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 0.0, 1.0;
     }
-    else{
-            rot <<  0.0, 0.0, -1.0,
-                    0.0, 1.0, 0.0,
-                    1.0, 0.0, 0.0;
+    else if(d2.norm() < 1e-3){
+        rot << 0.0, -1.0, 0.0,
+                0.0, 0.0, -1.0,
+                1.0, 0.0, 0.0;
     }
-
+    else if(d3.norm() < 1e-3){
+        rot << 0.0, 0.0, -1.0,
+                0.0, 1.0, 0.0,
+                1.0, 0.0, 0.0;
+    }
+    else if(d4.norm() < 1e-3){
+        rot << 0.0, 1.0, 0.0,
+                0.0, 0.0, 1.0,
+                1.0, 0.0, 0.0;
+    }
+    else rot.setZero();
+        
     return rot;
 }
+
+inline Eigen::Matrix3d generateRotationAroundAxis(EndEffector ee, Eigen::Vector3d axis){
+    Eigen::Matrix3d rot;
+        
+    Eigen::Vector3d n1(0.0, 0.0, +1.0);
+    Eigen::Vector3d n2(0.0, -1.0, 0.0);
+    Eigen::Vector3d n3(-1.0, 0.0, 0.0);
+    Eigen::Vector3d n4(0.0, +1.0, 0.0);
+
+    Eigen::Vector3d d1 = axis - n1;
+    Eigen::Vector3d d2 = axis - n2;
+    Eigen::Vector3d d3 = axis - n3;
+    Eigen::Vector3d d4 = axis - n4;
+
+    if(ee == L_HAND || ee == R_HAND){
+        if(d1.norm() < 1e-3){
+            rot << -1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, -1.0;
+        }
+        else if(d2.norm() < 1e-3){
+            rot << 0.0, -1.0, 0.0,
+                    0.0, 0.0, 1.0,
+                    -1.0, 0.0, 0.0;
+        }
+        else if(d3.norm() < 1e-3){
+            rot << 0.0, 0.0, 1.0,
+                    0.0, 1.0, 0.0,
+                    -1.0, 0.0, 0.0;
+        }
+        else if(d4.norm() < 1e-3){
+            rot << 0.0, 1.0, 0.0,
+                    0.0, 0.0, -1.0,
+                    -1.0, 0.0, 0.0;
+        }
+        else rot.setZero();
+    }
+    else if(ee == L_FOOT || ee == R_FOOT){
+        if(d1.norm() < 1e-3){
+            rot << 1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0;
+        }
+        else if(d2.norm() < 1e-3){
+            rot << 0.0, -1.0, 0.0,
+                    0.0, 0.0, -1.0,
+                    1.0, 0.0, 0.0;
+        }
+        else if(d3.norm() < 1e-3){
+            rot << 0.0, 0.0, -1.0,
+                    0.0, 1.0, 0.0,
+                    1.0, 0.0, 0.0;
+        }
+        else if(d4.norm() < 1e-3){
+            rot << 0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0,
+                    1.0, 0.0, 0.0;
+        }
+        else rot.setZero();
+    }
+    else rot.setZero();
+    
+    return rot;
+}
+
+
 
 #endif

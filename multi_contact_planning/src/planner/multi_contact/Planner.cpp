@@ -1103,6 +1103,7 @@ double Planner::computeHtorso(Configuration q){
     return fabs(d(0)) + fabs(d(1)) + fabs(d(2));
 }
 
+/*
 Eigen::Matrix3d Planner::generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis){
         Eigen::Matrix3d rot;
 
@@ -1137,6 +1138,7 @@ Eigen::Matrix3d Planner::generateRotationAroundAxis(EndEffector pk, Eigen::Vecto
 
         return rot;
 }
+*/
 
 /*
 Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
