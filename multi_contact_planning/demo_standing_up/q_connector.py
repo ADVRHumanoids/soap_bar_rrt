@@ -546,7 +546,8 @@ class Connector:
                                             interpolation_time=0.01, goal_threshold=0.05)
             rospy.sleep(self.__sleep)
             if self.__complete_solution:
-                self.__solution = self.__solution + self.solution
+                for q in range(len(self.solution)):
+                    self.__solution[i]['q'].append(q)
                 self.__counter = self.__counter + len(self.solution)
 
             self.planner_client.updateManifold(active_links)
