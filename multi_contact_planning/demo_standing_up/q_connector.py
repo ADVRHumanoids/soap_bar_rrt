@@ -599,11 +599,11 @@ class Connector:
         fmin = np.zeros(6)
         fmax = np.zeros(6)
         if len(links) == 2:
-            fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
-            fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
+            fmin = np.array([-10000, -10000, -10000, -10000, -10000, -10000])
+            fmax = np.array([10000, 10000, 10000, 10000, 10000, 10000])
         else:
-            fmin = np.array([-1000, -1000, -1000, 0, 0, 0])
-            fmax = np.array([1000, 1000, 1000, 0, 0, 0])
+            fmin = np.array([-10000, -10000, -10000, 0, 0, 0])
+            fmax = np.array([10000, 10000, 10000, 0, 0, 0])
 
         [self.ci_ff.getTask('force_lims_' + link).setLimits(fmin, fmax) for link in links]
 
@@ -868,6 +868,8 @@ class Connector:
                     self.model.robot.setPositionReference(q[6:])
                     self.model.robot.move()
                 rospy.sleep(0.01)
+
+            print ('{}% done...'.format(int((float(i)/float(len(self.__solution))) * 100)))
 
             self.__reset_stiffness(100, 2, '')
 
