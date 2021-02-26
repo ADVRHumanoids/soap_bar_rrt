@@ -394,7 +394,7 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     std::cout << "-------IK INVOCATION (refCoM = " << refCoM << ")-------" << std::endl;
     // build references
     Eigen::VectorXd q_postural(n_dof);
-    q_postural << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
+    q_postural << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
     int i_init;
@@ -1002,7 +1002,7 @@ void Planner::run(){
 
                         ///////////////////////////////////////////////////////////////////
                         solutionFound = isGoalStance(vNew);
-//                         if(solutionFound) vNew = new Vertex(sigmaGoal, qGoal, iNear);
+                        if(solutionFound) vNew = new Vertex(sigmaGoal, qGoal, iNear);
                         ///////////////////////////////////////////////////////////////////
 
                         tree->addVertex(vNew);
@@ -1125,11 +1125,12 @@ bool Planner::distanceCheck(Stance sigmaNew)
     Eigen::Vector3d pRHand = sigmaNew.retrieveContactPose(R_HAND).translation();
 
      if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND))
-        if(euclideanDistance(pLFoot, pLHand) < DIST_THRES)
+        if(euclideanDistance(pLFoot, pLHand) < L_DIST_THRES || euclideanDistance(pLFoot, pLHand) > U_DIST_THRES)
             return false;
 
     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND))
-        if(euclideanDistance(pRFoot, pRHand) < DIST_THRES) return false;
+        if(euclideanDistance(pRFoot, pRHand) < L_DIST_THRES || euclideanDistance(pRFoot, pRHand) > U_DIST_THRES) 
+            return false;
 
     return true;
 }
