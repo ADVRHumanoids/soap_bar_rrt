@@ -36,14 +36,14 @@ LeftHand:
     type: "Cartesian"
     distal_link: "TCP_L"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
+    #indices: [0, 1, 2]
     
 RightHand:
     type: "Cartesian"
     distal_link: "TCP_R"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
-
+    #indices: [0, 1, 2]
+    
 TorsoRPY:
     type: "Cartesian"
     distal_link: "torso"

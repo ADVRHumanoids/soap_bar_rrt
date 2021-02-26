@@ -228,13 +228,12 @@ void PlannerExecutor::init_load_model()
     
     q1 << 0.759541, 0.0925172, 0.730835, 2.71415, 1.64804, -2.78167, 0.0077494, -1.71118, -0.0198973, 0.829911, -0.617268, 0.0637515, -0.550414, -1.50116, -0.576022, 0.514271, -0.500356, 0.104535, 0.425875, 0.077989, -0.94867, 0.0520036, 0.872267, -0.907853, -0.267958, 0.206271, 0.0805234, -0.933177, -0.2558, -0.273087, -0.964502, 0.679464, 0.561918, -0.236882;
     
-//     q2 << 1.52222, 0.0582983, 0.669365, 2.78401, 1.73144, -2.67836, 0.333383, -1.30682, 0.260011, 0.659294, -0.770872, -0.178684, -0.729996, -1.05355, -0.816435, 0.584368, -0.801877, 0.261799, 0.228755, -0.0703316, -1.04772, 0.758873, 0.880334, -0.902563, 0.39737, 0.869672, -0.561398, -1.28108, -0.899519, -0.517277, -0.956685, -0.198193, 1.0296, 0.494724;
     q2 << 1.58871, 0.0223469, 0.637945, 2.81551, 1.77831, -2.76061, 0.452002, -1.11945, 0.376866, 0.64416, -0.872665, -0.226634, -0.482266, -0.975, -0.58049, 0.55925, -0.872665, 0.256492, 0.0890082, -0.0296354, -1.01587, 1.07963, 0.14952, -0.864876, 0.690062, 0.809135, -0.146463, -0.943517, -1.21241, -0.186094, -0.878702, -0.766646, 0.841216, 0.190342;
+        
+    q3 << 1.76207, -0.0338754, 0.908798, 2.94557, -3.00842, 3.31202, 0.365677, -0.184716, -0.212292, 0.979485, -0.734834, -0.203572, 0.165889, 0.178129, -0.189333, 0.490139, -0.5617, 0.0652543, -0.0335189, -0.210854, -1.16491, 0.866977, -0.115734, -0.74658, 0.254145, 0.622937, 0.0555549, -1.26494, -0.840133, -1.00947, 0.0352932, -0.941131, 0.210595, 1.42731;
     
-    q3 << 1.60928, 0.0268395, 0.902701, 0.402416, 0.336643, -0.478387, -0.0758205, -0.72895, 0.440415, 0.647168, -0.355169, -0.0206075, -0.278599, -1.08149, 0.397082, 0.881535, -0.31808, 0.261799, -0.333713, 0.305565, -0.262295, 2.40587, -0.0305856, -1.39355, 0.462373, 0.432568, -1.35639, -0.100786, -2.65952, 0.152034, -1.19691, -0.400916, 0.202445, 1.06957;
-    
-    q_init = q1;
-    q_goal = q2;
+    q_init = q2;
+    q_goal = q3;
      
          
     //q_init << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
@@ -272,7 +271,8 @@ void PlannerExecutor::init_load_model()
     double side_z = 3.0;
     double resolution = 0.05;
 
-    _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, center, side_x, side_y, side_z, resolution);
+    //_pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, center, side_x, side_y, side_z, resolution);
+    _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n);
     _pc_manager->computeNormals(0.2);
     _pc_manager->fromNormaltoMarkerArray(0.2);
 
@@ -653,7 +653,110 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     */
 }
 
+/*
+bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
+{
+    std::vector<std::string> active_tasks;
+    std::vector<Eigen::Affine3d> ref_tasks;
+    
+    Eigen::Affine3d T_ref;
+    Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
+    Eigen::Vector3d pos_ref;
+    
+    active_tasks.clear();
+      active_tasks.push_back("TCP_L");
+      active_tasks.push_back("TCP_R");
+    active_tasks.push_back("l_sole");
+    active_tasks.push_back("r_sole");
+ 
+    //LH
+    T_ref.translation() << 0.5, 0.8, 1.5;
+    T_ref.linear() << 0.0, -1.0, 0.0,
+                        0.0, 0.0, 1.0,
+                        -1.0, 0.0, 0.0;
+    ref_tasks.push_back(T_ref);
+    //RH
+    T_ref.translation() << 0.5, -0.8, 1.5;
+    T_ref.linear() <<  0.0, 1.0, 0.0,
+                        0.0, 0.0, -1.0,
+                        -1.0, 0.0, 0.0;
+    ref_tasks.push_back(T_ref); 
+    //LF
+    //T_ref.translation() << 0.4, 0.15, 0.0;
+    T_ref.translation() << 0.4, 0.8, 0.4;
+    T_ref.linear() <<  0.0, -1.0, 0.0,
+                        0.0, 0.0, -1.0,
+                        1.0, 0.0, 0.0;
+    ref_tasks.push_back(T_ref);
+    //RF
+    //T_ref.translation() << 0.4, -0.15, 0.0;
+    T_ref.translation() << 0.4, -0.8, 0.4;
+    T_ref.linear() <<  0.0, 1.0, 0.0,
+                        0.0, 0.0, 1.0,
+                        1.0, 0.0, 0.0;
+    ref_tasks.push_back(T_ref);
 
+    
+    std::vector<std::string> all_tasks;
+    all_tasks.push_back("com");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
+
+    for(int i = 0; i < all_tasks.size(); i++){
+        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);               
+        if(it == active_tasks.end()){
+            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        }
+        else{
+            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
+            int index = it - active_tasks.begin();
+            _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+        }
+    }
+
+    Eigen::VectorXd qHome; 
+    _model->getRobotState("home", qHome);
+    
+    Eigen::VectorXd qRand;
+    Eigen::VectorXd qMin, qMax;
+    _model->getJointLimits(qMin, qMax);
+    qRand.setRandom(n_dof); // uniform in -1 < x < 1
+    qRand = (qRand.array() + 1)/2.0; // uniform in 0 < x < 1
+    qRand = qMin + qRand.cwiseProduct(qMax - qMin); // uniform in qmin < x < qmax
+    qRand.head<6>().setRandom(); // we keep virtual joints between -1 and 1 (todo: improve)
+    qRand.head<6>().tail<3>() *= M_PI;
+    
+    _NSPG->getIKSolver()->getModel()->setJointPosition(qRand);
+    XBot::JointNameMap jmap;
+    _NSPG->getIKSolver()->getModel()->eigenToMap(qHome, jmap);
+    _NSPG->getIKSolver()->getCI()->setReferencePosture(jmap);
+    _NSPG->getIKSolver()->getModel()->update();
+    
+//      _goal_model->setJointPosition(qHome);
+//      return false;
+    
+    
+    Eigen::VectorXd c(n_dof);
+
+    if(_NSPG->getIKSolver()->solve()){
+        _NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+        _goal_model->setJointPosition(c);
+        _goal_model->update();
+
+        for(int z = 0; z < c.rows(); z++) std::cout << c(z) << ", ";
+        std::cout << " " << std::endl;
+
+        return true;
+    }    
+
+    return false;    
+
+}
+*/
+ 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req,
                                            multi_contact_planning::CartesioGoal::Response &res)
 {
@@ -670,7 +773,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
     Eigen::Vector3d pos_ref;
     
-    int qIndex = 2;
+    int qIndex = 3;
    
     if(qIndex == 0){
         ///// generation of q0 //////////////////////////////////////////////
@@ -740,13 +843,13 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
         T_ref.translation() << 2.5, 0.3, 1.4;
         T_ref.linear() << 0.0, 0.0, 1.0,
                             0.0, 1.0, 0.0,
-                            1.0, 0.0, 0.0;
+                            -1.0, 0.0, 0.0;
         ref_tasks.push_back(T_ref);
         //RH
         T_ref.translation() << 2.5, -0.3, 1.4;
         T_ref.linear() << 0.0, 0.0, 1.0,
                             0.0, 1.0, 0.0,
-                            1.0, 0.0, 0.0;
+                            -1.0, 0.0, 0.0;
         ref_tasks.push_back(T_ref);
         //LF
         T_ref.translation() << 1.5, 0.2, 0.0;
@@ -789,9 +892,9 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     qRand.head<6>().setRandom(); // we keep virtual joints between -1 and 1 (todo: improve)
     qRand.head<6>().tail<3>() *= M_PI;
     
-    if(qIndex == 1 || qIndex == 2) _NSPG->getIKSolver()->getModel()->setJointPosition(qQuad);
-    else _NSPG->getIKSolver()->getModel()->setJointPosition(qHome); 
-    //_NSPG->getIKSolver()->getModel()->setJointPosition(qRand);
+//     if(qIndex == 1 || qIndex == 2) _NSPG->getIKSolver()->getModel()->setJointPosition(qQuad);
+//     else _NSPG->getIKSolver()->getModel()->setJointPosition(qHome); 
+    _NSPG->getIKSolver()->getModel()->setJointPosition(qRand);
     _NSPG->getIKSolver()->getModel()->update();
 
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
@@ -815,6 +918,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     return false;
 
 }
+
 
 Planning::CartesianConstraint::Ptr PlannerExecutor::make_manifold(std::string problem_description_string)
 {
@@ -1009,7 +1113,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = false; 
+    bool runPlanner = true; 
 
     if(index_config == -1){
 

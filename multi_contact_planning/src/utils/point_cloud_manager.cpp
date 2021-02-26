@@ -2,77 +2,108 @@
 
 using namespace XBot::Planning;
 
-/*
-PointCloudManager::PointCloudManager ( ros::NodeHandle nh, std::__cxx11::string topic_name ): 
-    _nh(nh),
-    _pcl_normals(new pcl::PointCloud<pcl::Normal>),
-    _pcl_pointcloud(new pcl::PointCloud<pcl::PointXYZ>)
-    
-{
-    _sub = _nh.subscribe<pcl::PointCloud<pcl::PointXYZ>>(topic_name, 1000, &PointCloudManager::Callback, this);
-    _pub = _nh.advertise<visualization_msgs::MarkerArray> ( "normals_plane", 1, true);
-}
-*/
-
-PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d center, double side_x, double side_y, double side_z, double resolution ):
+PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
     _pcl_pointcloud(new pcl::PointCloud<pcl::PointXYZ>),
     _pcl_normals(new pcl::PointCloud<pcl::Normal>),
     _nh(nh)
     
 {
+    Eigen::Vector3d center;
+    double side_x, side_y, side_z;
+    double resolution = RESOLUTION;
+    int scenario = SCENARIO;
+     
     double x, y, z;
     unsigned int index = 0;
     _pcl_pointcloud->resize(10000);
     _pub = nh.advertise<visualization_msgs::MarkerArray> ( "normals_plane", 1, true);
-    for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
-    {
-        x = center(0) - (side_x/2.0) + i*resolution;
-        for(int j = 1; j <= (int)(side_y/resolution); j++)
-        {
-            y = center(1) - (side_y/2.0) + j*resolution;
-            z = center(2) + 0.0;
-            _pcl_pointcloud->points[index].x = x;
-            _pcl_pointcloud->points[index].y = y;
-            _pcl_pointcloud->points[index].z = z;
-            index ++;
-        }    
-    }
     
-    center << 2.5, 0.0, 1.5 + center(2);
-    for(int i = 1; i <= (int)(side_y/resolution); i++)
-    {
-        x = center(0) + 0.0;
-        y = center(1) - (side_y/2.0) + i*resolution;
-        for(int j = 1; j <= (int)(side_z/resolution); j++)
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // STAND UP
+    if(scenario == 1){
+        center << 0.0, 0.0, 0.0;
+        side_x = 5.0;
+        side_y = 2.0;
+        side_z = 3.0;
+        for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
         {
-            z = center(2) - (side_z/2.0) + j*resolution;
-            _pcl_pointcloud->points[index].x = x;
-            _pcl_pointcloud->points[index].y = y;
-            _pcl_pointcloud->points[index].z = z;
-            index ++;
+            x = center(0) - (side_x/2.0) + i*resolution;
+            for(int j = 1; j <= (int)(side_y/resolution); j++)
+            {
+                y = center(1) - (side_y/2.0) + j*resolution;
+                z = center(2) + 0.0;
+                _pcl_pointcloud->points[index].x = x;
+                _pcl_pointcloud->points[index].y = y;
+                _pcl_pointcloud->points[index].z = z;
+                index ++;
+            }    
+        }
+        center << 2.5, 0.0, 1.5;
+        for(int i = 1; i <= (int)(side_y/resolution); i++)
+        {
+            x = center(0);
+            y = center(1) - (side_y/2.0) + i*resolution;
+            for(int j = 1; j <= (int)(side_z/resolution); j++)
+            {
+                z = center(2) - (side_z/2.0) + j*resolution;
+                _pcl_pointcloud->points[index].x = x;
+                _pcl_pointcloud->points[index].y = y;
+                _pcl_pointcloud->points[index].z = z;
+                index ++;
+            }
         }
     }
-    /*
-    ///////////////////////////////////////////////////////////////////////
-    //center << 1.0, 0.0, 1.0;
-    //side_x = 1.0;
-    center << 1.1, 0.0, 1.0;
-    side_x = 0.4;
-    for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
-    {
-        x = center(0) - (side_x/2.0) + i*resolution;
-        for(int j = 1; j <= (int)(side_y/resolution); j++)
+    // PARALLEL WALLS CLIMBING
+    if(scenario == 2){
+        center << 0.0, 0.0, 0.0;
+        side_x = 2.0;
+        side_y = 2.0;
+        for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
         {
-            y = center(1) - (side_y/2.0) + j*resolution;
-            z = center(2);
-            _pcl_pointcloud->points[index].x = x;
-            _pcl_pointcloud->points[index].y = y;
-            _pcl_pointcloud->points[index].z = z;
-            index ++;
-        }    
+            x = center(0) - (side_x/2.0) + i*resolution;
+            for(int j = 1; j <= (int)(side_y/resolution); j++)
+            {
+                y = center(1) - (side_y/2.0) + j*resolution;
+                z = center(2) + 0.0;
+                _pcl_pointcloud->points[index].x = x;
+                _pcl_pointcloud->points[index].y = y;
+                _pcl_pointcloud->points[index].z = z;
+                index ++;
+            }    
+        }
+        center << 0.0, 0.0, 2.5;
+        side_x = 2.0;
+        side_z = 5.0;
+        for(int i = 1; i <= (int)(side_x/resolution); i++)
+        {
+            x = center(0) - (side_x/2.0) + i*resolution;
+            y = center(1) + 0.8;
+            for(int j = 1; j <= (int)(side_z/resolution); j++)
+            {
+                z = center(2) - (side_z/2.0) + j*resolution;
+                _pcl_pointcloud->points[index].x = x;
+                _pcl_pointcloud->points[index].y = y;
+                _pcl_pointcloud->points[index].z = z;
+                index ++;
+            }
+        }
+        for(int i = 1; i <= (int)(side_x/resolution); i++)
+        {
+            x = center(0) - (side_x/2.0) + i*resolution;
+            y = center(1) - 0.8;
+            for(int j = 1; j <= (int)(side_z/resolution); j++)
+            {
+                z = center(2) - (side_z/2.0) + j*resolution;
+                _pcl_pointcloud->points[index].x = x;
+                _pcl_pointcloud->points[index].y = y;
+                _pcl_pointcloud->points[index].z = z;
+                index ++;
+            }
+        }
     }
-    ///////////////////////////////////////////////////////////////////////
-    */
+    
+    
+   /////////////////////////////////////////////////////////////////////////////////////////////////
     
     _pointCloud.resize(_pcl_pointcloud->width, 3);
     for(int i = 0; i < _pcl_pointcloud->width; i++)
@@ -85,24 +116,6 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d cent
     _pcl_pointcloud->header.frame_id = "world";
     
 }
-
-/*
-void PointCloudManager::Callback ( const pcl::PointCloud< pcl::PointXYZ >::ConstPtr& msg )
-{
-     
-    _pcl_pointcloud = msg;
-    _pointCloud.resize(msg->width, 3);        
-    for(int i = 0; i < msg->width; i++)
-    {
-        _pointCloud(i,0) = msg->points[i].x;
-        _pointCloud(i,1) = msg->points[i].y;
-        _pointCloud(i,2) = msg->points[i].z;
-    }
-    _callbackDone = true;
-    //std::cout << "pointcloud width: " << _pcl_pointcloud->width << std::endl;
-    
-}
-*/
 
 void PointCloudManager::computeNormals (const double radius_search) 
 {    
@@ -119,13 +132,7 @@ void PointCloudManager::computeNormals (const double radius_search)
     ne.setRadiusSearch ( radius_search );
 
     // Compute normals
-    ne.compute ( *_pcl_normals );
-
-    // PF: modify normals of the ground 
-    //for (int i = 0; i < _pcl_normals->width; i++){
-        //if(_pcl_pointcloud->points[i].x < 0.85 && std::sqrt(std::pow(_pcl_pointcloud->points[i].x,2) + std::pow(_pcl_pointcloud->points[i].y,2)) > 1e-04) _pcl_normals->points[i].normal_z = -_pcl_normals->points[i].normal_z;
-    //}
-    
+    ne.compute ( *_pcl_normals );    
 }
 
 Eigen::MatrixXd PointCloudManager::getNormals()

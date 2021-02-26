@@ -25,18 +25,16 @@
 #include <geometry_msgs/PoseStamped.h>
 
 #include "planner/multi_contact/utils.hpp" //PF
+#include "planner/multi_contact/constant_values.hpp" //PF
 
 namespace XBot { namespace Planning {
 
 class PointCloudManager {
 
 public:
-
-    //PointCloudManager(ros::NodeHandle nh, std::string topic_name);
-   PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d center, double side_x, double side_y, double side_z, double resolution );
-
-    //void Callback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& msg);
     
+    PointCloudManager ( ros::NodeHandle& nh);
+
     void computeNormals(const double radius_search);
     
     Eigen::MatrixXd getPointCloud();
