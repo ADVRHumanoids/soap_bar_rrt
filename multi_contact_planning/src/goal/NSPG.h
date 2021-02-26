@@ -14,6 +14,7 @@
 #include <planner/multi_contact/Stance.hpp>
 #include <multi_contact_planning/SetContactFrames.h>
 #include "validity_checker/stability/centroidal_statics.h" 
+#include <planner/multi_contact/utils.hpp>
 
 namespace XBot { namespace Cartesian { namespace Planning {
     

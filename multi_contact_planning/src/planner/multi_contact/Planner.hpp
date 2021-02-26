@@ -62,8 +62,8 @@ class Planner {
         EndEffector pickRandomEndEffector();
         std::shared_ptr<Contact> pickRandomContactFromGoalStance();
         int findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r);
-        std::string getTaskStringName(EndEffector ee);
-        EndEffector getTaskEndEffectorName(std::string ee_str);
+        //std::string getTaskStringName(EndEffector ee);
+        //EndEffector getTaskEndEffectorName(std::string ee_str);
         bool computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev);
         bool computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Eigen::Vector3d rCoMdes, Eigen::MatrixXd rCdes, Eigen::MatrixXd nCdes, Eigen::Vector3d &rCoM, Eigen::MatrixXd &rC, Eigen::MatrixXd &FC);
         Eigen::Vector3d getNormalAtPoint(Eigen::Vector3d p);
@@ -73,7 +73,7 @@ class Planner {
         double computeHrange(Configuration q);
         double computeHtorso(Configuration q);
         Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
-        Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis);
+        //Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis);
 
         ros::NodeHandle _nh;
         ros::Publisher _pub;

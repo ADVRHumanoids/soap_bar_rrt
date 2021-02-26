@@ -404,41 +404,6 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge, Eigen::V
     return true;
 }
 
-std::string getTaskStringName(EndEffector ee){
-    std::string ee_str;
-
-    if(ee == L_HAND) ee_str = "TCP_L";
-    else if(ee == R_HAND) ee_str = "TCP_R";
-    else if(ee == L_FOOT) ee_str = "l_sole";
-    else if(ee == R_FOOT) ee_str = "r_sole";
-    else if(ee == HEAD) ee_str = "Head";
-    else ee_str = "com";
-
-    return ee_str;
-}
-
-Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis)
-{
-    Eigen::Matrix3d rot;
-
-    bool vertical = false;
-    Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0);
-    if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
-
-    if(vertical){
-            rot << 1.0, 0.0, 0.0,
-                   0.0, 1.0, 0.0,
-                   0.0, 0.0, 1.0;
-    }
-    else{
-            rot <<  0.0, 0.0, -1.0,
-                    0.0, 1.0, 0.0,
-                    1.0, 0.0, 0.0;
-    }
-
-    return rot;
-}
-
 void NSPG::initializeBalanceCheck(Stance sigma){    
     std::vector<std::string> active_links;
     std::vector<Eigen::Affine3d> ref_tasks;

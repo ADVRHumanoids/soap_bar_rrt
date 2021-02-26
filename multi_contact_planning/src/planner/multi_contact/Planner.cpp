@@ -369,6 +369,7 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
 
 }
 
+/*
 std::string Planner::getTaskStringName(EndEffector ee){
     std::string ee_str;
 
@@ -382,6 +383,7 @@ std::string Planner::getTaskStringName(EndEffector ee){
     return ee_str;
 }
 
+ 
 EndEffector Planner::getTaskEndEffectorName(std::string ee_str){
     EndEffector ee;
 
@@ -394,7 +396,8 @@ EndEffector Planner::getTaskEndEffectorName(std::string ee_str){
 
     return ee;
 }
-
+*/
+ 
 /*
 bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev){
     
@@ -1135,6 +1138,7 @@ Eigen::Matrix3d Planner::generateRotationAroundAxis(EndEffector pk, Eigen::Vecto
         return rot;
 }
 
+/*
 Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
 {
     Eigen::Matrix3d rot;
@@ -1156,6 +1160,7 @@ Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
 
     return rot;
 }
+*/
 
 /*
 bool Planner::distanceCheck(Stance sigmaNew)
