@@ -122,7 +122,8 @@ class Connector:
                 'type': 'Cartesian',
                 'base_link': 'torso',
                 'distal_link': c,
-                'lambda': 1.
+                'lambda': 1.0,
+                'indices': [2]
             }
 
         ik_cfg['torso'] = {
@@ -599,14 +600,26 @@ class Connector:
     def set_limits(self, links):
         fmin = np.zeros(6)
         fmax = np.zeros(6)
-        if len(links) == 2:
-            fmin = np.array([-10000, -10000, -10000, -10000, -10000, -10000])
-            fmax = np.array([10000, 10000, 10000, 10000, 10000, 10000])
-        else:
-            fmin = np.array([-10000, -10000, -10000, 0, 0, 0])
-            fmax = np.array([10000, 10000, 10000, 0, 0, 0])
+        for index in range(len(links)):
+            if len(links) == 2:
+                fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
+                fmax = np.array([1000, 1000, 1000, 10000, 1000, 1000])
+            elif links[index] == 'r_sole' or links[index] == 'l_sole':
+                fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
+                fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
+            else:
+                fmin = np.array([-1000, -1000, -1000, 0, 0, 0])
+                fmax = np.array([1000, 1000, 1000, 0, 0, 0])
+            self.ci_ff.getTask('force_lims_' + links[index]).setLimits(fmin, fmax)
 
-        [self.ci_ff.getTask('force_lims_' + link).setLimits(fmin, fmax) for link in links]
+        # if len(links) == 2:
+        #     fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
+        #     fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
+        # else:
+        #     fmin = np.array([-1000, -1000, 10, 0, 0, 0])
+        #     fmax = np.array([1000, 1000, 1000, 0, 0, 0])
+        #
+        # [self.ci_ff.getTask('force_lims_' + link).setLimits(fmin, fmax) for link in links]
 
         non_active_links = self.model.ctrl_points.values()
         for link in links:
@@ -656,7 +669,7 @@ class Connector:
                 self.set_limits(active_links_start)
 
             # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
+            [q_start, q_goal] = self.computeStartAndGoal(0.025, i)
 
             # find rotation matrices and quaternions for start and goal active_links
             normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
@@ -844,19 +857,16 @@ class Connector:
     def play_solution(self):
         if self.model.simulation:
             self.init()
-        raw_input('init done. click to continue...')
+            raw_input('init done. click to continue...')
         for i in range(len(self.__solution)):
             # set active contacts
             all_links = self.model.ctrl_points.values()
             active_links = self.__solution[i]['indices']
 
-            if len(active_links) == 3:
+            if len(active_links) == 3 and self.model.simulation:
                 [all_links.remove(active) for active in active_links]
                 lifted_link = all_links[0]
-
                 self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
-
-            if self.model.simulation:
                 self.set_limits(active_links)
 
             # move the robot
@@ -872,7 +882,8 @@ class Connector:
 
             print ('{}% done...'.format(int((float(i)/float(len(self.__solution))) * 100)))
 
-            self.__reset_stiffness(100, 2, '')
+            if self.model.simulation:
+                self.__reset_stiffness(100, 2, '')
 
 
 
