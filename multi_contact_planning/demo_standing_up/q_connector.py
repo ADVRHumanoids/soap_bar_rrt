@@ -123,7 +123,6 @@ class Connector:
                 'base_link': 'torso',
                 'distal_link': c,
                 'lambda': 1.0,
-                'indices': [2]
             }
 
         ik_cfg['torso'] = {
@@ -600,26 +599,26 @@ class Connector:
     def set_limits(self, links):
         fmin = np.zeros(6)
         fmax = np.zeros(6)
-        for index in range(len(links)):
-            if len(links) == 2:
-                fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
-                fmax = np.array([1000, 1000, 1000, 10000, 1000, 1000])
-            elif links[index] == 'r_sole' or links[index] == 'l_sole':
-                fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
-                fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
-            else:
-                fmin = np.array([-1000, -1000, -1000, 0, 0, 0])
-                fmax = np.array([1000, 1000, 1000, 0, 0, 0])
-            self.ci_ff.getTask('force_lims_' + links[index]).setLimits(fmin, fmax)
+        # for index in range(len(links)):
+        #     if len(links) == 2:
+        #         fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
+        #         fmax = np.array([1000, 1000, 1000, 10000, 1000, 1000])
+        #     elif links[index] == 'r_sole' or links[index] == 'l_sole':
+        #         fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
+        #         fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
+        #     else:
+        #         fmin = np.array([-1000, -1000, -1000, 0, 0, 0])
+        #         fmax = np.array([1000, 1000, 1000, 0, 0, 0])
+        #     self.ci_ff.getTask('force_lims_' + links[index]).setLimits(fmin, fmax)
 
-        # if len(links) == 2:
-        #     fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
-        #     fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
-        # else:
-        #     fmin = np.array([-1000, -1000, 10, 0, 0, 0])
-        #     fmax = np.array([1000, 1000, 1000, 0, 0, 0])
-        #
-        # [self.ci_ff.getTask('force_lims_' + link).setLimits(fmin, fmax) for link in links]
+        if len(links) == 2:
+            fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
+            fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
+        else:
+            fmin = np.array([-1000, -1000, 10, 0, 0, 0])
+            fmax = np.array([1000, 1000, 1000, 0, 0, 0])
+
+        [self.ci_ff.getTask('force_lims_' + link).setLimits(fmin, fmax) for link in links]
 
         non_active_links = self.model.ctrl_points.values()
         for link in links:
@@ -884,7 +883,3 @@ class Connector:
 
             if self.model.simulation:
                 self.__reset_stiffness(100, 2, '')
-
-
-
-
