@@ -597,38 +597,46 @@ class Connector:
         self.__set_fopt_active(True)
 
     def set_limits(self, links):
-        fmin = np.zeros(6)
-        fmax = np.zeros(6)
-        # for index in range(len(links)):
-        #     if len(links) == 2:
-        #         fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
-        #         fmax = np.array([1000, 1000, 1000, 10000, 1000, 1000])
-        #     elif links[index] == 'r_sole' or links[index] == 'l_sole':
-        #         fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
-        #         fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
-        #     else:
-        #         fmin = np.array([-1000, -1000, -1000, 0, 0, 0])
-        #         fmax = np.array([1000, 1000, 1000, 0, 0, 0])
-        #     self.ci_ff.getTask('force_lims_' + links[index]).setLimits(fmin, fmax)
-
-        if len(links) == 2:
-            fmin = np.array([-1000, -1000, -1000, -1000, -1000, -1000])
-            fmax = np.array([1000, 1000, 1000, 1000, 1000, 1000])
-        else:
-            fmin = np.array([-1000, -1000, 10, 0, 0, 0])
-            fmax = np.array([1000, 1000, 1000, 0, 0, 0])
-
-        [self.ci_ff.getTask('force_lims_' + link).setLimits(fmin, fmax) for link in links]
 
         non_active_links = self.model.ctrl_points.values()
         for link in links:
             if link in non_active_links:
                 non_active_links.remove(link)
+        self.ci_ff.update(0.)
+        fmin_na = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in non_active_links]
+        fmax_na = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in non_active_links]
 
-        [self.ci_ff.getTask('force_lims_' + link).setLimits(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                                                            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])) for link in non_active_links]
-
-        rospy.sleep(self.__sleep)
+        fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
+        fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
+        if len(links) == 2:
+            fmin_d = np.array([-700., -700., -700., -700., -700., -700.])
+            fmax_d = np.array([700., 700., 700., 700., 700., 700.])
+            fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
+            fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
+            fm = [(fmin_d - fmin[index])/100. for index in range(len(fmin))]
+            fM = [(fmax_d - fmax[index])/100. for index in range(len(fmax))]
+            for k in range(1, 101):
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
+                rospy.sleep(0.5/100)
+        else:
+            fmin_d = list()
+            fmax_d = list()
+            for index in range(len(links)):
+                if links[index] == 'l_sole' or links[index] == 'r_sole':
+                    fmin_d.append(np.array([-1000., -1000., -1000., -1000., -1000., -1000.]))
+                    fmax_d.append(np.array([1000., 1000., 1000., 1000., 1000., 1000.]))
+                else:
+                    fmin_d.append(np.array([-1000., -1000., -1000., 0., 0., 0.]))
+                    fmax_d.append(np.array([1000., 1000., 1000., 0., 0., 0.]))
+            fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
+            fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
+            fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
+            fM = [(fmax_d[index] - fmax[index]) / 100. for index in range(len(fmax))]
+            for k in range(1, 100):
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
+                rospy.sleep(0.5/100)
 
     def run(self):
         s = len(self.q_list) - 1
@@ -861,12 +869,12 @@ class Connector:
             # set active contacts
             all_links = self.model.ctrl_points.values()
             active_links = self.__solution[i]['indices']
+            self.set_limits(active_links)
 
             if len(active_links) == 3 and self.model.simulation:
                 [all_links.remove(active) for active in active_links]
                 lifted_link = all_links[0]
                 self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
-                self.set_limits(active_links)
 
             # move the robot
             for q in self.__solution[i]['q']:
