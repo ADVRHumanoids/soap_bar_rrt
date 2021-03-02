@@ -613,8 +613,8 @@ class Connector:
         fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
         fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
         if len(links) == 2:
-            fmin_d = np.array([-700., -700., -700., -700., -700., -700.])
-            fmax_d = np.array([700., 700., 700., 700., 700., 700.])
+            fmin_d = np.array([-1000., -1000., -1000., -1000., -1000., -1000.])
+            fmax_d = np.array([1000., 1000., 1000., 1000., 1000., 1000.])
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d - fmin[index])/100. for index in range(len(fmin))]
