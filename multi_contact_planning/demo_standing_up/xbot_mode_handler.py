@@ -85,7 +85,7 @@ def setStiffnessAndDamping(robot, N_ITER, multiplier, chain):
         robot.leg(0).setStiffness(stiff2)
         robot.leg(1).setStiffness(stiff3)
         robot.move()
-        rospy.sleep(1.0/N_ITER)
+        rospy.sleep(0.5/N_ITER)
 
     print "Stiffness of robot is: ", robot.getStiffness()
 
@@ -108,7 +108,7 @@ def resetStiffness(robot, N_ITER):
             stiff.append(K_s + float(k) / (N_ITER - 1) * (K_e - K_s))
         robot.setStiffness(stiff)
         robot.move()
-        rospy.sleep(1.0/N_ITER)
+        rospy.sleep(0.5/N_ITER)
 
 if __name__ == '__main__':
 
