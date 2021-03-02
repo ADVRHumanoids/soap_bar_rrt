@@ -46,6 +46,10 @@ def rotation(normal):
         theta = [0, 0, 0]
     elif normal[0] < -0.01:
         theta = [0, -np.pi / 2, 0]
+    elif normal[1] > 0.01:
+        theta = [-np.pi / 2, 0, 0]
+    elif normal[1] < -0.01:
+        theta = [np.pi / 2, 0, 0]
     else:
         raise Exception('wrong normal')
 
