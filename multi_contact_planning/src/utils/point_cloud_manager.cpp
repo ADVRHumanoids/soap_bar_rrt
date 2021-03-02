@@ -101,6 +101,50 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
             }
         }
     }
+    // LADDER CLIMBING
+    if(scenario == 3){
+        center << 0.0, 0.0, 0.0;
+        side_x = 2.0;
+        side_y = 2.0;
+        for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
+        {
+            x = center(0) - (side_x/2.0) + i*resolution;
+            for(int j = 1; j <= (int)(side_y/resolution); j++)
+            {
+                y = center(1) - (side_y/2.0) + j*resolution;
+                z = center(2) + 0.0;
+                _pcl_pointcloud->points[index].x = x;
+                _pcl_pointcloud->points[index].y = y;
+                _pcl_pointcloud->points[index].z = z;
+                index ++;
+            }    
+        }
+        side_x = 0.2;
+        side_y = 2.0;
+        int n_stair = 8;
+        double x_displacement = 0.05;
+        double z_displacement = 0.2;
+        center << 1.0, 0.0, 0.2;
+        for(int k = 0; k < n_stair; k++){
+            for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
+            {
+                x = center(0) - (side_x/2.0) + i*resolution;
+                for(int j = 1; j <= (int)(side_y/resolution); j++)
+                {
+                    y = center(1) - (side_y/2.0) + j*resolution;
+                    z = center(2) + 0.0;
+                    _pcl_pointcloud->points[index].x = x;
+                    _pcl_pointcloud->points[index].y = y;
+                    _pcl_pointcloud->points[index].z = z;
+                    index ++;
+                }    
+            }
+            
+            center(0) += x_displacement;
+            center(2) += z_displacement;
+            
+        }
+    }
     
     
    /////////////////////////////////////////////////////////////////////////////////////////////////

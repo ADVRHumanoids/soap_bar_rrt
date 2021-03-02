@@ -218,13 +218,15 @@ void PlannerExecutor::init_load_model()
     q_init.resize(n_dof);
     q_goal.resize(n_dof);
     
-     
     Eigen::VectorXd q0(n_dof); // home
     Eigen::VectorXd q1(n_dof); // quadruped
     Eigen::VectorXd q2(n_dof); // after quadrupedal walk
     Eigen::VectorXd q3(n_dof); // after standing up
     
+    
     /*
+    // STAND UP
+    
     //q0 << home with feet in q1 //TODO
     
     q1 << 0.759541, 0.0925172, 0.730835, 2.71415, 1.64804, -2.78167, 0.0077494, -1.71118, -0.0198973, 0.829911, -0.617268, 0.0637515, -0.550414, -1.50116, -0.576022, 0.514271, -0.500356, 0.104535, 0.425875, 0.077989, -0.94867, 0.0520036, 0.872267, -0.907853, -0.267958, 0.206271, 0.0805234, -0.933177, -0.2558, -0.273087, -0.964502, 0.679464, 0.561918, -0.236882;
@@ -234,13 +236,28 @@ void PlannerExecutor::init_load_model()
     q3 << 1.76207, -0.0338754, 0.908798, 2.94557, -3.00842, 3.31202, 0.365677, -0.184716, -0.212292, 0.979485, -0.734834, -0.203572, 0.165889, 0.178129, -0.189333, 0.490139, -0.5617, 0.0652543, -0.0335189, -0.210854, -1.16491, 0.866977, -0.115734, -0.74658, 0.254145, 0.622937, 0.0555549, -1.26494, -0.840133, -1.00947, 0.0352932, -0.941131, 0.210595, 1.42731;
     */
     
+    // PARALLEL WALLS CLIMBING
+    q0 << 0.392671, -0.0191674, 0.95783, -0.0105976, -0.0353956, 0.0267116, 0.0788019, -0.458175, -0.0334518, 0.741072, -0.24991, -0.0829859, -0.0311674, -0.446869, -0.0289934, 0.740588, -0.25764, 0.0292569, 0.00010873, -0.00163887, 0.956914, 0.00772743, 0.00150577, -1.91999, -0.000490356, -0.524224, -0.00193652, 0.960553, -0.00986163, 6.40194e-05, -1.91815, 0.000557603, -0.523711, 0.000680927;
+    
     q1 << 0.251611, -0.000849811, 1.04237, -0.0151705, -0.371729, -0.00205272, 0.911728, 0.0155281, 1.11786, 0.188712, -0.816631, 0.261799, -0.868397, 0.028154, -1.12254, 0.167069, -0.811616, -0.261799, 0.0637739, -0.128823, 1.45446, 2.19746, -0.788976, -1.03031, -1.56239, -0.582533, -0.95101, 1.20067, -2.54165, 0.738825, -1.05633, 1.58633, -0.797895, 1.14051;
     
     q2 = q1;
     q2(2)+=0.5; 
     
-    q_init = q1;
-    q_goal = q2;
+    /*
+    // LADDER CLIMBING
+    q1 = qhome;
+    //Eigen::Affine3d T;
+    //_model->getPose("l_sole", T);  
+    //std::cout << "T.translation() = " << T.translation() << std::endl;
+    //q1(2) = T.translation().z();
+    q1(2) = 1.0;
+    
+    q2 = q1;
+    */
+    
+    q_init = q0;
+    q_goal = q1;
     
     /////////////////////////////////////////////////
 
@@ -256,16 +273,16 @@ void PlannerExecutor::init_load_model()
 
     //_pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, "filtered_cloud2");
 
-    Eigen::Affine3d T;
-    _model->getPose("l_sole", T);
+    //Eigen::Affine3d T;
+    //_model->getPose("l_sole", T);
 
-    Eigen::Vector3d center;
+    //Eigen::Vector3d center;
     //center << 0.0, 0.0, T.translation().z();
-    center << 0.0, 0.0, 0.0;
-    double side_x = 5.0;
-    double side_y = 2.0;
-    double side_z = 3.0;
-    double resolution = 0.05;
+    //center << 0.0, 0.0, 0.0;
+    //double side_x = 5.0;
+    //double side_y = 2.0;
+    //double side_z = 3.0;
+    //double resolution = 0.05;
 
     //_pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n, center, side_x, side_y, side_z, resolution);
     _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n);
@@ -649,7 +666,204 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     */
 }
 
+bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
+{
+    std::vector<std::string> active_tasks;
+    std::vector<Eigen::Affine3d> ref_tasks;
+    
+    Eigen::Affine3d T_ref;
+    Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
+    Eigen::Vector3d pos_ref;
+    
+    active_tasks.clear();
+    active_tasks.push_back("l_sole");
+    active_tasks.push_back("r_sole");
  
+    //LF
+    //T_ref.translation() << 0.4, 0.15, 0.0;
+    T_ref.translation() << 0.4, 0.15, 0.0;
+    T_ref.linear() <<  1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0;
+    ref_tasks.push_back(T_ref);
+    //RF
+    //T_ref.translation() << 0.4, -0.15, 0.0;
+    T_ref.translation() << 0.4, -0.15, 0.0;
+    T_ref.linear() <<  1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0;
+    ref_tasks.push_back(T_ref);
+
+    
+    std::vector<std::string> all_tasks;
+    //all_tasks.push_back("com");
+    //all_tasks.push_back("TCP_L");
+    //all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
+    
+    _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("TCP_L", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("TCP_R", XBot::Cartesian::ActivationState::Disabled);
+    
+
+    for(int i = 0; i < all_tasks.size(); i++){
+        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);               
+        if(it == active_tasks.end()){
+            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        }
+        else{
+            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
+            int index = it - active_tasks.begin();
+            _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+        }
+    }
+
+    Eigen::VectorXd qHome; 
+    _model->getRobotState("home", qHome);
+    
+    Eigen::VectorXd qRand;
+    Eigen::VectorXd qMin, qMax;
+    _model->getJointLimits(qMin, qMax);
+    qRand.setRandom(n_dof); // uniform in -1 < x < 1
+    qRand = (qRand.array() + 1)/2.0; // uniform in 0 < x < 1
+    qRand = qMin + qRand.cwiseProduct(qMax - qMin); // uniform in qmin < x < qmax
+    qRand.head<6>().setRandom(); // we keep virtual joints between -1 and 1 (todo: improve)
+    qRand.head<6>().tail<3>() *= M_PI;
+    
+    _NSPG->getIKSolver()->getModel()->setJointPosition(qRand);
+    XBot::JointNameMap jmap;
+    _NSPG->getIKSolver()->getModel()->eigenToMap(qHome, jmap);
+    _NSPG->getIKSolver()->getCI()->setReferencePosture(jmap);
+    _NSPG->getIKSolver()->getModel()->update();
+    
+//      _goal_model->setJointPosition(qHome);
+//      return false;
+    
+    
+    Eigen::VectorXd c(n_dof);
+
+    if(_NSPG->getIKSolver()->solve()){
+        _NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+        _goal_model->setJointPosition(c);
+        _goal_model->update();
+
+        for(int z = 0; z < c.rows(); z++) std::cout << c(z) << ", ";
+        std::cout << " " << std::endl;
+
+        return true;
+    }    
+
+    return false;    
+
+}
+
+/*
+bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
+{
+    std::vector<std::string> active_tasks;
+    std::vector<Eigen::Affine3d> ref_tasks;
+    
+    Eigen::Affine3d T_ref;
+    Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
+    Eigen::Vector3d pos_ref;
+    
+    active_tasks.clear();
+      active_tasks.push_back("TCP_L");
+      active_tasks.push_back("TCP_R");
+    active_tasks.push_back("l_sole");
+    active_tasks.push_back("r_sole");
+ 
+    //LH
+    T_ref.translation() << 1.1, 0.3, 0.6;
+    T_ref.linear() << -1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, -1.0;
+    ref_tasks.push_back(T_ref);
+    //RH
+    T_ref.translation() << 1.1, -0.3, 0.6;
+    T_ref.linear() <<  -1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, -1.0;
+    ref_tasks.push_back(T_ref); 
+    //LF
+    //T_ref.translation() << 0.4, 0.15, 0.0;
+    T_ref.translation() << 0.8, 0.2, 0.0;
+    T_ref.linear() <<  1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0;
+    ref_tasks.push_back(T_ref);
+    //RF
+    //T_ref.translation() << 0.4, -0.15, 0.0;
+    T_ref.translation() << 0.8, -0.2, 0.0;
+    T_ref.linear() <<  1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0;
+    ref_tasks.push_back(T_ref);
+
+    
+    std::vector<std::string> all_tasks;
+    all_tasks.push_back("com");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_sole");
+    all_tasks.push_back("r_sole");
+
+    for(int i = 0; i < all_tasks.size(); i++){
+        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);               
+        if(it == active_tasks.end()){
+            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
+        }
+        else{
+            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
+            int index = it - active_tasks.begin();
+            _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+        }
+    }
+
+    Eigen::VectorXd qHome; 
+    _model->getRobotState("home", qHome);
+    
+    Eigen::VectorXd qRand;
+    Eigen::VectorXd qMin, qMax;
+    _model->getJointLimits(qMin, qMax);
+    qRand.setRandom(n_dof); // uniform in -1 < x < 1
+    qRand = (qRand.array() + 1)/2.0; // uniform in 0 < x < 1
+    qRand = qMin + qRand.cwiseProduct(qMax - qMin); // uniform in qmin < x < qmax
+    qRand.head<6>().setRandom(); // we keep virtual joints between -1 and 1 (todo: improve)
+    qRand.head<6>().tail<3>() *= M_PI;
+    
+    _NSPG->getIKSolver()->getModel()->setJointPosition(qRand);
+    XBot::JointNameMap jmap;
+    _NSPG->getIKSolver()->getModel()->eigenToMap(qHome, jmap);
+    _NSPG->getIKSolver()->getCI()->setReferencePosture(jmap);
+    _NSPG->getIKSolver()->getModel()->update();
+    
+//      _goal_model->setJointPosition(qHome);
+//      return false;
+    
+    
+    Eigen::VectorXd c(n_dof);
+
+    if(_NSPG->getIKSolver()->solve()){
+        _NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+        _goal_model->setJointPosition(c);
+        _goal_model->update();
+
+        for(int z = 0; z < c.rows(); z++) std::cout << c(z) << ", ";
+        std::cout << " " << std::endl;
+
+        return true;
+    }    
+
+    return false;    
+
+}
+*/
+
+/*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
     std::vector<std::string> active_tasks;
@@ -751,6 +965,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     return false;    
 
 }
+*/
  
  
 /*
@@ -1110,7 +1325,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = true; 
+    bool runPlanner = false; 
 
     if(index_config == -1){
 
