@@ -3,10 +3,10 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench", "UnderactuatedDyn"]
+    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"]#, "UnderactuatedDyn"]
 
 constraints:
-    #- "UnderactuatedDyn"
+    - "UnderactuatedDyn"
     - "l_sole_fc"
     - "r_sole_fc"
     - "l_ball_tip_fc"
@@ -42,25 +42,25 @@ r_sole_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "r_sole"
-    weight: [0.01, 0.01, 0.01, 0.1, 0.1, 0.1]
+    weight: [1., 1., 1., 1., 1., 1.]
 
 l_sole_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "l_sole"
-    weight: [0.01, 0.01, 0.01, 0.1, 0.1, 0.1]
+    weight: [1., 1., 1., 1., 1., 1.]
 
 r_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "r_ball_tip"
-    weight: [0.01, 0.01, 0.01, 0.1, 0.1, 0.1]
+    weight: [1., 1., 1., 1., 1., 1.]
 
 l_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "l_ball_tip"
-    weight: [0.01, 0.01, 0.01, 0.1, 0.1, 0.1]
+    weight: [1., 1., 1., 1., 1., 1.]
 
 r_sole_fc:
     lib_name: libcartesio_acceleration_support.so
