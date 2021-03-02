@@ -637,7 +637,7 @@ class Connector:
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
             fM = [(fmax_d[index] - fmax[index]) / 100. for index in range(len(fmax))]
-            for k in range(1, 100):
+            for k in range(1, 101):
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
                 rospy.sleep(0.5/100)
