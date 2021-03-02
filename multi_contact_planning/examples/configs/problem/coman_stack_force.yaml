@@ -142,7 +142,7 @@ UnderactuatedDyn:
     type: "DynamicFeasibility"
     contacts: ["l_sole", "r_sole", "l_ball_tip", "r_ball_tip"]
     dynamics: false
-    weight: [10., 10., 10., 0.01, 0.01, 0.01]
+    weight: [35., 35., 35., 0.025, 0.025, 0.025]
 
 postural:
     lib_name: libcartesio_acceleration_support.so
