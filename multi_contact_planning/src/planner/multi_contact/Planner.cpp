@@ -92,7 +92,7 @@ _nh(nh)
         Eigen::Affine3d T_i = computeForwardKinematics(qGoal, _activeEEsGoal.at(i));
         rCGoal.row(i) = T_i.translation().transpose();
         nCGoal.row(i) = getNormalAtPoint(rCGoal.row(i)).transpose();
-        std::cout << "EE = " << _activeEEsInit.at(i) << " pos = " << T_i.translation().transpose() << std::endl;
+        std::cout << "EE = " << _activeEEsGoal.at(i) << " pos = " << T_i.translation().transpose() << std::endl;
     }
     Eigen::MatrixXd FCGoal;
     FCGoal.resize(_activeEEsGoal.size(), 3);
@@ -203,6 +203,51 @@ bool Planner::nonEmptyReachableWorkspace(EndEffector pk, Configuration q){
 
     if(pointsInWorkspace.size() == 0) return false;
     return true;
+}
+
+Eigen::Vector3d Planner::pickPointInGrowingReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index){
+
+    double ReachableWorkspaceRadius = 0.0;
+    if(pk == L_HAND || pk == R_HAND) ReachableWorkspaceRadius = WORKSPACE_RADIUS_HAND;
+    else if(pk == L_FOOT || pk == R_FOOT) ReachableWorkspaceRadius = WORKSPACE_RADIUS_FOOT;
+
+    Eigen::Affine3d T_cur = computeForwardKinematics(q, pk);
+    Eigen::Vector3d p_cur = T_cur.translation();
+
+    std::vector<Eigen::Vector3d> pointsInWorkspace;
+    std::vector<int> pointsInWorkspaceIndices;
+    
+    double deltaRadius = 0.1;
+    while(pointsInWorkspace.size() == 0){    
+        for(int i = 0; i < pointCloud.rows(); i++){
+            Eigen::Vector3d p = pointCloud.row(i).transpose();
+            double d = euclideanDistance(p_cur, p);
+            if(d < ReachableWorkspaceRadius){
+                pointsInWorkspace.push_back(p);
+                pointsInWorkspaceIndices.push_back(i);
+            }
+        }
+        ReachableWorkspaceRadius+=deltaRadius;
+    }
+    
+    double dMin = std::numeric_limits<double>::max();
+    int iMin = -1;
+
+    for(int i = 0; i < pointsInWorkspace.size(); i++){
+        Eigen::Vector3d p = pointsInWorkspace.at(i);
+        double d = euclideanDistance(p, rRand);
+
+        if(d < dMin){
+            dMin = d;
+            iMin = i;
+        }
+    }
+
+    Eigen::Vector3d r = pointsInWorkspace.at(iMin);
+
+    index = pointsInWorkspaceIndices.at(iMin);
+
+    return r;
 }
 
 Eigen::Vector3d Planner::pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index){
@@ -894,6 +939,8 @@ void Planner::run(){
                 Stance sigmaNear = vNear->getStance();
                 Configuration qNear = vNear->getConfiguration();
                 // vNear->increaseNumExpansionAttempts(); //TODO INCREASE 
+                
+                
 
                 std::vector<EndEffector> activeEEsNear = sigmaNear.retrieveActiveEndEffectors();
                 foutLogMCP << "activeEEsNear.size() = " << activeEEsNear.size() << std::endl;
@@ -930,7 +977,8 @@ void Planner::run(){
                     for(int i = 0; i < activeEEsNear.size(); i++) activeEEsDes.push_back(activeEEsNear.at(i));
                     activeEEsDes.push_back(pk);
                     int pointIndex;
-                    T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);
+                    //T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);
+                    T_k.translation() = pickPointInGrowingReachableWorkspace(pk, qNear, rRand, pointIndex);
                     T_k.linear() = generateRotationAroundAxis(pk, getNormalAtPointByIndex(pointIndex));
                     n_k = getNormalAtPointByIndex(pointIndex);
                   

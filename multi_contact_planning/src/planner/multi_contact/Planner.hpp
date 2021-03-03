@@ -59,6 +59,7 @@ class Planner {
         Eigen::Vector3d pickRandomPoint();
         bool nonEmptyReachableWorkspace(EndEffector pk, Configuration q);
         Eigen::Vector3d pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index);
+        Eigen::Vector3d pickPointInGrowingReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index);
         EndEffector pickRandomEndEffector();
         std::shared_ptr<Contact> pickRandomContactFromGoalStance();
         int findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r);

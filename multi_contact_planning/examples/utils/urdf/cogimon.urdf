@@ -8,9 +8,7 @@
   ROS urdf definition of the COGIMON humanoid robot by Istituto Italiano di Tecnologia
   
   DO NOT INCLUDE THIS FILE DIRECTLY! USE cogimon_robot.urdf.xacro INSTEAD!
-
   Author: Enrico Mingo
-
   Inertial matrix has to be in CoM frame (URDF specs)
 -->
   <material name="grey">
@@ -30,7 +28,6 @@
 and to define the end effectors of the robot.
 The coordinate frame called gaze defines the head position and orientation. The orientation indicates in which direction the head appears to be looking regardless of any sensors (camera for instance). -->
   <!--link name="gaze"/>
-
 	<joint name="gaze_joint" type="fixed">
 		<parent link="torso"/>
 		<child link="gaze"/>
@@ -42,15 +39,11 @@ The coordinate frame called gaze defines the head position and orientation. The 
   ROS urdf definition of the COGIMON humanoid robot by Istituto Italiano di Tecnologia
   
   DO NOT INCLUDE THIS FILE DIRECTLY! USE cogimon_robot.urdf.xacro INSTEAD!
-
   Author: Enrico Mingo Hoffman
-
   Inertial matrix has to be in CoM frame (URDF specs)
-
 -->
   <!-- This links are defined in order to be compliant with http://www.ros.org/reps/rep-0120.html#coordinate-frames
 and to define the end effectors of the robot
-
 The coordinate frame called base_link is rigidly attached to the robot root body. It is recommended to choose the robot waist as its root body. The base_link can be attached to the root in any arbitrary position or orientation; for every hardware platform there will be a different place on the base that provides an obvious point of reference. Note that REP 103 [1] specifies a preferred orientation for frames. -->
   <link name="base_link"/>
   <link name="Waist">
@@ -993,6 +986,30 @@ The coordinate frame called base_link is rigidly attached to the robot root body
   </link>
   <link name="r_wrist"/>
   <link name="r_ball_tip"/>
+  <link name="r_ball_tip_u"/>
+    <joint name="r_ball_tipj_u" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.07 0.0 0.0"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_u"/>
+    </joint>
+    <link name="r_ball_tip_d"/>
+    <joint name="r_ball_tipj_d" type="fixed">
+      <origin rpy="0.0 -1.570796326795 0.0" xyz="-0.07 0.0 -0.01"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_d"/>
+    </joint>
+    <link name="r_ball_tip_l"/>
+    <joint name="r_ball_tipj_l" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.07 0.0"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_l"/>
+    </joint>
+    <link name="r_ball_tip_r"/>
+    <joint name="r_ball_tipj_r" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.07 0.0"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_r"/>
+    </joint>
   <joint name="r_wrist_joint" type="fixed">
     <parent link="RWrMot3"/>
     <child link="r_wrist"/>
@@ -1036,6 +1053,30 @@ The coordinate frame called base_link is rigidly attached to the robot root body
   </link>
   <link name="l_wrist"/>
   <link name="l_ball_tip"/>
+  <link name="l_ball_tip_u"/>
+    <joint name="l_ball_tipj_u" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.07 0.0 0.0"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_u"/>
+    </joint>
+    <link name="l_ball_tip_d"/>
+    <joint name="l_ball_tipj_d" type="fixed">
+      <origin rpy="0.0 -1.570796326795 0.0" xyz="-0.07 0.0 -0.01"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_d"/>
+    </joint>
+    <link name="l_ball_tip_l"/>
+    <joint name="l_ball_tipj_l" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.07 0.0"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_l"/>
+    </joint>
+    <link name="l_ball_tip_r"/>
+    <joint name="l_ball_tipj_r" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.07 0.0"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_r"/>
+    </joint>
   <joint name="l_wrist_joint" type="fixed">
     <parent link="LWrMot3"/>
     <child link="l_wrist"/>
@@ -1184,4 +1225,3 @@ The coordinate frame called base_link is rigidly attached to the robot root body
     <child link="base_link"/>
   </joint>
 </robot>
-

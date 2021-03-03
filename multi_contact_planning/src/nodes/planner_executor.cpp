@@ -1292,8 +1292,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     qInit.setFBOrientation(Eigen::Vector3d(q_init(3), q_init(4), q_init(5)));
     qInit.setJointValues(q_init.tail(n_dof-6));
     std::vector<EndEffector> activeEEsInit;
-    activeEEsInit.push_back(L_HAND);
-    activeEEsInit.push_back(R_HAND);
+    //activeEEsInit.push_back(L_HAND);
+    //activeEEsInit.push_back(R_HAND);
     activeEEsInit.push_back(L_FOOT);
     activeEEsInit.push_back(R_FOOT);
 
@@ -1325,7 +1325,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     std::vector<Configuration> qList;
     bool sol_found;
 
-    bool runPlanner = false; 
+    bool runPlanner = true; 
 
     if(index_config == -1){
 
