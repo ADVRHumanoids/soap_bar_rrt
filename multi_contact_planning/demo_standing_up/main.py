@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 from cartesian_interface.pyci_all import *
-from cartesio_acceleration_support.tasks import ForceTask
 import centroidal_planner.pycpl as cpl
 import numpy as np
 import xbot_interface.config_options as xbot_opt
 import xbot_interface.xbot_interface as xbot
 import rospy
-import centroidal_planner.pyforcepub as fp
 from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
 import matlogger2.matlogger as matlog
-from centroidal_planner.srv import setStiffnessDamping
 import yaml
 import cogimon
 import q_connector
 import loader
 import os
 import gazebo_robot_handler as grh
+import eigenpy
+from geometry_msgs.msg import Pose
 
 import collections
 
@@ -53,13 +52,9 @@ if __name__ == '__main__':
 
     rospy.init_node("standing_up")
     np.set_printoptions(precision=3, suppress=True)
-    # thr = threading.Thread(target = rospy.spin())
-    # thr.start()
-
     cpp_argv = []
     if not roscpp.init('standing_up', cpp_argv):
         print 'Unable to initialize roscpp node!'
-    # define contacts for the ForcePublisher
     opt = xbot_opt.ConfigOptions()
 
     urdf = rospy.get_param('robot_description')
@@ -76,32 +71,41 @@ if __name__ == '__main__':
     stances0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
     q_list1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/qList.txt")
     stances1 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/sigmaList.txt")
-    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/qList.txt")
-    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/sigmaList.txt")
+    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList.txt")
+    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList.txt")
 
     q_list = q_list0 + q_list1 + q_list2
     stances = stances0 + stances1 + stances2
-
-    # qhome = cogimon.model.getRobotState("home")
-    # qhome[2] = 0.96
-    # q_list.insert(0, qhome)
-    # stances.insert(0, stances[0])
 
     # flag = loader.checkStability(cogimon, stances1, q_list1)
     # print flag
     # rospy.sleep(2.)
     # exit()
 
-    # if cogimon.simulation:
-    #     gzhandler = grh.GazeboRobotHandler()
-    #     gzhandler.set_robot_posture(np.array(q_list[4])[6:])
-    #
-    #     initial_pos = dict()
-    #     initial_pos['position'] = q_list[4][0:3]
-    #     initial_pos['position'][2] += 0.1
-    #     initial_pos['orientation'] = [-0.03, -0.6, -0.03, -0.6]
-    #     # initial_pos['orientation'] = [0., 0., 0., 1.]
-    #     gzhandler.set_robot_position(initial_pos)
+    if cogimon.simulation:
+        gzhandler = grh.GazeboRobotHandler()
+        gzhandler.set_robot_posture(np.array(q_list2[0])[6:])
+        initial_pos = dict()
+        cogimon.model.setJointPosition(q_list2[0])
+        cogimon.model.update()
+        quat = cogimon.model.getPose('base_link').quaternion
+        pos = cogimon.model.getPose('base_link').translation
+        initial_pos['position'] = pos
+        initial_pos['position'][2] += 0.1
+        initial_pos['orientation'] = quat
+        gzhandler.set_robot_position(initial_pos)
+
+        rospy.sleep(1.)
+        state = gzhandler.get_link_state('base_link', 'world')
+
+        wall_pose = dict()
+        wall_pose['position'] = [2.1 + 0.5, 0, 0]
+        Rz = np.array([[np.cos(np.pi/2), -np.sin(np.pi/2), 0], [np.sin(np.pi/2), np.cos(np.pi/2), 0], [0, 0, 1]])
+        quat = eigenpy.Quaternion(Rz)
+        wall_pose['orientation'] = [quat.x, quat.y, quat.z, quat.w]
+        # wall_pose['orientation'] = [0,0,0,1]
+        model_xml = open('/home/luca/.gazebo/models/brick_box_3x1x3/model.sdf').read()
+        gzhandler.spawn_sdf_model('wall', model_xml, wall_pose, 'world')
 
     if cogimon.simulation:
         print 'waiting for xbot_mode...'
@@ -109,7 +113,7 @@ if __name__ == '__main__':
         rospy.wait_for_service('xbot_mode/reset_stiffness')
         print 'done.'
 
-    qc = q_connector.Connector(cogimon, q_list0 + q_list1, stances0 + stances1)
+    qc = q_connector.Connector(cogimon, q_list2, stances2)
     # qc.play_all_poses(1)
     qc.replaySolution('solution.txt')
     # qc.replaySolution('solution_phase0.csv')

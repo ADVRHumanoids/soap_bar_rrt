@@ -595,12 +595,15 @@ class Connector:
         # set initial contacts
         init_ind = [ind['ind'] for ind in self.stance_list[0]]
         init_links = [self.model.ctrl_points[j] for j in init_ind]
-        self.set_limits(init_links)
+        init_normals = [j['ref']['normal'] for j in self.stance_list[0]]
+        self.set_limits(init_links, [self.rotation(n) for n in init_normals])
 
         # activate fopt_node
         self.__set_fopt_active(True)
 
-    def set_limits(self, links):
+    def set_limits(self, links, rot):
+        # set friction cone rotation matrices
+        [self.ci_ff.getTask('friction_cone_' + link).setContactRotationMatrix(r) for link, r in zip(links, rot)]
 
         non_active_links = self.model.ctrl_points.values()
         for link in links:
@@ -657,7 +660,6 @@ class Connector:
 
             if self.__complete_solution:
                 self.__solution.append({'indices': active_links_start, 'q': []})
-                x = len(self.__solution)
 
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
@@ -778,9 +780,8 @@ class Connector:
             rospy.sleep(self.__sleep)
 
             if not res[1]:
-                for deleter in range(self.__counter):
-                    del self.__solution[-1]
-                    self.__half = False
+                del self.__solution[-1]
+                self.__half = False
                 continue
             elif res[0] == 5:
                 counter = 0
@@ -873,7 +874,8 @@ class Connector:
             # set active contacts
             all_links = self.model.ctrl_points.values()
             active_links = self.__solution[i]['indices']
-            self.set_limits(active_links)
+            normals = [j['ref']['normal'] for j in self.stance_list[i]]
+            self.set_limits(active_links, [self.rotation(n) for n in normals])
 
             if len(active_links) == 3 and self.model.simulation:
                 [all_links.remove(active) for active in active_links]
