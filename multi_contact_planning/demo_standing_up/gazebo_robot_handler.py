@@ -9,8 +9,11 @@ from gazebo_msgs.srv import SetModelState
 from gazebo_msgs.msg import LinkState
 from gazebo_msgs.msg import LinkStates
 from gazebo_msgs.msg import ModelState
+from gazebo_msgs.srv import SpawnModel
+from gazebo_msgs.srv import GetLinkState
 from xbot_interface import xbot_interface as xbot
 from xbot_interface import config_options as co
+from geometry_msgs.msg import Pose
 import yaml
 import numpy as np
 
@@ -51,6 +54,23 @@ class GazeboRobotHandler:
         try:
             set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
             return set_model_state(model_state)
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
+
+    def __spawn_sdf_model(self, name, model_xml, pose, reference_frame):
+        rospy.wait_for_service('/gazebo/spawn_sdf_model')
+        try:
+            set_sdf_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
+            return set_sdf_model(name, model_xml, '', pose, reference_frame)
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
+
+    def get_link_state(self, link_name, reference_frame):
+        rospy.wait_for_service('/gazebo/get_link_state')
+        try:
+            get_link_state = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
+            state = get_link_state(link_name, reference_frame)
+            return state
         except rospy.ServiceException as e:
             print("Service call failed: %s"%e)
 
@@ -103,8 +123,6 @@ class GazeboRobotHandler:
             self.__set_link_state_client(link_state)
 
     def set_robot_position(self, pose):
-
-
         model_state = ModelState()
         model_state.model_name = 'cogimon'
         model_state.reference_frame = 'world'
@@ -165,10 +183,16 @@ class GazeboRobotHandler:
             rospy.sleep(0.01)
             time = time + 0.01
 
-
-
-
-
+    def spawn_sdf_model(self, name, model_xml, pose, reference_frame):
+        msg_pose = Pose()
+        msg_pose.position.x = pose['position'][0]
+        msg_pose.position.y = pose['position'][1]
+        msg_pose.position.z = pose['position'][2]
+        msg_pose.orientation.x = pose['orientation'][0]
+        msg_pose.orientation.y = pose['orientation'][1]
+        msg_pose.orientation.z = pose['orientation'][2]
+        msg_pose.orientation.w = pose['orientation'][3]
+        self.__spawn_sdf_model(name, model_xml, msg_pose, reference_frame)
 
 if __name__ == '__main__':
 
