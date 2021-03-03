@@ -993,6 +993,30 @@ The coordinate frame called base_link is rigidly attached to the robot root body
   </link>
   <link name="r_wrist"/>
   <link name="r_ball_tip"/>
+  <link name="r_ball_tip_u"/>
+    <joint name="r_ball_tipj_u" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.07 0.0 0.0"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_u"/>
+    </joint>
+    <link name="r_ball_tip_d"/>
+    <joint name="r_ball_tipj_d" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="-0.07 0.0 0.0"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_d"/>
+    </joint>
+    <link name="r_ball_tip_l"/>
+    <joint name="r_ball_tipj_l" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.07 0.0"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_l"/>
+    </joint>
+    <link name="r_ball_tip_r"/>
+    <joint name="r_ball_tipj_r" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.07 0.0"/>
+      <parent link="RBall"/>
+      <child link="r_ball_tip_r"/>
+    </joint>
   <joint name="r_wrist_joint" type="fixed">
     <parent link="RWrMot3"/>
     <child link="r_wrist"/>
@@ -1036,6 +1060,30 @@ The coordinate frame called base_link is rigidly attached to the robot root body
   </link>
   <link name="l_wrist"/>
   <link name="l_ball_tip"/>
+  <link name="l_ball_tip_u"/>
+    <joint name="l_ball_tipj_u" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.07 0.0 0.0"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_u"/>
+    </joint>
+    <link name="l_ball_tip_d"/>
+    <joint name="l_ball_tipj_d" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="-0.07 0.0 0.0"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_d"/>
+    </joint>
+    <link name="l_ball_tip_l"/>
+    <joint name="l_ball_tipj_l" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.07 0.0"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_l"/>
+    </joint>
+    <link name="l_ball_tip_r"/>
+    <joint name="l_ball_tipj_r" type="fixed">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.07 0.0"/>
+      <parent link="LBall"/>
+      <child link="l_ball_tip_r"/>
+    </joint>
   <joint name="l_wrist_joint" type="fixed">
     <parent link="LWrMot3"/>
     <child link="l_wrist"/>
