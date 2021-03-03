@@ -223,8 +223,7 @@ void PlannerExecutor::init_load_model()
     Eigen::VectorXd q2(n_dof); // after quadrupedal walk
     Eigen::VectorXd q3(n_dof); // after standing up
     
-    
-    /*
+     
     // STAND UP
     
     //q0 << home with feet in q1 //TODO
@@ -234,7 +233,7 @@ void PlannerExecutor::init_load_model()
     q2 << 1.58871, 0.0223469, 0.637945, 2.81551, 1.77831, -2.76061, 0.452002, -1.11945, 0.376866, 0.64416, -0.872665, -0.226634, -0.482266, -0.975, -0.58049, 0.55925, -0.872665, 0.256492, 0.0890082, -0.0296354, -1.01587, 1.07963, 0.14952, -0.864876, 0.690062, 0.809135, -0.146463, -0.943517, -1.21241, -0.186094, -0.878702, -0.766646, 0.841216, 0.190342;
         
     q3 << 1.76207, -0.0338754, 0.908798, 2.94557, -3.00842, 3.31202, 0.365677, -0.184716, -0.212292, 0.979485, -0.734834, -0.203572, 0.165889, 0.178129, -0.189333, 0.490139, -0.5617, 0.0652543, -0.0335189, -0.210854, -1.16491, 0.866977, -0.115734, -0.74658, 0.254145, 0.622937, 0.0555549, -1.26494, -0.840133, -1.00947, 0.0352932, -0.941131, 0.210595, 1.42731;
-    */
+    
     
     /*
     // PARALLEL WALLS CLIMBING
@@ -245,15 +244,16 @@ void PlannerExecutor::init_load_model()
     q2 = q1;
     q2(2)+=0.5; 
     */
-     
+    
+    /*
     // LADDER CLIMBING
     q0 << 0.392671, -0.0191674, 0.95783, -0.0105976, -0.0353956, 0.0267116, 0.0788019, -0.458175, -0.0334518, 0.741072, -0.24991, -0.0829859, -0.0311674, -0.446869, -0.0289934, 0.740588, -0.25764, 0.0292569, 0.00010873, -0.00163887, 0.956914, 0.00772743, 0.00150577, -1.91999, -0.000490356, -0.524224, -0.00193652, 0.960553, -0.00986163, 6.40194e-05, -1.91815, 0.000557603, -0.523711, 0.000680927;
     
     q1 = q0;
+    */
     
-    
-    q_init = q0;
-    q_goal = q1;
+    q_init = q2;
+    q_goal = q3;
     
     /////////////////////////////////////////////////
 
@@ -602,160 +602,6 @@ void PlannerExecutor::init_interpolator()
 
     ///TODO: qdot, qddot limits?
 }
-
-void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref){
-    std::cout << "SETTING REFERENCES" << std::endl;
-
-    // NOTE: this is OK if used here (i.e., the non active contacts must remain fixed at the initial configuration)
-    // but it does not work in the planner (see computeIKSolution in Planner.cpp for comparison)
-
-//     auto ci = _goal_generator->getCartesianInterface();
-    auto ik = _NSPG->getIKSolver();
-
-    std::vector<std::string> all_tasks;
-    all_tasks.push_back("com");
-    all_tasks.push_back("TCP_L");
-    all_tasks.push_back("TCP_R");
-    all_tasks.push_back("l_sole");
-    all_tasks.push_back("r_sole");
-//     all_tasks.push_back("LHandOrientation");
-//     all_tasks.push_back("RHandOrientation");
-
-    ik->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-
-    for(int i = 1; i < all_tasks.size(); i++){
-
-        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
-
-        if(it == active_tasks.end()){
-            Eigen::MatrixXd wM = 0.1 * Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols());
-            ik->getCI()->getTask(all_tasks.at(i))->setWeight(wM);
-//             ik->getCI()->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
-        }
-        else{
-            Eigen::MatrixXd wM =  Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols());
-            ik->getCI()->getTask(all_tasks.at(i))->setWeight(wM);
-            int index = it - active_tasks.begin();
-            ik->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-        }
-    }
-
-//     ik->getCI()->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-//     for(int i = 0; i < all_tasks.size(); i++){
-//         int index = -1;
-//         for(int j = 0; j < active_tasks.size(); j++) if(active_tasks[j] == all_tasks[i]) index = j;
-//
-//         if(index == -1) ik->getCI()->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols()));
-//         else{
-//             ik->getCI()->getTask(all_tasks.at(i))->setWeight(Eigen::MatrixXd::Identity(ik->getCI()->getTask(all_tasks.at(i))->getWeight().rows(), ik->getCI()->getTask(all_tasks.at(i))->getWeight().cols()));
-//             ik->getCI()->setPoseReference(all_tasks[i], ref_tasks[index]);
-//         }
-//     }
-
-    /*
-    // postural
-    Eigen::VectorXd qhome;
-    _model->getRobotState("home", qhome);
-    XBot::JointNameMap jmap;
-    _goal_model->eigenToMap(qhome, jmap);
-    ci->setReferencePosture(jmap);
-    */
-}
-
-/*
-bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
-{
-    std::vector<std::string> active_tasks;
-    std::vector<Eigen::Affine3d> ref_tasks;
-    
-    Eigen::Affine3d T_ref;
-    Eigen::Matrix3d rot_ref = Eigen::Matrix3d::Identity(3,3);
-    Eigen::Vector3d pos_ref;
-    
-    active_tasks.clear();
-    active_tasks.push_back("l_sole");
-    active_tasks.push_back("r_sole");
- 
-    //LF
-    //T_ref.translation() << 0.4, 0.15, 0.0;
-    T_ref.translation() << 0.4, 0.15, 0.0;
-    T_ref.linear() <<  1.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0,
-                    0.0, 0.0, 1.0;
-    ref_tasks.push_back(T_ref);
-    //RF
-    //T_ref.translation() << 0.4, -0.15, 0.0;
-    T_ref.translation() << 0.4, -0.15, 0.0;
-    T_ref.linear() <<  1.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0,
-                    0.0, 0.0, 1.0;
-    ref_tasks.push_back(T_ref);
-
-    
-    std::vector<std::string> all_tasks;
-    //all_tasks.push_back("com");
-    //all_tasks.push_back("TCP_L");
-    //all_tasks.push_back("TCP_R");
-    all_tasks.push_back("l_sole");
-    all_tasks.push_back("r_sole");
-    
-    _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled);
-    _NSPG->getIKSolver()->getCI()->setActivationState("TCP_L", XBot::Cartesian::ActivationState::Disabled);
-    _NSPG->getIKSolver()->getCI()->setActivationState("TCP_R", XBot::Cartesian::ActivationState::Disabled);
-    
-
-    for(int i = 0; i < all_tasks.size(); i++){
-        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);               
-        if(it == active_tasks.end()){
-            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled);
-        }
-        else{
-            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled);
-            int index = it - active_tasks.begin();
-            _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-        }
-    }
-
-    Eigen::VectorXd qHome; 
-    _model->getRobotState("home", qHome);
-    
-    Eigen::VectorXd qRand;
-    Eigen::VectorXd qMin, qMax;
-    _model->getJointLimits(qMin, qMax);
-    qRand.setRandom(n_dof); // uniform in -1 < x < 1
-    qRand = (qRand.array() + 1)/2.0; // uniform in 0 < x < 1
-    qRand = qMin + qRand.cwiseProduct(qMax - qMin); // uniform in qmin < x < qmax
-    qRand.head<6>().setRandom(); // we keep virtual joints between -1 and 1 (todo: improve)
-    qRand.head<6>().tail<3>() *= M_PI;
-    
-    _NSPG->getIKSolver()->getModel()->setJointPosition(qRand);
-    XBot::JointNameMap jmap;
-    _NSPG->getIKSolver()->getModel()->eigenToMap(qHome, jmap);
-    _NSPG->getIKSolver()->getCI()->setReferencePosture(jmap);
-    _NSPG->getIKSolver()->getModel()->update();
-    
-//      _goal_model->setJointPosition(qHome);
-//      return false;
-    
-    
-    Eigen::VectorXd c(n_dof);
-
-    if(_NSPG->getIKSolver()->solve()){
-        _NSPG->getIKSolver()->getModel()->getJointPosition(c);
-        _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
-        _goal_model->setJointPosition(c);
-        _goal_model->update();
-
-        for(int z = 0; z < c.rows(); z++) std::cout << c(z) << ", ";
-        std::cout << " " << std::endl;
-
-        return true;
-    }    
-
-    return false;    
-
-}
-*/
 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
@@ -1289,8 +1135,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     qInit.setFBOrientation(Eigen::Vector3d(q_init(3), q_init(4), q_init(5)));
     qInit.setJointValues(q_init.tail(n_dof-6));
     std::vector<EndEffector> activeEEsInit;
-    activeEEsInit.push_back(L_HAND);
-    activeEEsInit.push_back(R_HAND);
+    activeEEsInit.push_back(L_HAND_C);
+    activeEEsInit.push_back(R_HAND_C);
     activeEEsInit.push_back(L_FOOT);
     activeEEsInit.push_back(R_FOOT);
 
@@ -1300,8 +1146,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     qGoal.setFBOrientation(Eigen::Vector3d(q_goal(3), q_goal(4), q_goal(5)));
     qGoal.setJointValues(q_goal.tail(n_dof-6));
     std::vector<EndEffector> activeEEsGoal;
-    activeEEsGoal.push_back(L_HAND);
-    activeEEsGoal.push_back(R_HAND);
+    activeEEsGoal.push_back(L_HAND_C);
+    activeEEsGoal.push_back(R_HAND_C);
     activeEEsGoal.push_back(L_FOOT);
     activeEEsGoal.push_back(R_FOOT);
 
@@ -1311,8 +1157,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
 
     // construct allowed end-effectors description
     std::vector<EndEffector> allowedEEs;
-    allowedEEs.push_back(L_HAND);
-    allowedEEs.push_back(R_HAND);
+    allowedEEs.push_back(L_HAND_C);
+    allowedEEs.push_back(R_HAND_C);
     allowedEEs.push_back(L_FOOT);
     allowedEEs.push_back(R_FOOT);
 
@@ -1550,39 +1396,4 @@ void PlannerExecutor::enforce_bounds(Eigen::VectorXd & q) const
     _planner->getBounds(qmin, qmax);
 
     q = q.cwiseMin(qmax).cwiseMax(qmin);
-}
-
-Eigen::Matrix3d PlannerExecutor::generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis){
-        Eigen::Matrix3d rot;
-
-        bool vertical = false;
-        Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0);
-    if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
-
-    if(pk == L_HAND || pk == R_HAND){
-        if(vertical){
-                rot << -1.0, 0.0, 0.0,
-                        0.0, 1.0, 0.0,
-                        0.0, 0.0, -1.0;
-        }
-        else{
-                rot <<  0.0, 0.0, 1.0,
-                        1.0, 0.0, 0.0,
-                        0.0, 1.0, 0.0;
-        }
-    }
-        else{
-        if(vertical){
-                rot <<  1.0, 0.0, 0.0,
-                        0.0, 1.0, 0.0,
-                        0.0, 0.0, 1.0;
-        }
-        else{
-                rot <<  0.0, 0.0, -1.0,
-                        0.0, 1.0, 0.0,
-                        1.0, 0.0, 0.0;
-        }
-    }
-
-        return rot;
 }

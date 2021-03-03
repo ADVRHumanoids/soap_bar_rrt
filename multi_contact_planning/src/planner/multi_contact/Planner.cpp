@@ -13,10 +13,8 @@ static std::default_random_engine rotationGenerator;
 static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
 std::string env(getenv("ROBOTOLOGY_ROOT"));
-
 static std::ofstream foutLogMCP(env + "/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
 
-// Planner::Planner(Configuration _qInit, std::vector<EndEffector> _activeEEsInit, Configuration _qGoal, std::vector<EndEffector> _activeEEsGoal, Eigen::MatrixXd _pointCloud, Eigen::MatrixXd _pointNormals, std::vector<EndEffector> _allowedEEs, XBot::ModelInterface::Ptr _planner_model, GoalGenerator::Ptr _goal_generator, XBot::Cartesian::Planning::ValidityCheckContext _vc_context){
 Planner::Planner(Configuration _qInit,
                  std::vector<EndEffector> _activeEEsInit,
                  Configuration _qGoal,
@@ -32,11 +30,9 @@ _nh(nh)
 {
     // set model, goal generator and cartesian interface
     planner_model = _planner_model;
-// 	goal_generator = _goal_generator;
-        NSPG = _NSPG;
-        ci = NSPG->getIKSolver()->getCI();
-// 	ci = _goal_generator->getCartesianInterface();
-
+    NSPG = _NSPG;
+    ci = NSPG->getIKSolver()->getCI();
+    
     // set the environment representation
     pointCloud = _pointCloud;
     pointNormals = _pointNormals;
@@ -65,7 +61,6 @@ _nh(nh)
     FCInit.resize(_activeEEsInit.size(), 3);
 
     bool resCPL_Init = computeCentroidalStatics(_activeEEsInit, rCoMInit, rCInit, nCInit, rCoMInit, rCInit, FCInit);
-
     if(resCPL_Init) std::cout << "INIT CONFIGURATION IS BALANCED - errorCom = " << (rCoMInit - computeCoM(qInit)).norm() << std::endl;
 
     for(int i = 0; i < _activeEEsInit.size(); i++){
@@ -98,7 +93,6 @@ _nh(nh)
     FCGoal.resize(_activeEEsGoal.size(), 3);
 
     bool resCPL_Goal = computeCentroidalStatics(_activeEEsGoal, rCoMGoal, rCGoal, nCGoal, rCoMGoal, rCGoal, FCGoal);
-
     if(resCPL_Goal) std::cout << "GOAL CONFIGURATION IS BALANCED - errorCom = " << (rCoMGoal - computeCoM(qGoal)).norm() << std::endl;
 
     for(int i = 0; i < _activeEEsGoal.size(); i++){
@@ -133,21 +127,8 @@ _nh(nh)
 
     _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("contacts", 10, true);
 
-    Eigen::Matrix3d rot;
-    rot <<  0.0, 0.0, 1.0,
-            0.0, 1.0, 0.0,
-           -1.0, 0.0, 0.0;
-
-    Eigen::Quaternion<double> quat(rot);
-    foutLogMCP << "ROTATION CHECK: \n " << quat.coeffs() << std::endl;
-    foutLogMCP << "sizeof(Vertex) = " << sizeof(Vertex) << std::endl;
-    foutLogMCP << "sizeof(Configuration) = " << sizeof(Configuration) << std::endl;
-    foutLogMCP << "sizeof(Stance) = " << sizeof(Stance) << std::endl;
-    foutLogMCP << "sizeof(Contact) = " << sizeof(Contact) << std::endl;
-
-    std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L"};
-    //_cs = std::make_unique<XBot::Cartesian::Planning::CentroidalStatics>(NSPG->getIKSolver()->getModel(), links, 0.5*sqrt(2));
     
+    std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
     _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, 0.5*sqrt(2)));
 
 }
@@ -188,7 +169,7 @@ Eigen::Vector3d Planner::pickRandomPoint(){
 bool Planner::nonEmptyReachableWorkspace(EndEffector pk, Configuration q){
 
     double ReachableWorkspaceRadius = 0.0;
-    if(pk == L_HAND || pk == R_HAND) ReachableWorkspaceRadius = WORKSPACE_RADIUS_HAND;
+    if(pk == L_HAND_C || pk == R_HAND_C || pk == L_HAND_D || pk == R_HAND_D) ReachableWorkspaceRadius = WORKSPACE_RADIUS_HAND;
     else if(pk == L_FOOT || pk == R_FOOT) ReachableWorkspaceRadius = WORKSPACE_RADIUS_FOOT;
 
     Eigen::Affine3d T_cur = computeForwardKinematics(q, pk);
@@ -208,7 +189,7 @@ bool Planner::nonEmptyReachableWorkspace(EndEffector pk, Configuration q){
 Eigen::Vector3d Planner::pickPointInGrowingReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index){
 
     double ReachableWorkspaceRadius = 0.0;
-    if(pk == L_HAND || pk == R_HAND) ReachableWorkspaceRadius = WORKSPACE_RADIUS_HAND;
+    if(pk == L_HAND_C || pk == R_HAND_C || pk == L_HAND_D || pk == R_HAND_D) ReachableWorkspaceRadius = WORKSPACE_RADIUS_HAND;
     else if(pk == L_FOOT || pk == R_FOOT) ReachableWorkspaceRadius = WORKSPACE_RADIUS_FOOT;
 
     Eigen::Affine3d T_cur = computeForwardKinematics(q, pk);
@@ -253,13 +234,11 @@ Eigen::Vector3d Planner::pickPointInGrowingReachableWorkspace(EndEffector pk, Co
 Eigen::Vector3d Planner::pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index){
 
     double ReachableWorkspaceRadius = 0.0;
-    if(pk == L_HAND || pk == R_HAND) ReachableWorkspaceRadius = WORKSPACE_RADIUS_HAND;
+    if(pk == L_HAND_C || pk == R_HAND_C || pk == L_HAND_D || pk == R_HAND_D) ReachableWorkspaceRadius = WORKSPACE_RADIUS_HAND;
     else if(pk == L_FOOT || pk == R_FOOT) ReachableWorkspaceRadius = WORKSPACE_RADIUS_FOOT;
 
     Eigen::Affine3d T_cur = computeForwardKinematics(q, pk);
     Eigen::Vector3d p_cur = T_cur.translation();
-
-    //foutLogMCP << "p_cur = " << p_cur.transpose() << std::endl;
 
     std::vector<Eigen::Vector3d> pointsInWorkspace;
     std::vector<int> pointsInWorkspaceIndices;
@@ -271,8 +250,6 @@ Eigen::Vector3d Planner::pickPointInReachableWorkspace(EndEffector pk, Configura
             pointsInWorkspaceIndices.push_back(i);
         }
     }
-
-    //foutLogMCP << "pointsInWorkspace.size() = " << pointsInWorkspace.size() << std::endl;
 
     double dMin = std::numeric_limits<double>::max();
     int iMin = -1;
@@ -290,20 +267,6 @@ Eigen::Vector3d Planner::pickPointInReachableWorkspace(EndEffector pk, Configura
     Eigen::Vector3d r = pointsInWorkspace.at(iMin);
 
     index = pointsInWorkspaceIndices.at(iMin);
-
-    /*
-    ////////////////////////////////////////////////////////////////////////
-    if(dMin < 1e-03){
-        Eigen::Vector3d r = pointsInWorkspace.at(iMin);
-        index = pointsInWorkspaceIndices.at(iMin);
-    }
-    else{
-        iMin = pointInWorkspaceDistribution(pointInWorkspaceGenerator) % pointsInWorkspace.size();
-        Eigen::Vector3d r = pointsInWorkspace.at(iMin);
-        index = pointsInWorkspaceIndices.at(iMin);
-    }
-    ////////////////////////////////////////////////////////////////////////
-    */
 
     return r;
 }
@@ -335,6 +298,7 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
         bool c2 = true; // at least 3 contact (after expansion)
         bool c3 = true; // non empty workspace for end effector pk if inactive at vnear
         bool c4 = true; // don't move an active ee that is already at the goal
+        bool c5 = true; // don't remove an active ee that has been just added
 
         std::vector<EndEffector> activeEEs = sigma.retrieveActiveEndEffectors();
         std::vector<EndEffector> activeEEsCand;
@@ -363,7 +327,15 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
             if(d < 1e-4) c4 = false;
         }
 
-        bool allConditionsRespected = c1 && c2 && c3 && c4;
+        // condition 5
+        int index_parent = v->getParentIndex();
+        if(index_parent != -1){
+            std::shared_ptr<Vertex> v_parent = tree->getVertex(index_parent);
+            Stance sigma_parent = v_parent->getStance();
+            if( sigma_parent.getSize() < sigma.getSize() && sigma.getContact(sigma.getSize()-1)->getEndEffectorName() == pk) c5 = false;
+        }
+        
+        bool allConditionsRespected = c1 && c2 && c3 && c4 && c5;
 
         if(allConditionsRespected){
             Eigen::Affine3d T_cur = computeForwardKinematics(q, pk);
@@ -377,14 +349,12 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
 
     }
 
-    //foutLogMCP << "admissibleVertexes.size() = " << admissibleVertexes.size() << std::endl;
     if(admissibleVertexes.size() == 0) return -1;
 
     // RRT-like selection
 
     Eigen::VectorXd invDist(admissibleVertexes.size());
     for(int i = 0; i < admissibleVertexes.size(); i++){
-        //foutLogMCP << "distAdmissibleVertexes.at(i) = " << distAdmissibleVertexes.at(i) << std::endl;
         invDist(i) = 1.0 / distAdmissibleVertexes.at(i);
     }
     double invDistSum = invDist.sum();
@@ -395,298 +365,16 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
     }
     Eigen::VectorXd probVector(admissibleVertexes.size());
     probVector = (1.0 / invDistSum) * invDist;
-    //foutLogMCP << "probVector = " << probVector.transpose() << std::endl;
-
+    
     double pr = exploitationDistribution(exploitationGenerator);
-    //foutLogMCP << "pr = " << pr << std::endl;
     int index = 0;
     while(pr > probVector(index)) index++;
-    //foutLogMCP << "index = " << index << std::endl;
-
+    
     iMin = admissibleVertexes.at(index);
 
-    // naive tree selection
-
-    //int index = integerDistribution(integerGenerator) % admissibleVertexes.size();
-    //iMin = admissibleVertexes.at(index);
 
     return iMin;
 
-}
-
-/*
-std::string Planner::getTaskStringName(EndEffector ee){
-    std::string ee_str;
-
-    if(ee == L_HAND) ee_str = "TCP_L";
-    else if(ee == R_HAND) ee_str = "TCP_R";
-    else if(ee == L_FOOT) ee_str = "l_sole";
-    else if(ee == R_FOOT) ee_str = "r_sole";
-    else if(ee == HEAD) ee_str = "Head";
-    else ee_str = "com";
-
-    return ee_str;
-}
-
- 
-EndEffector Planner::getTaskEndEffectorName(std::string ee_str){
-    EndEffector ee;
-
-    if(ee_str.compare("TCP_L") == 0) ee = L_HAND;
-    else if(ee_str.compare("TCP_R") == 0) ee = R_HAND;
-    else if(ee_str.compare("l_sole") == 0) ee = L_FOOT;
-    else if(ee_str.compare("r_sole") == 0) ee = R_FOOT;
-    else if(ee_str.compare("Head") == 0) ee = HEAD;
-    else ee = COM;
-
-    return ee;
-}
-*/
- 
-/*
-bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev){
-    
-    std::cout << "-------IK INVOCATION (refCoM = " << refCoM << ")-------" << std::endl;
-    // build references
-    Eigen::VectorXd q_postural(n_dof);
-    q_postural << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
-    std::vector<std::string> active_tasks;
-    std::vector<Eigen::Affine3d> ref_tasks;
-    int i_init;
-    if(refCoM){
-        active_tasks.push_back("com");
-        Eigen::Affine3d T_CoM_ref;
-        T_CoM_ref.translation() = rCoM;
-        T_CoM_ref.linear() = Eigen::Matrix3d::Identity();
-        ref_tasks.push_back(T_CoM_ref);
-    }
-    for(int i = 0; i < sigma.getSize(); i++){
-        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
-        active_tasks.push_back(getTaskStringName(ee));
-        ref_tasks.push_back(sigma.retrieveContactPose(ee));
-
-        foutLogMCP << "EE(stance) =\n " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).matrix() << std::endl;
-    }
-
-    // set active links and rotations
-//     multi_contact_planning::SetContactFrames contacts;
-//     
-//     if (refCoM)
-//     {
-//         contacts.action = multi_contact_planning::SetContactFrames::SET;
-//         contacts.frames_in_contact = {active_tasks.begin()+1, active_tasks.end()}; 
-//         i_init = 1;
-//     }
-//     else
-//     {
-//         contacts.action = multi_contact_planning::SetContactFrames::SET;
-//         contacts.frames_in_contact = active_tasks;
-//         i_init = 0;
-//     }
-// 
-//     Eigen::Vector3d nC_i;
-//     std::vector<geometry_msgs::Quaternion> rotations(sigma.getContacts().size());
-//     for (int i = 0; i < sigma.getContacts().size(); i ++)
-//     {
-//         if (refCoM)
-//             nC_i = getNormalAtPoint(ref_tasks[i+1].translation().transpose());   
-//         else 
-//             nC_i = getNormalAtPoint(ref_tasks[i].translation().transpose());
-//         Eigen::Matrix3d rot = generateRotationFrictionCone(nC_i);
-//         Eigen::Quaternion<double> quat(rot);
-//         rotations[i].x = quat.coeffs().x();
-//         rotations[i].y = quat.coeffs().y();
-//         rotations[i].z = quat.coeffs().z();
-//         rotations[i].w = quat.coeffs().w();
-//     }
-//     contacts.rotations = rotations;
-//     contacts.friction_coefficient = 0.5 * sqrt(2.0);
-//     contacts.optimize_torque = false;
-//     
-//     foutLogMCP << "contacts:" << std::endl;
-//     for (auto i : contacts.frames_in_contact)
-//         foutLogMCP << i << "  ";
-//     foutLogMCP << "\nrotations:" << std::endl;
-//     for (auto i : contacts.rotations)
-//         foutLogMCP << i << "  ";
-//     foutLogMCP << "\n";
-//     
-//     _pub.publish(contacts);
-//     ros::spinOnce();
-    
-    // set references
-    std::vector<std::string> all_tasks;
-    all_tasks.push_back("com");
-    all_tasks.push_back("TCP_L");
-    all_tasks.push_back("TCP_R");
-    all_tasks.push_back("l_sole");
-    all_tasks.push_back("r_sole");
-
-    if(!refCoM){
-        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-        i_init = 1;
-    }
-    else{
-        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled);
-        i_init = 0;
-    }
-
-    for(int i = i_init; i < all_tasks.size(); i++){
-        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
-
-        if(it == active_tasks.end()){
-            Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
-            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
-                wM.block<3,3>(3,3) *= 0.001;
-            NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setWeight(wM);
-            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
-        }
-        else{
-            Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
-            if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R")
-                wM.block<3,3>(3,3) *= 0.001;
-            NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setWeight(wM);
-            int index = it - active_tasks.begin();
-            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-        }
-    }
-
-    Eigen::VectorXd cPrev(n_dof);
-    Eigen::Vector3d posFB = qPrev.getFBPosition();
-    Eigen::Vector3d rotFB = qPrev.getFBOrientation();
-    cPrev.segment(0,3) = posFB;
-    cPrev.segment(3,3) = rotFB;
-    cPrev.tail(n_dof-6) = qPrev.getJointValues();
-    NSPG->getIKSolver()->getModel()->setJointPosition(q_postural);
-    NSPG->getIKSolver()->getModel()->update();
-
-    // search IK solution
-    double time_budget = GOAL_SAMPLER_TIME_BUDGET;
-    Eigen::VectorXd c(n_dof);
-    
-    if (!NSPG->getIKSolver()->solve())
-        return false;
-
-    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
-
-    if(!NSPG->sample(time_budget))
-    {
-        NSPG->getIKSolver()->getModel()->getJointPosition(c);
-        q.setFBPosition(c.segment(0,3));
-        q.setFBOrientation(c.segment(3,3));
-        q.setJointValues(c.tail(n_dof-6));
-        return false;
-    }
-    else
-    {
-        NSPG->getIKSolver()->getModel()->getJointPosition(c);
-        q.setFBPosition(c.segment(0,3));
-        q.setFBOrientation(c.segment(3,3));
-        q.setJointValues(c.tail(n_dof-6));
-        return true;
-    }
-}
-*/
-
-bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev){
-    
-    std::cout << "-------IK INVOCATION (refCoM = " << refCoM << ")-------" << std::endl;
-    
-    // build references
-    //Eigen::VectorXd q_postural(n_dof);
-    //q_postural << 0.34515884431887384, -0.06591591904073339, 0.7271543349204505, 2.772752261057329, 1.694067260637883, -2.8326452668824484, 0.02082929860422072, -1.7787860844940504, -0.036421660785962574, 0.9996204693896318, -0.6689316045377748, 0.04679752671173139, -0.0047857492997280225, -1.7034599738559666, -0.06227672563131584, 0.890601586605412, -0.6349870611535411, 0.04271151312504321, -0.02360545515374067, 0.032760740733259075, -0.707631719076811, 0.659625032411939, 0.04654837196558426, -0.9962331912723077, 0.6763772547285989, 0.44353465292278027, -0.2790720832627141, -0.6992796605078045, -0.6140390267081726, -0.10013692237630738, -0.9404489978405196, -0.6420967750257626, 0.3194200132256253, 0.17978778269015258;
-    std::vector<std::string> active_tasks;
-    std::vector<Eigen::Affine3d> ref_tasks;
-    int i_init;
-    if(refCoM){
-        active_tasks.push_back("com");
-        Eigen::Affine3d T_CoM_ref;
-        T_CoM_ref.translation() = rCoM;
-        T_CoM_ref.linear() = Eigen::Matrix3d::Identity();
-        ref_tasks.push_back(T_CoM_ref);
-    }
-    for(int i = 0; i < sigma.getSize(); i++){
-        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
-        active_tasks.push_back(getTaskStringName(ee));
-        ref_tasks.push_back(sigma.retrieveContactPose(ee));
-
-        //foutLogMCP << "EE(stance) =\n " << getTaskStringName(ee) << " pos =" << sigma.retrieveContactPose(ee).matrix() << std::endl;
-    }
-
-    
-    
-    // set references
-    std::vector<std::string> all_tasks;
-    all_tasks.push_back("com");
-    all_tasks.push_back("TCP_L");
-    all_tasks.push_back("TCP_R");
-    all_tasks.push_back("l_sole");
-    all_tasks.push_back("r_sole");
-
-    if(!refCoM){
-        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-        i_init = 1;
-    }
-    else{
-        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled);
-        i_init = 0;
-    }
-
-    for(int i = i_init; i < all_tasks.size(); i++){
-        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
-        //Eigen::MatrixXd wM = Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols());
-        //if (all_tasks[i] == "TCP_L" || all_tasks[i] == "TCP_R") wM.block<3,3>(3,3) *= 0.001;
-        //NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setWeight(wM);     
-        if(it == active_tasks.end()){
-            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), computeForwardKinematics(qPrev, getTaskEndEffectorName(all_tasks.at(i))));
-        }
-        else{ //FIXME maybe here only the next two lines could be used
-            int index = it - active_tasks.begin();
-            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-        }
-    }
-
-    Eigen::VectorXd cPrev(n_dof);
-    Eigen::Vector3d posFB = qPrev.getFBPosition();
-    Eigen::Vector3d rotFB = qPrev.getFBOrientation();
-    cPrev.segment(0,3) = posFB;
-    cPrev.segment(3,3) = rotFB;
-    cPrev.tail(n_dof-6) = qPrev.getJointValues();
-    //NSPG->getIKSolver()->getModel()->setJointPosition(q_postural);
-    NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
-    NSPG->getIKSolver()->getModel()->update();
-
-    // search IK solution
-    double time_budget = GOAL_SAMPLER_TIME_BUDGET;
-    Eigen::VectorXd c(n_dof);
-    
-    if (!NSPG->getIKSolver()->solve())
-        return false;
-
-    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
-
-    if(!NSPG->sample(time_budget))
-    {
-        NSPG->getIKSolver()->getModel()->getJointPosition(c);
-        q.setFBPosition(c.segment(0,3));
-        q.setFBOrientation(c.segment(3,3));
-        q.setJointValues(c.tail(n_dof-6));
-        
-        //ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled); //FIXME
-        
-        return false;
-    }
-    else
-    {
-        NSPG->getIKSolver()->getModel()->getJointPosition(c);
-        q.setFBPosition(c.segment(0,3));
-        q.setFBOrientation(c.segment(3,3));
-        q.setJointValues(c.tail(n_dof-6));
-        
-        //ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled); //FIXME
-        
-        return true;
-    }
 }
 
 bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList){
@@ -727,8 +415,6 @@ bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Confi
     std::reverse(sigmaList.begin(), sigmaList.end());
     std::reverse(qList.begin(), qList.end());
 
-    std::cout << "++++++++++++++++++++++++++++++++++branchSize++++++++++++++++++++++++++++ \n" << branchSize << std::endl;
-
     return true;
 }
 
@@ -768,7 +454,7 @@ bool Planner::computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Ei
         name = contact_name.at(i);
         cpl->SetContactPosition(name, rCdes.row(i));
         cpl->SetContactNormal(name, nCdes.row(i));
-        if(activeEEsDes.at(i) == L_HAND || activeEEsDes.at(i) == R_HAND) cpl->SetForceThreshold(name, FORCE_THRES_HAND);
+        if(activeEEsDes.at(i) == L_HAND_C || activeEEsDes.at(i) == R_HAND_C || activeEEsDes.at(i) == L_HAND_D || activeEEsDes.at(i) == R_HAND_D) cpl->SetForceThreshold(name, FORCE_THRES_HAND);
         if(activeEEsDes.at(i) == L_FOOT || activeEEsDes.at(i) == R_FOOT) cpl->SetForceThreshold(name, FORCE_THRES_FOOT);
     }
 
@@ -938,9 +624,6 @@ void Planner::run(){
                 vNear = tree->getVertex(iNear);
                 Stance sigmaNear = vNear->getStance();
                 Configuration qNear = vNear->getConfiguration();
-                // vNear->increaseNumExpansionAttempts(); //TODO INCREASE 
-                
-                
 
                 std::vector<EndEffector> activeEEsNear = sigmaNear.retrieveActiveEndEffectors();
                 foutLogMCP << "activeEEsNear.size() = " << activeEEsNear.size() << std::endl;
@@ -949,26 +632,11 @@ void Planner::run(){
                 std::vector<EndEffector> activeEEsDes;
                 Eigen::Affine3d T_k;
                 Eigen::Vector3d n_k;
-                Eigen::Vector3d dir;
                 if(sigmaNear.isActiveEndEffector(pk))
                 {
                     foutLogMCP << "REMOVING A CONTACT" << std::endl;
-                    //for(int i = 0; i < activeEEsNear.size(); i++) if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
-                    
                     for(int i = 0; i < activeEEsNear.size(); i++){
                         if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
-                        else{
-                            //DIRECTION FOR THE RANDOM VELOCITIES
-                            Eigen::Vector3d pRem = sigmaNear.retrieveContactPose(activeEEsNear.at(i)).translation();
-                            Eigen::Vector3d pCoM = computeCoM(qNear);
-                            dir = pCoM - pRem;
-                            double dir_norm = dir.norm();
-                            dir = (1.0/dir_norm)*dir;
-                            foutLogMCP << "pRem = " << pRem.transpose() << std::endl;
-                            foutLogMCP << "pCoM = " << pCoM.transpose() << std::endl;
-                            foutLogMCP << "dir = " << dir.transpose() << std::endl;
-                        }
-                        
                     }
                 }   
                 else
@@ -981,16 +649,6 @@ void Planner::run(){
                     T_k.translation() = pickPointInGrowingReachableWorkspace(pk, qNear, rRand, pointIndex);
                     T_k.linear() = generateRotationAroundAxis(pk, getNormalAtPointByIndex(pointIndex));
                     n_k = getNormalAtPointByIndex(pointIndex);
-                  
-                    //DIRECTION FOR THE RANDOM VELOCITIES 
-                    Eigen::Vector3d pAdd = T_k.translation();
-                    Eigen::Vector3d pCoM = computeCoM(qNear);
-                    dir = pCoM - pAdd;
-                    double dir_norm = dir.norm();
-                    dir = (1.0/dir_norm)*dir;
-                    foutLogMCP << "pAdd = " << pAdd.transpose() << std::endl;
-                    foutLogMCP << "pCoM = " << pCoM.transpose() << std::endl;
-                    foutLogMCP << "dir = " << dir.transpose() << std::endl;                    
                 }
 
                 foutLogMCP << "activeEEsDes.size() = " << activeEEsDes.size() << std::endl;
@@ -999,6 +657,8 @@ void Planner::run(){
                     std::string ee_str = getTaskStringName(ee);
                     foutLogMCP << ee_str << std::endl;
                 }
+                
+                // generate sigmaNew 
                 
                 Stance sigmaNew;
                 Eigen::Vector3d F_i(0.0, 0.0, 0.0);
@@ -1029,7 +689,7 @@ void Planner::run(){
                     
                     vNear->increaseNumExpansionAttempts();   
                     
-                    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // determine sigmaLarge and sigmaSmall
                     Stance sigmaLarge, sigmaSmall;
                     if(sigmaNew.getSize() > sigmaNear.getSize())
                     {
@@ -1051,22 +711,11 @@ void Planner::run(){
                         nCSmall.row(i) = sigmaSmall.getContact(i)->getNormal().transpose();
                     }
                     
-                    ////
-                    //Eigen::Vector3d rCoMCand = computeCoM(qNear);
-                    //bool resCPL = computeCentroidalStatics(activeEEsSmall, rCoMCand, rCSmall, nCSmall, rCoMCand, rCSmall, FCSmall); 
-                    //if(resCPL) foutLogMCP << "--------------- CPL SUCCESS ---------------" << std::endl;
-                    //else foutLogMCP << "--------------- CPL FAIL ---------------" << std::endl;
-                    //foutLogMCP << "rCoMCand = " << rCoMCand.transpose() << std::endl;
-                    ////
-                    
-                    Eigen::Vector3d rCoMCand = computeCoM(qNear);
-                    foutLogMCP << "rCoMCand = " << rCoMCand.transpose() << std::endl;
-                    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // generate qNew (feasible)
                     
                     auto tic = std::chrono::high_resolution_clock::now();
-                    
-                    //bool resIKCS = computeIKandCS(qNear, sigmaNear, qNew, sigmaNew);
-                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, rCoMCand, dir);
+
+                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew);
                     if(resIKCS) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
                     else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
                     
@@ -1077,24 +726,16 @@ void Planner::run(){
                     timeIKandCS += t_fsec;
                     
                     
-    
-                    // set forces in sigmaNew
-                    
                     if(resIKCS){
-                        Eigen::Vector3d rCoMNew = computeCoM(qNew);
-                        foutLogMCP << "rCoMNew = " << rCoMNew.transpose() << std::endl;
-                
+                        // set forces in sigmaNew
+                        retrieveContactForces(qNew, sigmaNew);
+                    
+                        // add new vertex    
                         vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
                         tree->addVertex(vNew);
                         solutionFound = isGoalStance(vNew);
 
-                        foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
-                        foutLogMCP << "L_HAND = " << computeForwardKinematics(qNew, L_HAND).translation().transpose() << std::endl;
-                        foutLogMCP << "R_HAND = " << computeForwardKinematics(qNew, R_HAND).translation().transpose() << std::endl;
-                        foutLogMCP << "L_FOOT = " << computeForwardKinematics(qNew, L_FOOT).translation().transpose() << std::endl;
-                        foutLogMCP << "R_FOOT = " << computeForwardKinematics(qNew, R_FOOT).translation().transpose() << std::endl;
-                        
-                        
+                        foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;                        
                     }
 
                 }
@@ -1112,7 +753,6 @@ void Planner::run(){
     timeTotal += fsec_timeTotal.count();
     
     foutLogMCP << "---------- DATA ----------" << std::endl;
-    
     foutLogMCP << "timeTotal = " << timeTotal << std::endl;
     foutLogMCP << "timeIKandCS = " << timeIKandCS << std::endl;
     foutLogMCP << "iters = " << j << std::endl;
@@ -1124,112 +764,6 @@ void Planner::run(){
 int Planner::getTreeSize(){
     return tree->getSize();
 }
-
-
-double Planner::computeHrange(Configuration q){
-    Eigen::VectorXd c = q.getJointValues();
-    int n = n_dof-6;
-    Eigen::VectorXd cMin = qmin.tail(n);
-    Eigen::VectorXd cMax = qmax.tail(n);
-    Eigen::VectorXd cBar = 0.5*(cMin + cMax);
-
-    double sum = 0.0;
-    for(int i = 0; i < n; i++){
-        sum += std::pow((c(i) - cBar(i)) / (cMax(i) - cMin(i)), 2.0);
-    }
-
-    return 1.0/ (2.0*(double)n);
-}
-
-double Planner::computeHtorso(Configuration q){
-    Eigen::Vector3d eTorsoCur = q.getFBOrientation();
-    Eigen::VectorXd qhome;
-    planner_model->getRobotState("home", qhome);
-    Eigen::Vector3d eTorsoDes = qhome.segment(3,3);
-
-    Eigen::Vector3d d = eTorsoCur - eTorsoDes;
-    return fabs(d(0)) + fabs(d(1)) + fabs(d(2));
-}
-
-/*
-Eigen::Matrix3d Planner::generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis){
-        Eigen::Matrix3d rot;
-
-        bool vertical = false;
-        Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0);
-    if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
-
-    if(pk == L_HAND || pk == R_HAND){
-        if(vertical){
-                rot << -1.0, 0.0, 0.0,
-                        0.0, 1.0, 0.0,
-                        0.0, 0.0, -1.0;
-        }
-        else{
-                rot <<  0.0, 0.0, 1.0,
-                        0.0, 1.0, 0.0,
-                        1.0, 0.0, 0.0;
-        }
-    }
-        else{
-        if(vertical){
-                rot <<  1.0, 0.0, 0.0,
-                        0.0, 1.0, 0.0,
-                        0.0, 0.0, 1.0;
-        }
-        else{
-                rot <<  0.0, 0.0, -1.0,
-                        0.0, 1.0, 0.0,
-                        1.0, 0.0, 0.0;
-        }
-    }
-
-        return rot;
-}
-*/
-
-/*
-Eigen::Matrix3d Planner::generateRotationFrictionCone(Eigen::Vector3d axis)
-{
-    Eigen::Matrix3d rot;
-
-        bool vertical = false;
-        Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0);
-    if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
-
-    if(vertical){
-            rot << 1.0, 0.0, 0.0,
-                   0.0, 1.0, 0.0,
-                   0.0, 0.0, 1.0;
-    }
-    else{
-            rot <<  0.0, 0.0, -1.0,
-                    0.0, 1.0, 0.0,
-                    1.0, 0.0, 0.0;
-    }
-
-    return rot;
-}
-*/
-
-/*
-bool Planner::distanceCheck(Stance sigmaNew)
-{
-    Eigen::Vector3d pLFoot = sigmaNew.retrieveContactPose(L_FOOT).translation();
-    Eigen::Vector3d pLHand = sigmaNew.retrieveContactPose(L_HAND).translation();
-    Eigen::Vector3d pRFoot = sigmaNew.retrieveContactPose(R_FOOT).translation();
-    Eigen::Vector3d pRHand = sigmaNew.retrieveContactPose(R_HAND).translation();
-
-     if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND))
-        if(euclideanDistance(pLFoot, pLHand) < DIST_THRES)
-            return false;
-
-    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND))
-        if(euclideanDistance(pRFoot, pRHand) < DIST_THRES) return false;
-
-    return true;
-}
-*/
 
 bool Planner::similarityCheck(Stance sigmaNew)
 {
@@ -1265,81 +799,31 @@ bool Planner::similarityCheck(Stance sigmaNew)
 bool Planner::distanceCheck(Stance sigmaNew) 
 {
     Eigen::Vector3d pLFoot = sigmaNew.retrieveContactPose(L_FOOT).translation();
-    Eigen::Vector3d pLHand = sigmaNew.retrieveContactPose(L_HAND).translation();
     Eigen::Vector3d pRFoot = sigmaNew.retrieveContactPose(R_FOOT).translation();
-    Eigen::Vector3d pRHand = sigmaNew.retrieveContactPose(R_HAND).translation();
+    Eigen::Vector3d pLHandC = sigmaNew.retrieveContactPose(L_HAND_C).translation();
+    Eigen::Vector3d pRHandC = sigmaNew.retrieveContactPose(R_HAND_C).translation();
+    Eigen::Vector3d pLHandD = sigmaNew.retrieveContactPose(L_HAND_D).translation();
+    Eigen::Vector3d pRHandD = sigmaNew.retrieveContactPose(R_HAND_D).translation();
     
-    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND))   
-        if(euclideanDistance(pLFoot, pLHand) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHand) > DIST_THRES_MAX) return false; 
+    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))   
+        if(euclideanDistance(pLFoot, pLHandC) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false; 
     
-    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND))   
-        if(euclideanDistance(pRFoot, pRHand) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHand) > DIST_THRES_MAX) return false;
+    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))   
+        if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
+        
+    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_D))   
+        if(euclideanDistance(pLFoot, pLHandD) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandD) > DIST_THRES_MAX) return false; 
+    
+    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_D))   
+        if(euclideanDistance(pRFoot, pRHandD) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandD) > DIST_THRES_MAX) return false;
 
-//     if(sigmaNew.isActiveEndEffector(L_HAND) && sigmaNew.isActiveEndEffector(R_HAND))   
-//         if(euclideanDistance(pLHand, pRHand) > DIST_HANDS_THRES_MAX) return false;
+    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
+        if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
+        
     
     return true;
 }
 
-void Planner::checkSolution(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
-
-    foutLogMCP << "********************************* CHECKING THE SOLUTION *********************************" << std::endl;
-    
-    Configuration qCurr;
-    Stance sigmaCurr;
-    for(int i = 0; i < qList.size(); i++){
-        std::cout << "i = " << i << std::endl;
-        
-        qCurr = qList.at(i);
-        sigmaCurr = sigmaList.at(i);
-        
-        Eigen::Vector3d rCoMCurr = computeCoM(qCurr);             
-        
-        std::vector<EndEffector> activeEEsCurr = sigmaCurr.retrieveActiveEndEffectors();
-        std::cout << "activeEEsCurr.size() = " << activeEEsCurr.size() << std::endl;
-        
-        Eigen::MatrixXd rCCurr(activeEEsCurr.size(), 3);
-        Eigen::MatrixXd nCCurr(activeEEsCurr.size(), 3);
-        Eigen::Vector3d rCoMCurrStar;
-        Eigen::MatrixXd FCCurr(activeEEsCurr.size(), 3);
-        for(int i = 0; i < activeEEsCurr.size(); i++)
-        {
-            rCCurr.row(i) = sigmaCurr.getContact(i)->getPose().translation().transpose();
-            nCCurr.row(i) = sigmaCurr.getContact(i)->getNormal().transpose();
-        }
-        
-        bool resCPL = computeCentroidalStatics(activeEEsCurr, rCoMCurr, rCCurr, nCCurr, rCoMCurrStar, rCCurr, FCCurr);
-        
-        double dCoMcpl = euclideanDistance(rCoMCurr, rCoMCurrStar);
-        
-        std::cout << "rCoMCurr = " << rCoMCurr.transpose() << std::endl;
-        std::cout << "rCoMCurrStar = " << rCoMCurrStar.transpose() << std::endl;
-        std::cout << "dCoMcpl = " << dCoMcpl << std::endl;
-        
-        std::cout << "rCCurr = " << rCCurr << std::endl;
-    }
-
-}
-
-float sign (Eigen::Vector2d p1, Eigen::Vector2d p2, Eigen::Vector2d p3)
-{
-    return (p1(0) - p3(0)) * (p2(1) - p3(1)) - (p2(0) - p3(0)) * (p1(1) - p3(1));
-}
-
-bool PointInTriangle (Eigen::Vector2d pt, Eigen::Vector2d v1, Eigen::Vector2d v2, Eigen::Vector2d v3)
-{
-    double d1, d2, d3;
-    bool has_neg, has_pos;
-
-    d1 = sign(pt, v1, v2);
-    d2 = sign(pt, v2, v3);
-    d3 = sign(pt, v3, v1);
-
-    has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-    has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-
-    return !(has_neg && has_pos);
-}
 
 void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
     
@@ -1390,29 +874,6 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
         if (_cs->checkStability(5*1e-2)) foutLogMCP << "CS CHECK TRUE" << std::endl;
         else foutLogMCP << "CS CHECK FALSE" << std::endl;  
         
-        /*
-        if(sigmaCurr.getSize() == 3){
-            bool geometricCheck; // true if CoM ground projection is in the triangle defined by the contacts: WORKS ONLY ON FLAT GROUND
-            Eigen::Vector2d comPos = rCoMCurr.head(2);
-            foutLogMCP << "comPos = " << comPos.transpose() << std::endl;
-            Eigen::MatrixXd contactPos(3,2);
-            for(int i = 0; i < sigmaCurr.getSize(); i++)
-            {
-                EndEffector ee = sigmaCurr.getContact(i)->getEndEffectorName();
-                Eigen::Vector3d p = sigmaCurr.retrieveContactPose(ee).translation();
-                contactPos(i, 0) = p(0);
-                contactPos(i, 1) = p(1);
-            }
-            
-            foutLogMCP << "contactPos = " << contactPos << std::endl;
-        
-            geometricCheck = PointInTriangle(comPos, contactPos.row(0), contactPos.row(1), contactPos.row(2));
-            
-            if(geometricCheck) foutLogMCP << "GEOMETRIC CHECK TRUE" << std::endl;
-            else foutLogMCP << "GEOMETRIC CHECK FALSE" << std::endl;
-        }
-        */
-        
         /////////////////////// TRANSITION CHECK
         if(i == 0) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
         else{
@@ -1458,8 +919,75 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
     }
 }
 
-bool Planner::balanceCheck(Configuration q, Stance sigma){
-    //ci->setActivationState("com", XBot::Cartesian::ActivationState::Enabled);
+
+bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew){
+    
+    // build references
+    std::vector<std::string> active_tasks;
+    std::vector<Eigen::Affine3d> ref_tasks;
+    for(int i = 0; i < sigmaLarge.getSize(); i++){
+        EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
+        active_tasks.push_back(getTaskStringName(ee));
+        ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
+    }
+    
+    // set references
+    std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
+    ci->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME if it is not in the stack this is not needed  
+    for(int i = 0; i < all_tasks.size(); i++){
+        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
+        if(it == active_tasks.end()){
+            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled); 
+        }
+        else{ 
+            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled); 
+            int index = it - active_tasks.begin();
+            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+        }
+    }
+
+    // set postural
+    Eigen::VectorXd cPrev(n_dof);
+    Eigen::Vector3d posFB = qNear.getFBPosition();
+    Eigen::Vector3d rotFB = qNear.getFBOrientation();
+    cPrev.segment(0,3) = posFB;
+    cPrev.segment(3,3) = rotFB;
+    cPrev.tail(n_dof-6) = qNear.getJointValues();
+    NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
+    NSPG->getIKSolver()->getModel()->update();
+
+    // search IK solution (joint limits)
+    double time_budget = GOAL_SAMPLER_TIME_BUDGET;
+    Eigen::VectorXd c(n_dof);
+    if (!NSPG->getIKSolver()->solve()){
+        foutLogMCP << "STOP BEFORE NSPG" << std::endl;
+        return false;
+    }
+    
+    // refine IK solution (balance and self-collisions)
+    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+   
+    if(!NSPG->sample(time_budget, sigmaSmall, sigmaLarge))
+    {
+        NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        qNew.setFBPosition(c.segment(0,3));
+        qNew.setFBOrientation(c.segment(3,3));
+        qNew.setJointValues(c.tail(n_dof-6));
+        
+        return false;
+    }
+    else
+    {
+        NSPG->getIKSolver()->getModel()->getJointPosition(c);
+        qNew.setFBPosition(c.segment(0,3));
+        qNew.setFBOrientation(c.segment(3,3));
+        qNew.setJointValues(c.tail(n_dof-6));
+        
+        return true;
+    }
+}
+
+void Planner::retrieveContactForces(Configuration q, Stance &sigma){
     
     Eigen::VectorXd c(n_dof);
     Eigen::Vector3d posFB = q.getFBPosition();
@@ -1497,125 +1025,14 @@ bool Planner::balanceCheck(Configuration q, Stance sigma){
             //foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
         
         std::map<std::string, Eigen::Vector6d> FCmap = _cs->getForces();
-        for (auto i : _cs->getContactLinks()){
-            foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
-            foutLogMCP << FCmap.find(i)->second << std::endl;
+        for(int i = 0; i < sigma.getSize(); i++)
+        {
+            EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+            std::string ee_str = getTaskStringName(ee);
+            Eigen::Vector6d FC = FCmap.find(ee_str)->second;
+            sigma.getContact(i)->setForce(FC.head(3));
         }
-        
-        return true;
-    }
-    else
-    {
-        foutLogMCP << "----------STABILITY CHECK NOT PASSED----------" << std::endl;
-        for (auto i : _cs->getContactLinks())
-            foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
-        
-        return false;
     }
     
 }
-
-bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, Eigen::Vector3d rCoM, Eigen::Vector3d dir){
-    
-    bool refCoM = false; //FIXME
-        
-    // build references
-    std::vector<std::string> active_tasks;
-    std::vector<Eigen::Affine3d> ref_tasks;
-    int i_init;
-    if(refCoM){
-        active_tasks.push_back("com");
-        Eigen::Affine3d T_CoM_ref;
-        T_CoM_ref.translation() = rCoM;
-        T_CoM_ref.linear() = Eigen::Matrix3d::Identity();
-        ref_tasks.push_back(T_CoM_ref);
-    }
-    for(int i = 0; i < sigmaLarge.getSize(); i++){
-        EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
-        active_tasks.push_back(getTaskStringName(ee));
-        ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
-    }
-    
-    // set references
-    std::vector<std::string> all_tasks;
-    all_tasks.push_back("com");
-    all_tasks.push_back("TCP_L");
-    all_tasks.push_back("TCP_R");
-    all_tasks.push_back("l_sole");
-    all_tasks.push_back("r_sole");
-
-    if(!refCoM){
-        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled);
-        i_init = 1;
-    }
-    else{
-        ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Enabled);
-        i_init = 0;
-    }
-
-    for(int i = i_init; i < all_tasks.size(); i++){
-        std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
-        if(it == active_tasks.end()){
-            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), computeForwardKinematics(qNear, getTaskEndEffectorName(all_tasks.at(i))));
-        }
-        else{ //FIXME maybe here only the next two lines could be used
-            int index = it - active_tasks.begin();
-            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-        }
-    }
-
-    Eigen::VectorXd cPrev(n_dof);
-    Eigen::Vector3d posFB = qNear.getFBPosition();
-    Eigen::Vector3d rotFB = qNear.getFBOrientation();
-    cPrev.segment(0,3) = posFB;
-    cPrev.segment(3,3) = rotFB;
-    cPrev.tail(n_dof-6) = qNear.getJointValues();
-    NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
-    NSPG->getIKSolver()->getModel()->update();
-
-    // search IK solution
-    double time_budget = GOAL_SAMPLER_TIME_BUDGET;
-    Eigen::VectorXd c(n_dof);
-    
-    ci->setActivationState(all_tasks[0], XBot::Cartesian::ActivationState::Disabled); // FIXME
-     
-    if (!NSPG->getIKSolver()->solve()){
-        foutLogMCP << "STOP BEFORE NSPG" << std::endl;
-        return false;
-    }
-    
-    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
-    
-    auto tic = std::chrono::high_resolution_clock::now();
-
-    if(!NSPG->sample(time_budget, sigmaSmall, sigmaLarge, dir))
-    //if(!NSPG->sample(time_budget, sigmaSmall, sigmaLarge))
-    {
-        NSPG->getIKSolver()->getModel()->getJointPosition(c);
-        qNew.setFBPosition(c.segment(0,3));
-        qNew.setFBOrientation(c.segment(3,3));
-        qNew.setJointValues(c.tail(n_dof-6));
-        
-        auto toc = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float> fsec = toc - tic;
-        foutLogMCP << "SAMPLE = " << fsec.count() << std::endl;
-        
-        return false;
-    }
-    else
-    {
-        NSPG->getIKSolver()->getModel()->getJointPosition(c);
-        qNew.setFBPosition(c.segment(0,3));
-        qNew.setFBOrientation(c.segment(3,3));
-        qNew.setJointValues(c.tail(n_dof-6));
-        
-        auto toc = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float> fsec = toc - tic;
-        foutLogMCP << "SAMPLE = " << fsec.count() << std::endl;
-        
-        return true;
-    }
-}
-
-
 

@@ -3,8 +3,7 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["LeftFoot", "RightFoot", "LeftHand", "RightHand"]#, "Com"]
-    #- ["RHandOrientation", "LHandOrientation"]
+    - ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC"]
     - ["Com"]
     - ["Postural"]
     
@@ -20,63 +19,37 @@ LeftFoot:
     type: "Cartesian"
     distal_link: "l_sole"
     lambda: 1.0
-    #indices: [0, 1, 2]
     
 RightFoot:
     type: "Cartesian"
     distal_link: "r_sole"
     lambda: 1.0
-    #indices: [0, 1, 2]
-    
-Postural:
-    type: "Postural"
-    lambda: 0.1
-    
-LeftHand:
+        
+LeftHandC:
     type: "Cartesian"
-    #distal_link: "TCP_L"
+    distal_link: "TCP_L"
+    lambda: 1.0
+    
+RightHandC:
+    type: "Cartesian"
+    distal_link: "TCP_R"
+    lambda: 1.0
+    
+LeftHandD:
+    type: "Cartesian"
     distal_link: "l_ball_tip_d"
     lambda: 1.0
-    #indices: [0, 1, 2]
     
-RightHand:
+RightHandD:
     type: "Cartesian"
-    #distal_link: "TCP_R"
     distal_link: "r_ball_tip_d"
     lambda: 1.0
-    #indices: [0, 1, 2]
     
-TorsoRPY:
-    type: "Cartesian"
-    distal_link: "torso"
-    lambda: 1.0
-    indices: [3, 4, 5]
-
 Com:
     type: "Com"
     lambda: 0.1
     weight: 0.1
-    
-Head:
-    type: "Cartesian"
-    distal_link: "Head"
-    lambda: 1.0
-    
-RHandOrientation:
-    type: "Subtask"
-    task: "RightHand"
-    indices: [4]
+        
+Postural:
+    type: "Postural"
     lambda: 0.1
-    weight: 10
-    
-LHandOrientation:
-    type: "Subtask"
-    task: "LeftHand"
-    indices: [4]
-    lambda: 0.1
-    weight: 10
-    
-Waist:
-    type: "Cartesian"
-    distal_link: "Waist"
-    indices: [0, 2]

@@ -15,8 +15,10 @@ inline double euclideanDistance(Eigen::Vector3d v1, Eigen::Vector3d v2) {
 inline std::string getTaskStringName(EndEffector ee){
     std::string ee_str;
 
-    if(ee == L_HAND) ee_str = "TCP_L";
-    else if(ee == R_HAND) ee_str = "TCP_R";
+    if(ee == L_HAND_C) ee_str = "TCP_L";
+    else if(ee == R_HAND_C) ee_str = "TCP_R";
+    else if(ee == L_HAND_D) ee_str = "l_ball_tip_d";
+    else if(ee == R_HAND_D) ee_str = "r_ball_tip_d";
     else if(ee == L_FOOT) ee_str = "l_sole";
     else if(ee == R_FOOT) ee_str = "r_sole";
     else if(ee == HEAD) ee_str = "Head";
@@ -28,8 +30,10 @@ inline std::string getTaskStringName(EndEffector ee){
 inline EndEffector getTaskEndEffectorName(std::string ee_str){
     EndEffector ee;
 
-    if(ee_str.compare("TCP_L") == 0) ee = L_HAND;
-    else if(ee_str.compare("TCP_R") == 0) ee = R_HAND;
+    if(ee_str.compare("TCP_L") == 0) ee = L_HAND_C;
+    else if(ee_str.compare("TCP_R") == 0) ee = R_HAND_C;
+    else if(ee_str.compare("l_ball_tip_d") == 0) ee = L_HAND_D;
+    else if(ee_str.compare("r_ball_tip_d") == 0) ee = R_HAND_D;
     else if(ee_str.compare("l_sole") == 0) ee = L_FOOT;
     else if(ee_str.compare("r_sole") == 0) ee = R_FOOT;
     else if(ee_str.compare("Head") == 0) ee = HEAD;
@@ -89,7 +93,7 @@ inline Eigen::Matrix3d generateRotationAroundAxis(EndEffector ee, Eigen::Vector3
     Eigen::Vector3d d3 = axis - n3;
     Eigen::Vector3d d4 = axis - n4;
 
-    if(ee == L_HAND || ee == R_HAND){
+    if(ee == L_HAND_C || ee == R_HAND_C || ee == L_HAND_D || ee == R_HAND_D){
         if(d1.norm() < 1e-3){
             rot << -1.0, 0.0, 0.0,
                     0.0, 1.0, 0.0,

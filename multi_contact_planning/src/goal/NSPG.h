@@ -29,9 +29,7 @@ namespace XBot { namespace Cartesian { namespace Planning {
         void setIKSolver(PositionCartesianSolver::Ptr new_ik_solver);
         PositionCartesianSolver::Ptr getIKSolver() const;
         
-        bool sample(double timeout);
         bool sample(double timeout, Stance sigmaSmall, Stance sigmaLarge); 
-        bool sample(double timeout, Stance sigmaSmall, Stance sigmaLarge, Eigen::Vector3d dir); 
         
     private:        
         
@@ -41,11 +39,9 @@ namespace XBot { namespace Cartesian { namespace Planning {
         
         double generateRandom();
         bool balanceCheck(Stance sigma);
-        
         void initializeBalanceCheck(Stance sigma);
         
         XBot::JointNameMap generateRandomVelocities(std::vector<XBot::ModelChain> colliding_chains);
-        XBot::JointNameMap generateRandomVelocities(bool collisionCheckRes, bool balanceCheckRes, std::vector<XBot::ModelChain> colliding_chains);
-        XBot::JointNameMap generateRandomVelocities(bool collisionCheckRes, bool balanceCheckRes, std::vector<XBot::ModelChain> colliding_chains, Eigen::Vector3d dir);
+    
     };
 }}}

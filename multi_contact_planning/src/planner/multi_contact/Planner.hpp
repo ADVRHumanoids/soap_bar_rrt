@@ -45,13 +45,15 @@ class Planner {
         std::vector<EndEffector> endEffectorsList;
 
         XBot::ModelInterface::Ptr planner_model;
-        GoalGenerator::Ptr goal_generator;
         XBot::Cartesian::Planning::NSPG::Ptr NSPG;
 
         XBot::Cartesian::CartesianInterfaceImpl::Ptr ci;
 
         XBot::Cartesian::Planning::ValidityCheckContext vc_context;
-
+        
+        ros::NodeHandle _nh;
+        ros::Publisher _pub;
+        
         int n_dof;
         Eigen::VectorXd qmin, qmax;
 
@@ -63,28 +65,18 @@ class Planner {
         EndEffector pickRandomEndEffector();
         std::shared_ptr<Contact> pickRandomContactFromGoalStance();
         int findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r);
-        //std::string getTaskStringName(EndEffector ee);
-        //EndEffector getTaskEndEffectorName(std::string ee_str);
-        bool computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev);
         bool computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Eigen::Vector3d rCoMdes, Eigen::MatrixXd rCdes, Eigen::MatrixXd nCdes, Eigen::Vector3d &rCoM, Eigen::MatrixXd &rC, Eigen::MatrixXd &FC);
         Eigen::Vector3d getNormalAtPoint(Eigen::Vector3d p);
         Eigen::Vector3d getNormalAtPointByIndex(int index);
         Eigen::Vector3d computeCoM(Configuration q);
         Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
-        double computeHrange(Configuration q);
-        double computeHtorso(Configuration q);
-        //Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
-        //Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis);
-
-        ros::NodeHandle _nh;
-        ros::Publisher _pub;
         
         bool similarityCheck(Stance sigmaNew);
         bool distanceCheck(Stance sigmaNew);
         
-        bool balanceCheck(Configuration q, Stance sigma);
+        void retrieveContactForces(Configuration q, Stance &sigma);
         
-        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, Eigen::Vector3d rCoM, Eigen::Vector3d dir);
+        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew);
         
 
     public:
@@ -103,7 +95,6 @@ class Planner {
         bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
         int getTreeSize();
         
-        void checkSolution(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
         void checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
 
 };
