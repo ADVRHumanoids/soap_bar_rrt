@@ -37,7 +37,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh, Eigen::Vector3d cent
             index ++;
         }    
     }
-    center << 2.0, 0.0, 1.5 + center(2);
+    center << 2.1, 0.0, 1.5 + center(2);
     for(int i = 1; i <= (int)(side_y/resolution); i++)
     {
         x = center(0) + 0.0;

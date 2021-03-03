@@ -502,7 +502,7 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     cPrev.segment(0,3) = posFB;
     cPrev.segment(3,3) = rotFB;
     cPrev.tail(n_dof-6) = qPrev.getJointValues();
-    NSPG->getIKSolver()->getModel()->setJointPosition(q_postural);
+    NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
     NSPG->getIKSolver()->getModel()->update();
 
     // search IK solution
@@ -859,7 +859,7 @@ void Planner::run(){
                 bool similar = similarityTest(sigmaNew);
                 bool check_distance = distanceCheck(sigmaNew);
 
-                if(!similar && check_distance)
+                if(!similar) // && check_distance)
                 {
                     sigmaListVertex.clear();
                     qListVertex.clear();
@@ -1065,7 +1065,7 @@ Eigen::Matrix3d Planner::generateRotationAroundAxis(EndEffector pk, Eigen::Vecto
 
         bool vertical = false;
         Eigen::Vector3d aux = axis - Eigen::Vector3d(0.0, 0.0, 1.0);
-    if(abs(aux(0)) < 1e-3 && abs(aux(1)) < 1e-3 && abs(aux(2)) < 1e-3) vertical = true;
+    if(abs(aux(0)) < 0.3 && abs(aux(1)) < 0.3 && abs(aux(2)) < 0.3) vertical = true;
 
     if(pk == L_HAND || pk == R_HAND){
         if(vertical){
