@@ -236,6 +236,7 @@ void PlannerExecutor::init_load_model()
     q3 << 1.76207, -0.0338754, 0.908798, 2.94557, -3.00842, 3.31202, 0.365677, -0.184716, -0.212292, 0.979485, -0.734834, -0.203572, 0.165889, 0.178129, -0.189333, 0.490139, -0.5617, 0.0652543, -0.0335189, -0.210854, -1.16491, 0.866977, -0.115734, -0.74658, 0.254145, 0.622937, 0.0555549, -1.26494, -0.840133, -1.00947, 0.0352932, -0.941131, 0.210595, 1.42731;
     */
     
+    /*
     // PARALLEL WALLS CLIMBING
     q0 << 0.392671, -0.0191674, 0.95783, -0.0105976, -0.0353956, 0.0267116, 0.0788019, -0.458175, -0.0334518, 0.741072, -0.24991, -0.0829859, -0.0311674, -0.446869, -0.0289934, 0.740588, -0.25764, 0.0292569, 0.00010873, -0.00163887, 0.956914, 0.00772743, 0.00150577, -1.91999, -0.000490356, -0.524224, -0.00193652, 0.960553, -0.00986163, 6.40194e-05, -1.91815, 0.000557603, -0.523711, 0.000680927;
     
@@ -243,18 +244,13 @@ void PlannerExecutor::init_load_model()
     
     q2 = q1;
     q2(2)+=0.5; 
-    
-    /*
-    // LADDER CLIMBING
-    q1 = qhome;
-    //Eigen::Affine3d T;
-    //_model->getPose("l_sole", T);  
-    //std::cout << "T.translation() = " << T.translation() << std::endl;
-    //q1(2) = T.translation().z();
-    q1(2) = 1.0;
-    
-    q2 = q1;
     */
+     
+    // LADDER CLIMBING
+    q0 << 0.392671, -0.0191674, 0.95783, -0.0105976, -0.0353956, 0.0267116, 0.0788019, -0.458175, -0.0334518, 0.741072, -0.24991, -0.0829859, -0.0311674, -0.446869, -0.0289934, 0.740588, -0.25764, 0.0292569, 0.00010873, -0.00163887, 0.956914, 0.00772743, 0.00150577, -1.91999, -0.000490356, -0.524224, -0.00193652, 0.960553, -0.00986163, 6.40194e-05, -1.91815, 0.000557603, -0.523711, 0.000680927;
+    
+    q1 = q0;
+    
     
     q_init = q0;
     q_goal = q1;
@@ -666,6 +662,7 @@ void PlannerExecutor::setReferences(std::vector<std::string> active_tasks, std::
     */
 }
 
+/*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
     std::vector<std::string> active_tasks;
@@ -758,8 +755,8 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     return false;    
 
 }
+*/
 
-/*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
     std::vector<std::string> active_tasks;
@@ -770,19 +767,19 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     Eigen::Vector3d pos_ref;
     
     active_tasks.clear();
-      active_tasks.push_back("TCP_L");
-      active_tasks.push_back("TCP_R");
+    active_tasks.push_back("l_ball_tip_d");
+    active_tasks.push_back("r_ball_tip_d");
     active_tasks.push_back("l_sole");
     active_tasks.push_back("r_sole");
  
     //LH
-    T_ref.translation() << 1.1, 0.3, 0.6;
+    T_ref.translation() << 1.1, 0.3, 0.8;
     T_ref.linear() << -1.0, 0.0, 0.0,
                     0.0, 1.0, 0.0,
                     0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref);
     //RH
-    T_ref.translation() << 1.1, -0.3, 0.6;
+    T_ref.translation() << 1.1, -0.3, 0.8;
     T_ref.linear() <<  -1.0, 0.0, 0.0,
                     0.0, 1.0, 0.0,
                     0.0, 0.0, -1.0;
@@ -805,8 +802,8 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     
     std::vector<std::string> all_tasks;
     all_tasks.push_back("com");
-    all_tasks.push_back("TCP_L");
-    all_tasks.push_back("TCP_R");
+    all_tasks.push_back("l_ball_tip_d");
+    all_tasks.push_back("r_ball_tip_d");
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
 
@@ -861,7 +858,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     return false;    
 
 }
-*/
+
 
 /*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
@@ -1292,8 +1289,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     qInit.setFBOrientation(Eigen::Vector3d(q_init(3), q_init(4), q_init(5)));
     qInit.setJointValues(q_init.tail(n_dof-6));
     std::vector<EndEffector> activeEEsInit;
-    //activeEEsInit.push_back(L_HAND);
-    //activeEEsInit.push_back(R_HAND);
+    activeEEsInit.push_back(L_HAND);
+    activeEEsInit.push_back(R_HAND);
     activeEEsInit.push_back(L_FOOT);
     activeEEsInit.push_back(R_FOOT);
 
