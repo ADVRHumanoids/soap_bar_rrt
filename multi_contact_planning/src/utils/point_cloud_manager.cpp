@@ -119,9 +119,9 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
                 index ++;
             }    
         }
-        side_x = 0.2;
+        side_x = 0.1;
         side_y = 2.0;
-        int n_stair = 8;
+        int n_stair = 10;
         double x_displacement = 0.1;
         double z_displacement = 0.2;
         center << 1.0, 0.0, 0.2;
@@ -129,10 +129,13 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
             for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
             {
                 x = center(0) - (side_x/2.0) + i*resolution;
+                z = center(2);
+                std::cout << "x = " << x << std::endl;
+                std::cout << "z = " << z << std::endl;
                 for(int j = 1; j <= (int)(side_y/resolution); j++)
                 {
                     y = center(1) - (side_y/2.0) + j*resolution;
-                    z = center(2) + 0.0;
+                    
                     _pcl_pointcloud->points[index].x = x;
                     _pcl_pointcloud->points[index].y = y;
                     _pcl_pointcloud->points[index].z = z;

@@ -17,7 +17,7 @@ NSPG::NSPG ( PositionCartesianSolver::Ptr ik_solver, ValidityCheckContext vc_con
         _rspub = std::make_shared<XBot::Cartesian::Utils::RobotStatePublisher>(_ik_solver->getModel());         
         
         std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-        _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(_ik_solver->getModel(), links, 0.5*sqrt(2)));
+        _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(_ik_solver->getModel(), links, MU_FRICTION*sqrt(2)));
     }
     
 void NSPG::setIKSolver ( PositionCartesianSolver::Ptr new_ik_solver )
@@ -45,7 +45,8 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
     _ik_solver->getCI()->getReferencePosture(velocityLim_map);
     _ik_solver->getModel()->eigenToMap(velocity_lim, velocityLim_map);
     
-    random_map.insert(std::make_pair("VIRTUALJOINT_1", generateRandom()*50));
+    if(SCENARIO != 3) random_map.insert(std::make_pair("VIRTUALJOINT_1", generateRandom()*50));
+    else random_map.insert(std::make_pair("VIRTUALJOINT_1", -fabs(generateRandom()*50)));
     random_map.insert(std::make_pair("VIRTUALJOINT_2", generateRandom()*50));
     random_map.insert(std::make_pair("VIRTUALJOINT_3", generateRandom()*50));              
     
@@ -134,7 +135,8 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     return true;
 }
 
-void NSPG::initializeBalanceCheck(Stance sigma){    
+void NSPG::initializeBalanceCheck(Stance sigma){  
+    
     std::vector<std::string> active_links;
     std::vector<Eigen::Affine3d> ref_tasks;
     for(int i = 0; i < sigma.getSize(); i++)

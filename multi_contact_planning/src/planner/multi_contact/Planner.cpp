@@ -129,7 +129,7 @@ _nh(nh)
 
     
     std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-    _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, 0.5*sqrt(2)));
+    _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2)));
 
 }
 
@@ -817,8 +817,8 @@ bool Planner::distanceCheck(Stance sigmaNew)
     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_D))   
         if(euclideanDistance(pRFoot, pRHandD) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandD) > DIST_THRES_MAX) return false;
 
-    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
-        if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
+    //if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
+        //if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
         
     
     return true;
