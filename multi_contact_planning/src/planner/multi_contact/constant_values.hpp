@@ -29,7 +29,7 @@ const double DIST_HANDS_THRES_MAX = 1.0;
 
 const double CS_THRES = 5*1e-2;
 
-const int SCENARIO = 1;
+const int SCENARIO = 3;
 const double RESOLUTION = 0.05;
 
 #endif

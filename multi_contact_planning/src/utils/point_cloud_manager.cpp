@@ -122,7 +122,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
         side_x = 0.2;
         side_y = 2.0;
         int n_stair = 8;
-        double x_displacement = 0.05;
+        double x_displacement = 0.1;
         double z_displacement = 0.2;
         center << 1.0, 0.0, 0.2;
         for(int k = 0; k < n_stair; k++){
@@ -177,6 +177,16 @@ void PointCloudManager::computeNormals (const double radius_search)
 
     // Compute normals
     ne.compute ( *_pcl_normals );    
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    if(SCENARIO == 3){
+        for ( int i = 0; i < _pcl_pointcloud->width; i++ ) {
+            _pcl_normals->points[i].normal_x = 0.0;
+            _pcl_normals->points[i].normal_y = 0.0;
+            _pcl_normals->points[i].normal_z = 1.0;        
+        }
+    }
 }
 
 Eigen::MatrixXd PointCloudManager::getNormals()

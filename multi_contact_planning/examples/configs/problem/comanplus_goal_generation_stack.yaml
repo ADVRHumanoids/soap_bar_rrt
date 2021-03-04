@@ -3,7 +3,7 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC"]
+    - ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"]
     - ["Com"]
     - ["Postural"]
     

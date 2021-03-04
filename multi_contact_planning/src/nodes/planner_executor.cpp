@@ -223,7 +223,7 @@ void PlannerExecutor::init_load_model()
     Eigen::VectorXd q2(n_dof); // after quadrupedal walk
     Eigen::VectorXd q3(n_dof); // after standing up
     
-     
+    /* 
     // STAND UP
     
     //q0 << home with feet in q1 //TODO
@@ -233,7 +233,7 @@ void PlannerExecutor::init_load_model()
     q2 << 1.58871, 0.0223469, 0.637945, 2.81551, 1.77831, -2.76061, 0.452002, -1.11945, 0.376866, 0.64416, -0.872665, -0.226634, -0.482266, -0.975, -0.58049, 0.55925, -0.872665, 0.256492, 0.0890082, -0.0296354, -1.01587, 1.07963, 0.14952, -0.864876, 0.690062, 0.809135, -0.146463, -0.943517, -1.21241, -0.186094, -0.878702, -0.766646, 0.841216, 0.190342;
         
     q3 << 1.76207, -0.0338754, 0.908798, 2.94557, -3.00842, 3.31202, 0.365677, -0.184716, -0.212292, 0.979485, -0.734834, -0.203572, 0.165889, 0.178129, -0.189333, 0.490139, -0.5617, 0.0652543, -0.0335189, -0.210854, -1.16491, 0.866977, -0.115734, -0.74658, 0.254145, 0.622937, 0.0555549, -1.26494, -0.840133, -1.00947, 0.0352932, -0.941131, 0.210595, 1.42731;
-    
+    */
     
     /*
     // PARALLEL WALLS CLIMBING
@@ -245,15 +245,15 @@ void PlannerExecutor::init_load_model()
     q2(2)+=0.5; 
     */
     
-    /*
+    
     // LADDER CLIMBING
     q0 << 0.392671, -0.0191674, 0.95783, -0.0105976, -0.0353956, 0.0267116, 0.0788019, -0.458175, -0.0334518, 0.741072, -0.24991, -0.0829859, -0.0311674, -0.446869, -0.0289934, 0.740588, -0.25764, 0.0292569, 0.00010873, -0.00163887, 0.956914, 0.00772743, 0.00150577, -1.91999, -0.000490356, -0.524224, -0.00193652, 0.960553, -0.00986163, 6.40194e-05, -1.91815, 0.000557603, -0.523711, 0.000680927;
     
     q1 = q0;
-    */
     
-    q_init = q2;
-    q_goal = q3;
+    
+    q_init = q0;
+    q_goal = q1;
     
     /////////////////////////////////////////////////
 
@@ -619,27 +619,29 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     active_tasks.push_back("r_sole");
  
     //LH
-    T_ref.translation() << 1.1, 0.3, 0.8;
+    //T_ref.translation() << 1.1, 0.3, 0.8;
+    T_ref.translation() << 1.25, 0.3, 1.0;
     T_ref.linear() << -1.0, 0.0, 0.0,
                     0.0, 1.0, 0.0,
                     0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref);
     //RH
-    T_ref.translation() << 1.1, -0.3, 0.8;
+    //T_ref.translation() << 1.1, -0.3, 0.8;
+    T_ref.translation() << 1.25, -0.3, 1.0;
     T_ref.linear() <<  -1.0, 0.0, 0.0,
                     0.0, 1.0, 0.0,
                     0.0, 0.0, -1.0;
     ref_tasks.push_back(T_ref); 
     //LF
-    //T_ref.translation() << 0.4, 0.15, 0.0;
-    T_ref.translation() << 0.8, 0.2, 0.0;
+    //T_ref.translation() << 0.8, 0.2, 0.0;
+    T_ref.translation() << 1.0, 0.2, 0.2;
     T_ref.linear() <<  1.0, 0.0, 0.0,
                     0.0, 1.0, 0.0,
                     0.0, 0.0, 1.0;
     ref_tasks.push_back(T_ref);
     //RF
-    //T_ref.translation() << 0.4, -0.15, 0.0;
-    T_ref.translation() << 0.8, -0.2, 0.0;
+    //T_ref.translation() << 0.8, -0.2, 0.0;
+    T_ref.translation() << 1.0, -0.2, 0.2;
     T_ref.linear() <<  1.0, 0.0, 0.0,
                     0.0, 1.0, 0.0,
                     0.0, 0.0, 1.0;
@@ -650,6 +652,8 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     all_tasks.push_back("com");
     all_tasks.push_back("l_ball_tip_d");
     all_tasks.push_back("r_ball_tip_d");
+    all_tasks.push_back("TCP_L");
+    all_tasks.push_back("TCP_R");
     all_tasks.push_back("l_sole");
     all_tasks.push_back("r_sole");
 
