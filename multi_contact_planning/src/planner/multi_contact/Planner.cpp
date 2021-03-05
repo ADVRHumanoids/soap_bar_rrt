@@ -150,7 +150,10 @@ _nh(nh)
     _logger->set_buffer_mode(XBot::VariableBuffer::Mode::circular_buffer);
 }
 
-Planner::~Planner(){ }
+Planner::~Planner()
+{
+    std::cout << "DESTRUCTING PLANNER ELEMENT CLASS!!!!!!!!!!!!!!" << std::endl;
+}
 
 bool Planner::isGoalStance(Vertex* v){
 
@@ -524,10 +527,12 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
         auto toc = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> fsec = toc-tic;
         auto T = fsec.count();
-        double time = T;
-        std::cout << "adding" << std::endl;
-        _logger->add("time", time);
-        _logger->add("success", 0);
+        std::cout << "adding: " << T << std::endl;
+        if (refCoM)
+        {
+            _logger->add("time", T);
+            _logger->add("success", 0);
+        }
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
@@ -539,10 +544,12 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
         auto toc = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> fsec = toc-tic;
         auto T = fsec.count();
-        double time = T;
-        std::cout << "adding" << std::endl;
-        _logger->add("time", time);
-        _logger->add("success", 1);
+        std::cout << "adding: " << T << std::endl;
+        if (refCoM)
+        {
+            _logger->add("time", T);
+            _logger->add("success", 1);
+        }
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
@@ -1048,6 +1055,7 @@ void Planner::run(){
     std::cout << "iters = " << j << std::endl;
     std::cout << "tree size = " << tree->getSize() << std::endl;
 
+    _logger.reset();
 }
 
 
