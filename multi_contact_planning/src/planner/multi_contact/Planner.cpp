@@ -144,6 +144,10 @@ _nh(nh)
     std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L"};
     _cs = std::make_unique<XBot::Cartesian::Planning::CentroidalStatics>(NSPG->getIKSolver()->getModel(), links, 0.5*sqrt(2));
 
+    XBot::MatLogger2::Options opt;
+    opt.default_buffer_size =1e6;
+    _logger = XBot::MatLogger2::MakeLogger(env + "/external/soap_bar_rrt/log/NSPG_log", opt);
+    _logger->set_buffer_mode(XBot::VariableBuffer::Mode::circular_buffer);
 }
 
 Planner::~Planner(){ }
@@ -509,13 +513,21 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
     
+    auto tic = std::chrono::high_resolution_clock::now();
     if (!NSPG->getIKSolver()->solve())
         return false;
 
-    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+//    NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
 
     if(!NSPG->sample(time_budget))
     {
+        auto toc = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> fsec = toc-tic;
+        auto T = fsec.count();
+        double time = T;
+        std::cout << "adding" << std::endl;
+        _logger->add("time", time);
+        _logger->add("success", 0);
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
@@ -524,6 +536,13 @@ bool Planner::computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM,
     }
     else
     {
+        auto toc = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> fsec = toc-tic;
+        auto T = fsec.count();
+        double time = T;
+        std::cout << "adding" << std::endl;
+        _logger->add("time", time);
+        _logger->add("success", 1);
         NSPG->getIKSolver()->getModel()->getJointPosition(c);
         q.setFBPosition(c.segment(0,3));
         q.setFBOrientation(c.segment(3,3));
@@ -859,7 +878,7 @@ void Planner::run(){
                 bool similar = similarityTest(sigmaNew);
                 bool check_distance = distanceCheck(sigmaNew);
 
-                if(!similar) // && check_distance)
+                if(!similar && check_distance)
                 {
                     sigmaListVertex.clear();
                     qListVertex.clear();
@@ -973,6 +992,8 @@ void Planner::run(){
                             }
                         }
                     }
+
+
 
                     foutLogMCP << "j = " << j << " qListVertex.size() = " << qListVertex.size() << std::endl;
 

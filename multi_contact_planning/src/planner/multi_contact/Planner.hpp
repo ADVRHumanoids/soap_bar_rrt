@@ -26,10 +26,11 @@
 #include <cartesian_interface/CartesianInterfaceImpl.h>
 #include <multi_contact_planning/SetContactFrames.h>
 #include "validity_checker/stability/centroidal_statics.h"
+#include <matlogger2/matlogger2.h>
 
 #include <fstream>
 #include <memory>
-
+#include <chrono>
 
 class Planner {
 
@@ -79,6 +80,7 @@ class Planner {
 
         ros::NodeHandle _nh;
         ros::Publisher _pub;
+        XBot::MatLogger2::Ptr _logger;
 
     public:
 
