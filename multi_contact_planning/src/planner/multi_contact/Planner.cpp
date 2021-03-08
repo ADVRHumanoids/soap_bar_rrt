@@ -15,6 +15,7 @@ static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 std::string env(getenv("ROBOTOLOGY_ROOT"));
 static std::ofstream foutLogMCP(env + "/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
 
+/*
 Planner::Planner(Configuration _qInit,
                  std::vector<EndEffector> _activeEEsInit,
                  Configuration _qGoal,
@@ -130,6 +131,86 @@ _nh(nh)
     
     std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
     _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2)));
+
+}
+*/
+
+Planner::Planner(Configuration _qInit,
+                 std::vector<EndEffector> _activeEEsInit,
+                 Configuration _qGoal,
+                 std::vector<EndEffector> _activeEEsGoal,
+                 Eigen::MatrixXd _pointCloud,
+                 Eigen::MatrixXd _pointNormals,
+                 std::vector<EndEffector> _allowedEEs,
+                 XBot::ModelInterface::Ptr _planner_model,
+                 XBot::Cartesian::Planning::NSPG::Ptr _NSPG,
+                 XBot::Cartesian::Planning::ValidityCheckContext _vc_context,
+                 ros::NodeHandle& nh):
+_nh(nh)
+{
+    // set model, goal generator and cartesian interface
+    planner_model = _planner_model;
+    NSPG = _NSPG;
+    ci = NSPG->getIKSolver()->getCI();
+    
+    // set the environment representation
+    pointCloud = _pointCloud;
+    pointNormals = _pointNormals;
+
+    // set number of dof of the robot of interest and joint limits
+    n_dof = planner_model->getJointNum();
+    planner_model->getJointLimits(qmin, qmax);
+    
+    // create an empty tree
+    tree = std::make_shared<Tree>();
+
+    // seed generators
+    auto a = std::chrono::system_clock::now();
+    time_t b = std::chrono::system_clock::to_time_t(a);
+    integerGenerator.seed(b);
+    pointGenerator.seed(2*b);
+    exploitationGenerator.seed(3*b);
+    pointInWorkspaceGenerator.seed(4*b);
+    rotationGenerator.seed(5*b);
+
+    // for collision checking (seems that it is not needed anymore)
+    vc_context = _vc_context;
+
+    _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("contacts", 10, true);
+
+    std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
+    _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2)));
+
+    // set initial configuration
+    qInit = _qInit;
+    
+    // create initial stance
+    for(int i = 0; i < _activeEEsInit.size(); i++){
+        Eigen::Affine3d T_i = computeForwardKinematics(qInit, _activeEEsInit.at(i));
+        Eigen::Vector3d F_i(0.0, 0.0, 0.0);
+        Eigen::Vector3d n_i = getNormalAtPoint(T_i.translation());
+        std::shared_ptr<Contact> c = std::make_shared<Contact>(_activeEEsInit.at(i), T_i, F_i, n_i);
+        sigmaInit.addContact(c);
+    }
+    retrieveContactForces(qInit, sigmaInit);  
+
+    // set goal configuration
+    qGoal = _qGoal;
+
+    // create goal stance
+    for(int i = 0; i < _activeEEsGoal.size(); i++){
+        Eigen::Affine3d T_i = computeForwardKinematics(qGoal, _activeEEsGoal.at(i));
+        Eigen::Vector3d F_i(0.0, 0.0, 0.0);
+        Eigen::Vector3d n_i = getNormalAtPoint(T_i.translation());
+        std::shared_ptr<Contact> c = std::make_shared<Contact>(_activeEEsGoal.at(i), T_i, F_i, n_i);
+        sigmaGoal.addContact(c);
+    }
+    retrieveContactForces(qGoal, sigmaGoal);  
+
+    // add to endEffectorsList all the ee that we want to consider
+    for(int i = 0; i < _allowedEEs.size(); i++){
+        endEffectorsList.push_back(_allowedEEs.at(i));
+    }
 
 }
 
@@ -645,8 +726,8 @@ void Planner::run(){
                     for(int i = 0; i < activeEEsNear.size(); i++) activeEEsDes.push_back(activeEEsNear.at(i));
                     activeEEsDes.push_back(pk);
                     int pointIndex;
-                    //T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);
-                    T_k.translation() = pickPointInGrowingReachableWorkspace(pk, qNear, rRand, pointIndex);
+                    T_k.translation() = pickPointInReachableWorkspace(pk, qNear, rRand, pointIndex);
+                    //T_k.translation() = pickPointInGrowingReachableWorkspace(pk, qNear, rRand, pointIndex);
                     T_k.linear() = generateRotationAroundAxis(pk, getNormalAtPointByIndex(pointIndex));
                     n_k = getNormalAtPointByIndex(pointIndex);
                 }
@@ -820,6 +901,13 @@ bool Planner::distanceCheck(Stance sigmaNew)
     //if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
         //if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
         
+    if(SCENARIO == 3){
+        if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(R_FOOT))   
+            if(euclideanDistance(pLFoot, pRFoot) > 0.6) return false;
+        if(sigmaNew.isActiveEndEffector(L_HAND_D) && sigmaNew.isActiveEndEffector(R_HAND_D))   
+            if(euclideanDistance(pLHandD, pRHandD) > 0.8) return false;
+    }
+        
     
     return true;
 }
@@ -946,16 +1034,20 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
         }
     }
 
-    // set postural
+    // set initial guess (and starting postural in NSPG as well)
     Eigen::VectorXd cPrev(n_dof);
     Eigen::Vector3d posFB = qNear.getFBPosition();
     Eigen::Vector3d rotFB = qNear.getFBOrientation();
     cPrev.segment(0,3) = posFB;
     cPrev.segment(3,3) = rotFB;
     cPrev.tail(n_dof-6) = qNear.getJointValues();
+    
+    if(SCENARIO == 3) NSPG->getIKSolver()->getModel()->getRobotState("home", cPrev);
+    
     NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
     NSPG->getIKSolver()->getModel()->update();
-
+    
+    
     // search IK solution (joint limits)
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
