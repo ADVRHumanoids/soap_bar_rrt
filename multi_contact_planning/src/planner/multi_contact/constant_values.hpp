@@ -33,6 +33,6 @@ const int SCENARIO = 3;
 const double RESOLUTION = 0.05;
 
 const int INIT_INDEX = 0;
-const int GOAL_INDEX = 1;
+const int GOAL_INDEX = 2;
 
 #endif
