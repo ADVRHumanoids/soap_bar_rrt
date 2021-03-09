@@ -121,12 +121,12 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
         }
         side_x = 0.1;
         side_y = 1.0;
-        int n_stair = 13;
+        int n_stair = 10; //13;
         double x_displacement = 0.1;
         double z_displacement = 0.2;
         center << 1.0, 0.0, 0.2;
         for(int k = 0; k < n_stair; k++){
-            if(k != n_stair-2 && k != n_stair-3){
+            //if(k != n_stair-2 && k != n_stair-3){
                 for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
                 {
                     x = center(0) - (side_x/2.0) + i*resolution;
@@ -142,7 +142,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
                         index ++;
                     }    
                 }
-            }
+            //}
             
             center(0) += x_displacement;
             center(2) += z_displacement;
