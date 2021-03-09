@@ -15,7 +15,7 @@ const double GOAL_SAMPLER_TIME_BUDGET_COM = 3.0;
 
 const double ROBOT_MASS = 70.0;
 const double GRAVITY = -9.81;
-const double MU_FRICTION = 0.5; //0.5;
+const double MU_FRICTION = 0.8; //0.5;
 const double FORCE_THRES_HAND = 15.0;
 const double FORCE_THRES_FOOT = 65.0;
 const double COM_WEIGHT_CPL = 1000; //100.0; 
@@ -29,7 +29,10 @@ const double DIST_HANDS_THRES_MAX = 1.0;
 
 const double CS_THRES = 5*1e-2;
 
-const int SCENARIO = 1;
+const int SCENARIO = 3;
 const double RESOLUTION = 0.05;
+
+const int INIT_INDEX = 0;
+const int GOAL_INDEX = 1;
 
 #endif

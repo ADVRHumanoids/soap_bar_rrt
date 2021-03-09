@@ -111,6 +111,10 @@ private:
     int n_dof;
     Eigen::VectorXd q_init;
     Eigen::VectorXd q_goal;
+    
+    std::vector<EndEffector> activeEEsInit;
+    std::vector<EndEffector> activeEEsGoal;
+    std::vector<EndEffector> allowedEEs;
 
     /////////////////////////////////////////// PF
     

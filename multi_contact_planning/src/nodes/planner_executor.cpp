@@ -220,10 +220,10 @@ void PlannerExecutor::init_load_model()
     q_init.resize(n_dof);
     q_goal.resize(n_dof);
     
-    Eigen::VectorXd q0(n_dof); // home
-    Eigen::VectorXd q1(n_dof); // quadruped
-    Eigen::VectorXd q2(n_dof); // after quadrupedal walk
-    Eigen::VectorXd q3(n_dof); // after standing up
+    Eigen::VectorXd q0(n_dof); 
+    Eigen::VectorXd q1(n_dof); 
+    Eigen::VectorXd q2(n_dof); 
+    Eigen::VectorXd q3(n_dof); 
     
     if(SCENARIO == 1){
         // STAND UP
@@ -263,14 +263,56 @@ void PlannerExecutor::init_load_model()
         q2 << 1.15667, 0.0227583, 1.65702, -0.533903, 0.0705821, 0.286732, 0.264738, -1.28463, -0.558505, 1.2229, -0.151601, -0.261799, 0.187707, -0.85183, -0.350576, 0.782062, -0.088001, 0.0891286, 0.418645, 0.158891, 1.37562, 3.09792, 2.24523, -0.0254683, -1.59168, -0.0676732, 2.50583, -0.19434, -0.925812, -1.31944, -1.61386, -0.61326, 0.878791, 0.192605;
     }
     
+    std::vector<Eigen::VectorXd> qs = {q0, q1, q2, q3};
     
-    q_init = q0;
-    q_goal = q1;
+    q_init = qs.at(INIT_INDEX);
+    q_goal = qs.at(GOAL_INDEX);
     
-//     LUCA
-//     q_init << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
-//     
-//     q_goal <<  1.49337, -0.0662007, 0.970917, 0.0597891, -0.0407462, -0.125382, 0.03414, -0.262597, 0.12986, 0.463382, -0.157895, -0.0600118, -0.1831, -0.36339, 0.140625, 0.521333, -0.143898, 0.171801, 0.0744598, 0.320503, -0.284782, 0.176351,0.474617, -1.4458, 0.481911, 0.284907, -0.308228, 0.146862, -0.347575, -0.863262, -1.98525, -0.317097, 0.603302, 0.0652266;
+    if(SCENARIO == 1){
+        if(INIT_INDEX == 0) activeEEsInit = {L_FOOT, R_FOOT};
+        else activeEEsInit = {L_HAND_C, R_HAND_C, L_FOOT, R_FOOT};
+        
+        activeEEsGoal = {L_HAND_C, R_HAND_C, L_FOOT, R_FOOT};
+        allowedEEs = {L_HAND_C, R_HAND_C, L_FOOT, R_FOOT};
+    }
+    if(SCENARIO == 2){
+        if(INIT_INDEX == 0) activeEEsInit = {L_FOOT, R_FOOT};
+        else activeEEsInit = {L_HAND_C, R_HAND_C, L_FOOT, R_FOOT};
+        
+        activeEEsGoal = {L_HAND_C, R_HAND_C, L_FOOT, R_FOOT};
+        allowedEEs = {L_HAND_C, R_HAND_C, L_FOOT, R_FOOT};
+    }
+    if(SCENARIO == 3){
+        if(INIT_INDEX == 0) activeEEsInit = {L_FOOT, R_FOOT};
+        else activeEEsInit = {L_HAND_D, R_HAND_D, L_FOOT, R_FOOT};
+        
+        activeEEsGoal = {L_HAND_D, R_HAND_D, L_FOOT, R_FOOT};
+        allowedEEs = {L_HAND_D, R_HAND_D, L_FOOT, R_FOOT};
+    }
+    
+    /*
+    activeEEsInit.push_back(L_HAND_C);
+    activeEEsInit.push_back(R_HAND_C);
+    activeEEsInit.push_back(L_HAND_D);
+    activeEEsInit.push_back(R_HAND_D);
+    activeEEsInit.push_back(L_FOOT);
+    activeEEsInit.push_back(R_FOOT);
+
+    activeEEsGoal.push_back(L_HAND_C);
+    activeEEsGoal.push_back(R_HAND_C);
+    activeEEsGoal.push_back(L_HAND_D);
+    activeEEsGoal.push_back(R_HAND_D);
+    activeEEsGoal.push_back(L_FOOT);
+    activeEEsGoal.push_back(R_FOOT);
+
+    allowedEEs.push_back(L_HAND_C);
+    allowedEEs.push_back(R_HAND_C);
+    allowedEEs.push_back(L_HAND_D);
+    allowedEEs.push_back(R_HAND_D);
+    allowedEEs.push_back(L_FOOT);
+    allowedEEs.push_back(R_FOOT);
+        */
+    
     
     /////////////////////////////////////////////////
     _model->setJointPosition(q_init);
@@ -1246,7 +1288,6 @@ void PlannerExecutor::on_goal_state_recv(const sensor_msgs::JointStateConstPtr &
 bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::Request& req,
                                       multi_contact_planning::CartesioPlanner::Response& res)
 {
-
     std::cout << "+++++++++++++ PLANNING +++++++++++++" << std::endl;
 
     auto ci = _goal_generator->getCartesianInterface();
@@ -1256,42 +1297,19 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     qInit.setFBPosition(Eigen::Vector3d(q_init(0), q_init(1), q_init(2)));
     qInit.setFBOrientation(Eigen::Vector3d(q_init(3), q_init(4), q_init(5)));
     qInit.setJointValues(q_init.tail(n_dof-6));
-    std::vector<EndEffector> activeEEsInit;
-    //activeEEsInit.push_back(L_HAND_C);
-    //activeEEsInit.push_back(R_HAND_C);
-    //activeEEsInit.push_back(L_HAND_D);
-    //activeEEsInit.push_back(R_HAND_D);
-    activeEEsInit.push_back(L_FOOT);
-    activeEEsInit.push_back(R_FOOT);
-
+    
     // retrieve goal
     Configuration qGoal;
     qGoal.setFBPosition(Eigen::Vector3d(q_goal(0), q_goal(1), q_goal(2)));
     qGoal.setFBOrientation(Eigen::Vector3d(q_goal(3), q_goal(4), q_goal(5)));
     qGoal.setJointValues(q_goal.tail(n_dof-6));
-    std::vector<EndEffector> activeEEsGoal;
-    activeEEsGoal.push_back(L_HAND_C);
-    activeEEsGoal.push_back(R_HAND_C);
-    //activeEEsGoal.push_back(L_HAND_D);
-    //activeEEsGoal.push_back(R_HAND_D);
-    activeEEsGoal.push_back(L_FOOT);
-    activeEEsGoal.push_back(R_FOOT);
-
+    
     // construct the environment description
     Eigen::MatrixXd pointCloud = _pc_manager->getPointCloud();
     Eigen::MatrixXd pointNormals = _pc_manager->getNormals();
 
-    // construct allowed end-effectors description
-    std::vector<EndEffector> allowedEEs;
-    allowedEEs.push_back(L_HAND_C);
-    allowedEEs.push_back(R_HAND_C);
-    //allowedEEs.push_back(L_HAND_D);
-    //allowedEEs.push_back(R_HAND_D);
-    allowedEEs.push_back(L_FOOT);
-    allowedEEs.push_back(R_FOOT);
-
+    
     // plan a solution
-
     std::vector<Stance> sigmaList;
     std::vector<Configuration> qList;
     bool sol_found;

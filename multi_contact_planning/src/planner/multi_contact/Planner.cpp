@@ -781,7 +781,7 @@ bool Planner::distanceCheck(Stance sigmaNew)
     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_D))   
         if(euclideanDistance(pRFoot, pRHandD) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandD) > DIST_THRES_MAX) return false;
     */
-    
+        
     //if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
         //if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
         
