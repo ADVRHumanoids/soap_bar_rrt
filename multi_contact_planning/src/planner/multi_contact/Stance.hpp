@@ -9,19 +9,20 @@
 #include "Contact.hpp"
 #include "constant_values.hpp"
 
+#include <memory>
+
 class Stance {
 
     private:
-
-        std::vector<Contact*> contactsList;
+        std::vector<std::shared_ptr<Contact>> contactsList;
 
     public:
 
         Stance();
 
-        Contact* getContact(int i);
-        std::vector<Contact*> getContacts();
-        void addContact(Contact* c);
+        std::shared_ptr<Contact> getContact(int i);
+        std::vector<std::shared_ptr<Contact>> getContacts();
+        void addContact(std::shared_ptr<Contact> c);
         int getSize();
         void clear();
 

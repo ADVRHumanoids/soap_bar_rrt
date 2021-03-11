@@ -134,6 +134,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
         yaml << YAML::Key << "lib_name" << YAML::Value << libname;
         yaml << YAML::Key << "type" << YAML::Value << "Force";
         yaml << YAML::Key << "link" << YAML::Value << link;
+        yaml << YAML::Key << "weight" << YAML::Value << 1e-2;
         yaml << YAML::EndMap;
     }
 
@@ -157,7 +158,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
     }
 
     yaml << YAML::EndMap;
-    std::cout<<yaml.c_str()<<std::endl;
+    //std::cout<<yaml.c_str()<<std::endl;
 
     return YAML::Load(yaml.c_str());
 }
@@ -209,15 +210,20 @@ bool CentroidalStatics::compute()
 
 bool CentroidalStatics::checkStability(const double eps)
 {
+    double res;
     if(compute())
     {   
         Eigen::VectorXd error;
         if(!_dyn_feas->getTaskError(error))
             return false;
-        double res = error.norm();
+        res = error.norm();
         if(res <= eps)
+        {
+            std::cout << res << std::endl;
             return true;
+        }
     }
+    std::cout << res << std::endl;
     return false;
 }
 

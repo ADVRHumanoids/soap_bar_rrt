@@ -4,7 +4,7 @@
 #include <OpenSoT/utils/ForceOptimization.h>
 #include <ros/ros.h>
 #include <rviz_visual_tools/rviz_visual_tools.h>
-#include <cartesio_planning/SetContactFrames.h>
+#include <multi_contact_planning/SetContactFrames.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <yaml-cpp/yaml.h>
 #include <cartesian_interface/CartesianInterfaceImpl.h>
@@ -399,7 +399,7 @@ private:
      * all the contacts
      * @param msg
      */
-public: void set_contacts(cartesio_planning::SetContactFrames::ConstPtr msg)
+public: void set_contacts(multi_contact_planning::SetContactFrames::ConstPtr msg)
     {
         bool call_init = false;
 

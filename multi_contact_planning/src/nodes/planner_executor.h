@@ -32,6 +32,7 @@
 #include "planner/multi_contact/enum.h"
 
 #include "planner/multi_contact/Planner.hpp" //PF
+#include "planner/multi_contact/utils.hpp" //PF
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 
@@ -144,7 +145,7 @@ private:
     bool goal_sampler_service(multi_contact_planning::CartesioGoal::Request& req,
                               multi_contact_planning::CartesioGoal::Response& res);
     
-    Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
+    //Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
 
 
 
@@ -187,7 +188,12 @@ private:
     std::shared_ptr<XBot::Planning::PointCloudManager> _pc_manager;
     
     Planning::NSPG::Ptr _NSPG;
-
+    
+    Eigen::Vector3d getNormalAtPoint(Eigen::Vector3d p);
+    //Eigen::Matrix3d generateRotationAroundAxis(EndEffector ee, Eigen::Vector3d axis);
+    bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew);
+    XBot::Cartesian::RosServerClass::Ptr _rsc;
+    unsigned int _goal_sampler_service_counter;
 };
 
 } }

@@ -2,10 +2,10 @@
 #define PLANNER_H
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>   
 #include <vector>
 #include <map>
-#include <iostream>
+#include <iostream>   
 #include <chrono>
 #include <fstream>
 #include <random>
@@ -27,10 +27,11 @@
 #include <multi_contact_planning/SetContactFrames.h>
 #include "validity_checker/stability/centroidal_statics.h"
 #include <matlogger2/matlogger2.h>
+#include <chrono>
 
 #include <fstream>
 #include <memory>
-#include <chrono>
+
 
 class Planner {
 
@@ -42,45 +43,45 @@ class Planner {
         Stance sigmaGoal;
         Eigen::MatrixXd pointCloud;
         Eigen::MatrixXd pointNormals;
-        Tree* tree;
+        std::shared_ptr<Tree> tree;
         std::vector<EndEffector> endEffectorsList;
 
         XBot::ModelInterface::Ptr planner_model;
-        GoalGenerator::Ptr goal_generator;
         XBot::Cartesian::Planning::NSPG::Ptr NSPG;
 
         XBot::Cartesian::CartesianInterfaceImpl::Ptr ci;
 
         XBot::Cartesian::Planning::ValidityCheckContext vc_context;
-
+        
+        ros::NodeHandle _nh;
+        ros::Publisher _pub;
+        
         int n_dof;
         Eigen::VectorXd qmin, qmax;
 
-        bool isGoalStance(Vertex* v);
+        bool isGoalStance(std::shared_ptr<Vertex> v);
         Eigen::Vector3d pickRandomPoint();
         bool nonEmptyReachableWorkspace(EndEffector pk, Configuration q);
         Eigen::Vector3d pickPointInReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index);
+        Eigen::Vector3d pickPointInGrowingReachableWorkspace(EndEffector pk, Configuration q, Eigen::Vector3d rRand, int &index);
         EndEffector pickRandomEndEffector();
-        Contact* pickRandomContactFromGoalStance();
+        std::shared_ptr<Contact> pickRandomContactFromGoalStance();
         int findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r);
-        std::string getTaskStringName(EndEffector ee);
-        EndEffector getTaskEndEffectorName(std::string ee_str);
-        bool computeIKSolution(Stance sigma, bool refCoM, Eigen::Vector3d rCoM, Configuration &q, Configuration qPrev);
         bool computeCentroidalStatics(std::vector<EndEffector> activeEEsDes, Eigen::Vector3d rCoMdes, Eigen::MatrixXd rCdes, Eigen::MatrixXd nCdes, Eigen::Vector3d &rCoM, Eigen::MatrixXd &rC, Eigen::MatrixXd &FC);
         Eigen::Vector3d getNormalAtPoint(Eigen::Vector3d p);
         Eigen::Vector3d getNormalAtPointByIndex(int index);
         Eigen::Vector3d computeCoM(Configuration q);
         Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
-        bool similarityTest(Stance sigmaNew);
-        bool distanceCheck(Stance sigma);
-        double computeHrange(Configuration q);
-        double computeHtorso(Configuration q);
-                Eigen::Matrix3d generateRotationAroundAxis(EndEffector pk, Eigen::Vector3d axis);
-                Eigen::Matrix3d generateRotationFrictionCone(Eigen::Vector3d axis);
+        
+        bool similarityCheck(Stance sigmaNew);
+        bool distanceCheck(Stance sigmaNew);
+        
+        void retrieveContactForces(Configuration q, Stance &sigma);
+        
+        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew);
 
-        ros::NodeHandle _nh;
-        ros::Publisher _pub;
         XBot::MatLogger2::Ptr _logger;
+        
 
     public:
 
@@ -97,10 +98,10 @@ class Planner {
         void run();
         bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
         int getTreeSize();
+        
+        void checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
 
 };
 
 #endif
-
-
 
