@@ -154,6 +154,7 @@ class GazeboRobotHandler:
         opt.set_string_parameter('framework', 'ROS')
         self.model = xbot.ModelInterface(opt)
         self.robot = xbot.RobotInterface(opt)
+        self.robot.setControlMode(xbot.ControlMode.Position() + xbot.ControlMode.Velocity())
 
         # update from robot
         self.robot.sense()
@@ -164,11 +165,14 @@ class GazeboRobotHandler:
 
 
         start_posture = self.model.getJointPosition()[6:]
+        v = self.model.getJointVelocity()[6:]
 
-        duration = 5
+        duration = 3
 
         initial_time = rospy.get_time()
         time = initial_time
+
+        old_posture = start_posture
 
         while time < initial_time + duration:
             t_internal = time - initial_time
@@ -177,8 +181,11 @@ class GazeboRobotHandler:
             tr3 = tr2 * tr
             s = (6.0 * tr3 * tr2 - 15.0 * tr3 * tr + 10.0 * tr3)
             ref = start_posture + (target_posture - start_posture) * s
+            v = (ref - old_posture) / 0.01
+            old_posture = ref
 
             self.robot.setPositionReference(ref)
+            self.robot.setVelocityReference(v)
             self.robot.move()
             rospy.sleep(0.01)
             time = time + 0.01
