@@ -78,4 +78,8 @@
     
     <node pkg="multi_contact_planning" type="octomap_collision_main" name="octomap_collision_main"/>
 
+<!-- Marker spawner -->
+<node pkg="cartesian_interface" type="marker_spawner" name="marker_spawner" output="screen"/>
+
+
 </launch>
