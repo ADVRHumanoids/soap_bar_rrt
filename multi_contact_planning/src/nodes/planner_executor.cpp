@@ -170,6 +170,9 @@ void PlannerExecutor::run()
         _goal_generator->update();
 
     publish_and_check_start_and_goal_models(time);
+    
+    
+    //_ros_server->run();
 }
 
 void PlannerExecutor::init_load_model()
@@ -582,6 +585,9 @@ void PlannerExecutor::init_goal_generator()
                                                        ik_prob, ci_ctx);
 
         auto ik_solver_NSPG = std::make_shared<Planning::PositionCartesianSolver>(ci);
+        
+        
+        //_ros_server = std::make_shared<XBot::Cartesian::RosServerClass>(ci);
 
 
         _NSPG = std::make_shared<Planning::NSPG>(ik_solver_NSPG, _vc_context);
@@ -619,6 +625,66 @@ void PlannerExecutor::init_interpolator()
     ///TODO: qdot, qddot limits?
 }
 
+bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
+{
+    
+    std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
+    std::vector<int> ind = {0,1,2,3,4};
+    for(int i = 0; i < all_tasks.size(); i++){
+        _NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setIndices(ind); 
+    }
+    
+    _NSPG->getIKSolver()->getCI()->update(0.0, 0.1);
+    
+    return true;   
+}
+
+/*
+bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
+{
+    
+    Eigen::Vector3d pos_ref;
+    std::string link = "l_ball_tip_d";
+    
+    pos_ref << 1.9, 0.3, 2.0;
+    Eigen::Vector3d n_i = getNormalAtPoint(pos_ref);
+    Eigen::Affine3d T_i;
+    T_i.translation() = pos_ref;
+    T_i.linear() = generateRotationAroundAxis(getTaskEndEffectorName(link), n_i);
+
+    
+    
+    Eigen::VectorXd q, dq;
+    double duration = 10.0;
+    double dt = 0.1;
+    double t = 0.0;
+   
+    _NSPG->getIKSolver()->getCI()->setPoseReference(link, T_i);
+    _NSPG->getIKSolver()->getCI()->update(0.0, dt);
+
+    while(t < duration){
+
+        _NSPG->getIKSolver()->getModel()->getJointPosition(q);
+        _NSPG->getIKSolver()->getModel()->getJointVelocity(dq);
+        std::cout << "dq = " << dq.transpose() << std::endl;
+        q += dt*dq;
+        _NSPG->getIKSolver()->getModel()->setJointPosition(q);
+        _NSPG->getIKSolver()->getModel()->update();
+
+        _NSPG->getIKSolver()->getCI()->update(t, dt);
+        
+        t+=dt;
+        
+    }
+    
+    _NSPG->getIKSolver()->getCI()->getCurrentPose(link, T_i);
+    std::cout << "LF = " << T_i.translation() << std::endl;
+    
+    return true;   
+}
+*/
+ 
+/*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
     std::vector<std::string> active_tasks;
@@ -681,7 +747,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     qRand.head<6>().setRandom(); // we keep virtual joints between -1 and 1 (todo: improve)
     qRand.head<6>().tail<3>() *= M_PI;
     
-    //c = qRand;
+    c = qRand; //FIXME
     
     Configuration qCurr; 
     Configuration qNew;
@@ -708,6 +774,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::cout << "--------------- GS FAIL ---------------" << std::endl;
     return false;   
 }
+*/ 
 
 /*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
@@ -1551,7 +1618,30 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
             _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
         }
     }
-
+    
+    //////////////////////////////////////////// //TODO THIS IS AN ATTEMPT
+//     Eigen::VectorXi ind(6);
+//     ind << 0,1,2,3,4,5;
+//     for(int i = 0; i < all_tasks.size(); i++){
+//         _NSPG->getIKSolver()->getCI()->setIndices(all_tasks.at(i), ind);
+//     }
+    //auto t = _NSPG->getIKSolver()->getCI()->getIkProblem().getTask(0);
+    //auto cart = std::dynamic_pointer_cast<Cartesian::CartesianTask>(_NSPG->getIKSolver()->getCI()->getIkProblem().getTask(0));
+    
+    //ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
+    
+    std::vector<int> ind = {0,1,2,3,4};
+    for(int i = 0; i < all_tasks.size(); i++){
+        _NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setIndices(ind); 
+    }
+    _NSPG->getIKSolver()->getCI()->update( 0.0, 0.1);
+    _NSPG->getIKSolver()->getModel()->update();
+    _NSPG->getIKSolver()->UpdateSolver(_NSPG->getIKSolver()->getCI());
+    
+    
+      
+    //////////////////////////////////////////// //TODO THIS IS AN ATTEMPT
+    
     // set postural
     Eigen::VectorXd cPrev(n_dof);
     Eigen::Vector3d posFB = qNear.getFBPosition();
@@ -1572,7 +1662,13 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
     
     // refine IK solution (balance and self-collisions)
     _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
-   
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    for(int i = 0; i < all_tasks.size(); i++){
+        std::cout << _NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->getIndices().size() << std::endl;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     if(!_NSPG->sample(time_budget, sigmaSmall, sigmaLarge))
     {
         _NSPG->getIKSolver()->getModel()->getJointPosition(c);

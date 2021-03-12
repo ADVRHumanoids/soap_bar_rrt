@@ -64,6 +64,81 @@ PositionCartesianSolver::PositionCartesianSolver(CartesianInterfaceImpl::Ptr ci)
 
 }
 
+void PositionCartesianSolver::UpdateSolver(CartesianInterfaceImpl::Ptr ci)
+{
+    
+    _n_task= 0;
+
+    for(auto t : ci->getIkProblem().getTask(0))
+    {
+        if(auto cart = std::dynamic_pointer_cast<Cartesian::CartesianTask>(t))
+        {
+            std::string distal_link=cart->getDistalLink();
+
+            auto tdata = std::make_shared<CartesianTaskData>(distal_link,
+                                                             cart->getBaseLink(),
+                                                             cart->getIndices());
+
+
+            std::cout << "TASKS ------" << std::endl;    
+            std::cout << "WEIGHTS" << std::endl;
+            std::cout << t->getWeight() << std::endl;
+            //std::cout << cart->getLambda() << std::endl;    
+            std::cout << "distal_link" << std::endl;
+            std::cout << distal_link << std::endl;
+            std::cout << "cart->getBaseLink()" << std::endl;    
+            std::cout << cart->getBaseLink() << std::endl;           
+            std::cout << "cart->getIndices()" << std::endl;
+            for(int i=0; i < cart->getIndices().size(); i++){
+                std::cout << cart->getIndices().at(i) << std::endl;    
+            }        
+            
+            _n_task += tdata->size;
+
+            _task_map[distal_link] = tdata;
+
+            printf("[PositionCartesianSolver] adding cartesian task '%s' to '%s', size is %d \n",
+                   cart->getBaseLink().c_str(),
+                   distal_link,
+                   tdata->size);
+        }
+    }
+
+}
+
+void PositionCartesianSolver::UpdateSolver()
+{
+    _n_task = 0;
+    //_task_map.clear();
+    
+    //std::vector<int> indices_c = ci->getTask(distal_link)->getIndices();
+    //int size_c = indices_c.size();
+    
+    for(auto t : _ci->getIkProblem().getTask(0))
+    {
+        if(auto cart = std::dynamic_pointer_cast<Cartesian::CartesianTask>(t))
+        {
+           
+            std::string distal_link = cart->getDistalLink();
+
+            auto tdata = std::make_shared<CartesianTaskData>(distal_link,
+                                                             cart->getBaseLink(),
+                                                             cart->getIndices());
+
+            std::cout << "distal_link = " << distal_link << std::endl;
+            for(int i=0; i < cart->getIndices().size(); i++){
+                std::cout << cart->getIndices().at(i) << std::endl;    
+            } 
+            
+            _n_task += tdata->size;
+
+            _task_map[distal_link] = tdata;
+
+        }
+    }
+
+}
+
 void PositionCartesianSolver::setDesiredPose(std::string distal_frame,
                                              const Eigen::Affine3d & pose)
 {
@@ -219,7 +294,71 @@ PositionCartesianSolver::CartesianTaskData::CartesianTaskData(std::string a_dist
 
 }
 
-void PositionCartesianSolver::CartesianTaskData::update(XBot::Cartesian::CartesianInterfaceImpl::Ptr ci,
+void PositionCartesianSolver::CartesianTaskData::update(XBot::Cartesian::CartesianInterfaceImpl::Ptr ci, XBot::ModelInterface::Ptr model)
+{
+    std::vector<int> indices_c = ci->getTask(distal_link)->getIndices();
+    int size_c = indices_c.size();
+    
+    std::cout << "error size = " << size_c << std::endl;
+    
+    J.setZero(size_c, model->getJointNum());
+    error.setZero(size_c);
+
+    /* If task was disabled, error and jacobian are zero */
+    auto active = ci->getActivationState(distal_link);
+    if(active == ActivationState::Disabled)
+    {
+        return;
+    }
+
+
+    /* Error computation */
+    Eigen::Affine3d T, Tdes;
+    ci->getCurrentPose(distal_link, T);
+    ci->getPoseReference(distal_link, Tdes);
+
+    Eigen::Vector3d pos_error = T.translation() - Tdes.translation();
+    Eigen::Vector3d rot_error;
+    Eigen::Matrix3d L;
+    compute_orientation_error(Tdes.linear(),
+                              T.linear(),
+                              rot_error,
+                              L);
+
+    Eigen::Vector6d error6d;
+    error6d << pos_error, rot_error;
+
+    for(int i = 0; i < size_c; i++)
+    {
+        error[i] = error6d[indices_c[i]];
+    }
+
+    /* Jacobian computation */
+    Eigen::MatrixXd Ji;
+
+    if(distal_link == "com")
+    {
+        model->getCOMJacobian(Ji);
+    }
+    else if(base_link == "world")
+    {
+        model->getJacobian(distal_link, Ji);
+    }
+    else
+    {
+        model->getJacobian(distal_link, base_link, Ji);
+    }
+
+    //Ji.bottomRows<3>() = L * Ji.bottomRows<3>(); //FIXME why this?
+
+    for(int i = 0; i < size_c; i++)
+    {
+        J.row(i) = Ji.row(indices_c[i]);
+    }
+
+}
+
+void PositionCartesianSolver::CartesianTaskData::updateOld(XBot::Cartesian::CartesianInterfaceImpl::Ptr ci,
                                                         XBot::ModelInterface::Ptr model)
 {
     J.setZero(size, model->getJointNum());
@@ -272,7 +411,7 @@ void PositionCartesianSolver::CartesianTaskData::update(XBot::Cartesian::Cartesi
         model->getJacobian(distal_link, base_link, Ji);
     }
 
-    Ji.bottomRows<3>() = L * Ji.bottomRows<3>();
+    //Ji.bottomRows<3>() = L * Ji.bottomRows<3>(); //FIXME why this?
 
     for(int i = 0; i < size; i++)
     {
@@ -280,6 +419,21 @@ void PositionCartesianSolver::CartesianTaskData::update(XBot::Cartesian::Cartesi
     }
 
 }
+
+// float angleSignedDistance(float a, float b){ //FIXME possibly put this in utils.hpp
+// 	float d = fabs(a - b);
+// 	while(d > 2.0*M_PI) d = d - 2.0*M_PI; 
+// 
+// 	float r = 0.0;
+// 	if(d > M_PI) r = 2.0*M_PI - d;
+// 	else r = d;
+// 	float sign = 0.0;
+// 	if( (a-b>=0.0 && a-b<=M_PI) || (a-b<=-M_PI && a-b>=-2.0*M_PI) ) sign = +1.0;
+// 	else sign = -1.0;
+// 
+// 	r = sign * r;
+// 	return r; 
+// }
 
 void PositionCartesianSolver::CartesianTaskData::compute_orientation_error(const Eigen::Matrix3d & Rd,
                                                                            const Eigen::Matrix3d & Re,
@@ -297,6 +451,21 @@ void PositionCartesianSolver::CartesianTaskData::compute_orientation_error(const
     //e_o = e_o_euler;
 
     //e_o = 0.5 * ( Re.col(2).cross(Rd.col(2)));
-      
+    
+    //e_o = Rd.eulerAngles(0, 1, 2) - Re.eulerAngles(0, 1, 2);
+//     Eigen::Vector3d e_d = Rd.eulerAngles(0, 1, 2);
+//     Eigen::Vector3d e_c = Re.eulerAngles(0, 1, 2);
+//     e_o(0) = angleSignedDistance(e_d(0), e_c(0));
+//     e_o(1) = angleSignedDistance(e_d(1), e_c(1));
+//     e_o(2) = angleSignedDistance(e_d(2), e_c(2));
+//     
+//      L = Eigen::MatrixXd::Identity(3,3);
+    
+//     Eigen::Vector3d e_d = Rd.eulerAngles(0, 1, 2);
+//     Eigen::Vector3d e_c = Re.eulerAngles(0, 1, 2);
+//     e_o(0) = angleSignedDistance(e_c(0), e_d(0));
+//     e_o(1) = angleSignedDistance(e_c(1), e_d(1));
+//     e_o(2) = angleSignedDistance(e_c(2), e_d(2));
 }
+
 

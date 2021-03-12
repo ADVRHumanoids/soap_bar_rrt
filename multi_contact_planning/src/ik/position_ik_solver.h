@@ -18,6 +18,10 @@ class PositionCartesianSolver
 {
 
 public:
+    
+    void UpdateSolver();
+    void UpdateSolver(CartesianInterfaceImpl::Ptr ci);
+
 
     typedef std::shared_ptr<PositionCartesianSolver> Ptr;
 
@@ -126,8 +130,8 @@ private:
         Eigen::MatrixXd J;
         Eigen::VectorXd error;
 
-        virtual void update(CartesianInterfaceImpl::Ptr ci,
-                            ModelInterface::Ptr model) = 0;
+        virtual void updateOld(CartesianInterfaceImpl::Ptr ci, ModelInterface::Ptr model) = 0;
+        virtual void update(CartesianInterfaceImpl::Ptr ci, ModelInterface::Ptr model) = 0;
 
         virtual ~TaskData();
     };
@@ -142,8 +146,8 @@ private:
         std::string base_link;
         std::vector<int> indices;
 
-        void update(CartesianInterfaceImpl::Ptr ci,
-                    ModelInterface::Ptr model) override;
+        void updateOld(CartesianInterfaceImpl::Ptr ci, ModelInterface::Ptr model) override;
+        void update(CartesianInterfaceImpl::Ptr ci, ModelInterface::Ptr model) override;
 
         static void compute_orientation_error(const Eigen::Matrix3d& Rd,
                                               const Eigen::Matrix3d& Re,
@@ -161,6 +165,7 @@ private:
     std::function<void(void)> _iter_callback;
 
     RosServerClass::Ptr _ros_server;
+    
 
 };
 

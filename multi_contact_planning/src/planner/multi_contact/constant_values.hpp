@@ -24,7 +24,7 @@ const double COM_REF_HEIGHT = 0.915;
 const double DIST_THRES = 0.65;
 
 const double DIST_THRES_MIN = 0.60;
-const double DIST_THRES_MAX = 1.80;
+const double DIST_THRES_MAX = 1.40;//1.80;
 const double DIST_HANDS_THRES_MAX = 1.0;
 
 const double CS_THRES = 5*1e-2;
