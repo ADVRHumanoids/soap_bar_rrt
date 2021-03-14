@@ -1,5 +1,6 @@
 #include "NSPG.h"
 #include <chrono>
+#include <stdlib.h>
 
 using namespace XBot::Cartesian::Planning;
 
@@ -20,7 +21,7 @@ NSPG::NSPG ( PositionCartesianSolver::Ptr ik_solver, ValidityCheckContext vc_con
         std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L"};//, "l_ball_tip_d", "r_ball_tip_d"};
         _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(_ik_solver->getModel(), links, MU_FRICTION*sqrt(2)));
 
-        _logger = XBot::MatLogger2::MakeLogger("/home/luca/MultiDoF-superbuild/external/soap_bar_rrt/log/checks_log");
+        _logger = XBot::MatLogger2::MakeLogger("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/log/checks_log");
         _logger->set_buffer_mode(XBot::VariableBuffer::Mode::circular_buffer);
 
     }
@@ -66,13 +67,13 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
     std::normal_distribution<double> z_dist(-dir(2)*10, 2.0);
 
     // Move the floating base randomly
-    random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*randDistribution(randGenerator)));
-    random_map.insert(std::make_pair("VIRTUALJOINT_2", 50*randDistribution(randGenerator)));
-    random_map.insert(std::make_pair("VIRTUALJOINT_3", 50*randDistribution(randGenerator)));
+//     random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*randDistribution(randGenerator)));
+//     random_map.insert(std::make_pair("VIRTUALJOINT_2", 50*randDistribution(randGenerator)));
+//     random_map.insert(std::make_pair("VIRTUALJOINT_3", 50*randDistribution(randGenerator)));
 
     // Move the floating base in the opposite direction of the non active contact
-//    random_map.insert(std::make_pair("VIRTUALJOINT_1", x_dist(randGenerator)));
-//    random_map.insert(std::make_pair("VIRTUALJOINT_2", y_dist(randGenerator)));
+   random_map.insert(std::make_pair("VIRTUALJOINT_1", x_dist(randGenerator)));
+   random_map.insert(std::make_pair("VIRTUALJOINT_2", y_dist(randGenerator)));
 //    random_map.insert(std::make_pair("VIRTUALJOINT_3", z_dist(randGenerator)));
     
     
@@ -106,7 +107,7 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     _ik_solver->getModel()->eigenToMap(dqlimits, velocity_map);
     
     float T = 0.0;
-    double dt = 0.001;
+    double dt = 0.01;
     int iter = 0;
     int iterMax = 100;
     
