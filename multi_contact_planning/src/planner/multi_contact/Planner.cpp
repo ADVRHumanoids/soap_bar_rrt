@@ -128,7 +128,7 @@ _nh(nh)
     _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("contacts", 10, true);
 
     
-    std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
+    std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L"}; //, "l_ball_tip_d", "r_ball_tip_d"};
     _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2)));
 
     _logger = XBot::MatLogger2::MakeLogger(env + "/external/soap_bar_rrt/log/NSPG_log");
@@ -685,7 +685,7 @@ void Planner::run(){
                 bool similarityCheckRes = similarityCheck(sigmaNew); // true if a similar stance already exists in the tree
                 bool distanceCheckRes = distanceCheck(sigmaNew); // true if distance between ees is in range 
 
-                if(!similarityCheckRes) // & distanceCheckRes)
+                if(!similarityCheckRes & distanceCheckRes)
                 {
                     Configuration qNew;
                     
@@ -807,12 +807,17 @@ bool Planner::distanceCheck(Stance sigmaNew)
     Eigen::Vector3d pRHandD = sigmaNew.retrieveContactPose(R_HAND_D).translation();
     
     if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))
-        if(euclideanDistance(pLFoot, pLHandC) < DIST_THRES_MIN)
+        if(euclideanDistance(pLFoot, pLHandC) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX)
             return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
     
     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))
-        if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN)
+        if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX)  
             return false;// || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
+        
+    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
+        if(sqrt((pLHandC(0) - pRHandC(0)) * (pLHandC(0) - pRHandC(0))) > 0.3)
+            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
+    
         
 //    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_D))
 //        if(euclideanDistance(pLFoot, pLHandD) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandD) > DIST_THRES_MAX) return false;
@@ -825,12 +830,12 @@ bool Planner::distanceCheck(Stance sigmaNew)
 //    if(sigmaNew.isActiveEndEffector(R_HAND_C) && sigmaNew.isActiveEndEffector(L_HAND_C))
 //        if(sqrt((pRHandC(0) - pLHandC(0))*(pRHandC(0) - pLHandC(0))) > 0.41) return false;
 
-    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
-        if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
+//     if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
+//         if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
 
     // scenario 1 check
-    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
-        if(sqrt((pLHandC(2) - pRHandC(2)) * (pLHandC(2) - pRHandC(2))) > DIST_HANDS_THRES_MAX) return false;
+//     if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
+//         if(sqrt((pLHandC(2) - pRHandC(2)) * (pLHandC(2) - pRHandC(2))) > DIST_HANDS_THRES_MAX) return false;
         
     
     return true;
@@ -944,7 +949,7 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
     }
     
     // set references
-    std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
+    std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L"}; //, "l_ball_tip_d", "r_ball_tip_d"};
     ci->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME if it is not in the stack this is not needed  
     for(int i = 0; i < all_tasks.size(); i++){
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
