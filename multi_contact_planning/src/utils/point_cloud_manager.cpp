@@ -76,7 +76,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
         }
 
         // right wall
-        center << 0.9, -0.4, 0.5;
+        center << 0.9, -0.6, 0.5;
         side_x = 0.3;
         side_z = 1.0;
         for(int i = 1; i <= (int)(side_x/resolution); i++)
@@ -112,7 +112,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
             }
         }
 
-        center << 0.9, 0.0, 1.0;
+        center << 1.0, -0.1, 1.0;
         side_x = 0.3;
         side_y = 1.0;
         for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
