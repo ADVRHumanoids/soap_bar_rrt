@@ -27,36 +27,36 @@ inline std::string getTaskStringName(EndEffector ee){
     return ee_str;
 }
 
-inline std::vector<std::string> getTasksStringName(EndEffector ee){
-    std::vector<std::string> ee_str;
-
-    if(ee == L_HAND_C){
-        ee_str.push_back("LeftHandCNoZ");
-        ee_str.push_back("LeftHandCZ");
-    }
-    else if(ee == R_HAND_C){
-        ee_str.push_back("RightHandCNoZ");
-        ee_str.push_back("RightHandCZ");
-    }
-    else if(ee == L_HAND_D){
-        ee_str.push_back("LeftHandDNoZ");
-        ee_str.push_back("LeftHandDZ");
-    }
-    else if(ee == R_HAND_D){
-        ee_str.push_back("RightHandDNoZ");
-        ee_str.push_back("RightHandDZ");
-    }
-    else if(ee == L_FOOT){
-        ee_str.push_back("LeftFootNoZ");
-        ee_str.push_back("LeftFootZ");
-    }
-    else if(ee == R_FOOT){
-        ee_str.push_back("RightFootNoZ");
-        ee_str.push_back("RightFootZ");
-    }
-    
-    return ee_str;
-}
+// inline std::vector<std::string> getTasksStringName(EndEffector ee){
+//     std::vector<std::string> ee_str;
+// 
+//     if(ee == L_HAND_C){
+//         ee_str.push_back("LeftHandCNoZ");
+//         ee_str.push_back("LeftHandCZ");
+//     }
+//     else if(ee == R_HAND_C){
+//         ee_str.push_back("RightHandCNoZ");
+//         ee_str.push_back("RightHandCZ");
+//     }
+//     else if(ee == L_HAND_D){
+//         ee_str.push_back("LeftHandDNoZ");
+//         ee_str.push_back("LeftHandDZ");
+//     }
+//     else if(ee == R_HAND_D){
+//         ee_str.push_back("RightHandDNoZ");
+//         ee_str.push_back("RightHandDZ");
+//     }
+//     else if(ee == L_FOOT){
+//         ee_str.push_back("LeftFootNoZ");
+//         ee_str.push_back("LeftFootZ");
+//     }
+//     else if(ee == R_FOOT){
+//         ee_str.push_back("RightFootNoZ");
+//         ee_str.push_back("RightFootZ");
+//     }
+//     
+//     return ee_str;
+// }
 
 inline std::string getMainTaskStringName(std::string ee_str){
     std::string ee;
@@ -75,6 +75,37 @@ inline std::string getMainTaskStringName(std::string ee_str){
     else if(ee_str.compare("RightFootZ") == 0) ee = "r_sole"; 
 
     return ee;
+}
+
+inline std::vector<std::string> getSubtasksStringName(std::string task_str){
+    std::vector<std::string> subtasks_str;
+    
+    if(task_str.compare("TCP_L") == 0){
+        subtasks_str.push_back("LeftHandCNoZ");
+        subtasks_str.push_back("LeftHandCZ");
+    }
+    else if(task_str.compare("TCP_R") == 0){
+        subtasks_str.push_back("RightHandCNoZ");
+        subtasks_str.push_back("RightHandCZ");
+    }
+    else if(task_str.compare("l_ball_tip_d") == 0){
+        subtasks_str.push_back("LeftHandDNoZ");
+        subtasks_str.push_back("LeftHandDZ");
+    }
+    else if(task_str.compare("r_ball_tip_d") == 0){
+        subtasks_str.push_back("RightHandDNoZ");
+        subtasks_str.push_back("RightHandDZ");
+    }
+    else if(task_str.compare("l_sole") == 0){
+        subtasks_str.push_back("LeftFootNoZ");
+        subtasks_str.push_back("LeftFootZ");
+    }
+    else if(task_str.compare("r_sole") == 0){
+        subtasks_str.push_back("RightFootNoZ");
+        subtasks_str.push_back("RightFootZ");
+    }
+    
+    return subtasks_str;
 }
 
 inline EndEffector getTaskEndEffectorName(std::string ee_str){

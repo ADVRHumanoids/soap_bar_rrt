@@ -722,6 +722,8 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Vector3d> pos_ref;
     
+    bool adding = true;
+    
 //     Eigen::VectorXd c(n_dof);
 //     c << 1.15667, 0.0227583, 1.65702, -0.533903, 0.0705821, 0.286732, 0.264738, -1.28463, -0.558505, 1.2229, -0.151601, -0.261799, 0.187707, -0.85183, -0.350576, 0.782062, -0.088001, 0.0891286, 0.418645, 0.158891, 1.37562, 3.09792, 2.24523, -0.0254683, -1.59168, -0.0676732, 2.50583, -0.19434, -0.925812, -1.31944, -1.61386, -0.61326, 0.878791, 0.192605;
 //     _goal_model->setJointPosition(c);
@@ -741,19 +743,19 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 //     std::cout << "LH = " << T.translation() << std::endl;
 //  
     active_tasks.clear();
-    active_tasks.push_back("l_ball_tip_d");
-    active_tasks.push_back("r_ball_tip_d");
     active_tasks.push_back("l_sole");
     active_tasks.push_back("r_sole");
-     
-    //LH
-    pos_ref.push_back(Eigen::Vector3d(1.9, 0.3, 2.0));
-    //RH
-    pos_ref.push_back(Eigen::Vector3d(1.9, -0.3, 2.0));
+    active_tasks.push_back("l_ball_tip_d");
+    active_tasks.push_back("r_ball_tip_d");
+    
     //LF
     pos_ref.push_back(Eigen::Vector3d(1.3, 0.15, 0.8));
     //RF
     pos_ref.push_back(Eigen::Vector3d(1.3, -0.15, 0.8));
+    //LH
+    pos_ref.push_back(Eigen::Vector3d(1.9, 0.3, 2.0));
+    //RH
+    pos_ref.push_back(Eigen::Vector3d(1.9, -0.3, 2.0));
     
     // create stance
     Stance sigma;
@@ -787,7 +789,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     qCurr.setFBOrientation(c.segment(3,3));
     qCurr.setJointValues(c.tail(n_dof-6));
     
-    bool resIKCS = computeIKandCS(sigma, sigma, qCurr, qNew);
+    bool resIKCS = computeIKandCS(sigma, sigma, qCurr, qNew, adding);
     if(resIKCS){
         std::cout << "--------------- GS SUCCESS ---------------" << std::endl;
         
@@ -1625,74 +1627,37 @@ Eigen::Vector3d PlannerExecutor::getNormalAtPoint(Eigen::Vector3d p){
     return nC;
 }
 
-bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew){
+bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding){
     
-//      std::cout << "QUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII" << std::endl;
-//     
-//     // build references
-//     std::vector<std::string> active_tasks;
-//     std::vector<Eigen::Affine3d> ref_tasks;
-//     for(int i = 0; i < sigmaLarge.getSize(); i++){
-//         EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
-//         active_tasks.push_back(getTaskStringName(ee));
-//         ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
-//     }
-//     
-//     std::cout << "QUOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" << std::endl;
-//     
-//     // set references
-//     //std::vector<std::string> all_tasks = {"LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"};
-//     std::vector<std::string> all_tasks = {"l_sole", "r_sole", "TCP_L", "TCP_R", "l_ball_tip_d", "r_ball_tip_d"}; 
-//     _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
-//     for(int i = 0; i < all_tasks.size(); i++){
-//         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
-//         if(it == active_tasks.end()){
-//             _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled); 
-//         }
-//         else{ 
-//             _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled); 
-//             int index = it - active_tasks.begin();
-//             _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-//         }
-//     }
-    
-    std::cout << "QUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII" << std::endl;
+    std::string added_task = getTaskStringName(sigmaLarge.getContact(sigmaLarge.getSize()-1)->getEndEffectorName());
     
     // build references
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
     for(int i = 0; i < sigmaLarge.getSize(); i++){
         EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
-        //active_tasks.push_back(getTaskStringName(ee));
-        //ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
-        std::vector<std::string> tasks = getTasksStringName(ee);
-        active_tasks.push_back(tasks[0]);
-        ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
-        active_tasks.push_back(tasks[1]);
+        active_tasks.push_back(getTaskStringName(ee));
         ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
     }
-    
-    std::cout << "QUOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" << std::endl;
-    
+
     // set references
-    std::vector<std::string> all_tasks = {"LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"};
+    std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
     _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
     for(int i = 0; i < all_tasks.size(); i++){
+        std::vector<std::string> subtasks = getSubtasksStringName(all_tasks[i]);
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
         if(it == active_tasks.end()){
-            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled); 
+            _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[0], XBot::Cartesian::ActivationState::Disabled); 
+            _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
         }
         else{ 
-            _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled); 
+            _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[0], XBot::Cartesian::ActivationState::Enabled); 
+            if(adding && added_task.compare(all_tasks[i]) == 0) _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
+            else _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Enabled); 
             int index = it - active_tasks.begin();
-            //_NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-            std::string main_task = getMainTaskStringName(all_tasks[i]);
-            std::cout << "main_task = " << main_task << std::endl;
-            //_NSPG->getIKSolver()->getCI()->setPoseReference(main_task, ref_tasks[index]);
+            _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks[i], ref_tasks[index]);
         } 
     }
-    
-    _NSPG->getIKSolver()->getCI()->setActivationState("RightHandDZ", XBot::Cartesian::ActivationState::Disabled); 
   
     // set postural
     Eigen::VectorXd cPrev(n_dof);

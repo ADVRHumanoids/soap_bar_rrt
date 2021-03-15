@@ -1,78 +1,4 @@
-#solver_options:
-    #regularization: 1e-2
-    #back_end: "qpoases"
-    
-#stack:
-    #- ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"]
-    #- ["Com"]
-    #- ["Postural"]
-    
-#constraints: ["JointLimits"] #, "VelocityLimits"]
-
-#JointLimits:
-    #type: "JointLimits"
-
-#VelocityLimits:
-    #type: "VelocityLimits"    
-    
-## ------------------------------------------------------------------------------------------------------------- 
-#LeftFoot:
-    #type: "Cartesian"
-    #distal_link: "l_sole"
-    #lambda: 1.0
-## -------------------------------------------------------------------------------------------------------------
-
-#RightFoot:
-    #type: "Cartesian"
-    #distal_link: "r_sole"
-    #lambda: 1.0
-
-## -------------------------------------------------------------------------------------------------------------    
-
-#LeftHandC:
-    #type: "Cartesian"
-    #distal_link: "TCP_L"
-    #lambda: 1.0
-
-## -------------------------------------------------------------------------------------------------------------
-    
-#RightHandC:
-    #type: "Cartesian"
-    #distal_link: "TCP_R"
-    #lambda: 1.0
-
-    ## -------------------------------------------------------------------------------------------------------------
-    
-#LeftHandD:
-    #type: "Cartesian"
-    #distal_link: "l_ball_tip_d"
-    #lambda: 1.0
-
-
-    ## -------------------------------------------------------------------------------------------------------------
-    
-#RightHandD:
-    #type: "Cartesian"
-    #distal_link: "r_ball_tip_d"
-    #lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
-
-
-    
-## -------------------------------------------------------------------------------------------------------------
-    
-#Com:
-    #type: "Com"
-    #lambda: 0.1
-    #weight: 0.1
-        
-#Postural:
-    #type: "Postural"
-    #lambda: 0.1
-
-
 stack:
-    #- ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"]
     - ["LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"]
     - ["Com"]
     - ["Postural"]
@@ -92,7 +18,6 @@ LeftFoot:
     lambda: 1.0
 
 LeftFootNoZ:
-    #name: "LeftFootNoZ"
     type: "Subtask"
     task: "LeftFoot"
     indices: [0, 1, 2, 3, 4]

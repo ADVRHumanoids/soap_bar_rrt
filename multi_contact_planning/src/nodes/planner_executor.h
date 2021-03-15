@@ -195,7 +195,7 @@ private:
     
     Eigen::Vector3d getNormalAtPoint(Eigen::Vector3d p);
     //Eigen::Matrix3d generateRotationAroundAxis(EndEffector ee, Eigen::Vector3d axis);
-    bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew);
+    bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding);
     
     XBot::Cartesian::RosServerClass::Ptr _ros_server;
     
