@@ -44,6 +44,7 @@ public:
 private:
     
     std::vector<std::string> _all_tasks;    
+    std::vector<std::string> _all_subtasks; 
     CartesianInterfaceImpl::Ptr _ci;
     ModelInterface::Ptr _model;
     
