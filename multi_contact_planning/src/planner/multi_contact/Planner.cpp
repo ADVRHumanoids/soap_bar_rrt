@@ -550,6 +550,8 @@ void Planner::run(){
 
     std::shared_ptr<Vertex> vNear;
     std::shared_ptr<Vertex> vNew;
+    
+    bool adding;
 
     std::vector<Configuration> qListVertex;
     std::vector<Stance> sigmaListVertex;
@@ -598,6 +600,7 @@ void Planner::run(){
                 if(sigmaNear.isActiveEndEffector(pk))
                 {
                     foutLogMCP << "REMOVING A CONTACT" << std::endl;
+                    adding = false;
                     for(int i = 0; i < activeEEsNear.size(); i++){
                         if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
                     }
@@ -605,6 +608,7 @@ void Planner::run(){
                 else
                 {
                     foutLogMCP << "ADDING A CONTACT" << std::endl;
+                    adding = true;
                     for(int i = 0; i < activeEEsNear.size(); i++) activeEEsDes.push_back(activeEEsNear.at(i));
                     activeEEsDes.push_back(pk);
                     int pointIndex;
@@ -622,7 +626,6 @@ void Planner::run(){
                 }
                 
                 // generate sigmaNew 
-                
                 Stance sigmaNew;
                 Eigen::Vector3d F_i(0.0, 0.0, 0.0);
                 Eigen::Affine3d T_i;
@@ -678,7 +681,8 @@ void Planner::run(){
                     
                     auto tic = std::chrono::high_resolution_clock::now();
 
-                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew);
+                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, adding);
+                    //bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, false);
                     if(resIKCS) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
                     else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
                     
@@ -688,8 +692,10 @@ void Planner::run(){
                     foutLogMCP << "GS TIME = " << t_fsec << std::endl;
                     timeIKandCS += t_fsec;
                     
-                    
                     if(resIKCS){
+                        // adjust orientations in sigmaNew 
+                        retrieveContactPoses(qNew, sigmaNew);
+                            
                         // set forces in sigmaNew
                         retrieveContactForces(qNew, sigmaNew);
                     
@@ -768,17 +774,17 @@ bool Planner::distanceCheck(Stance sigmaNew)
     Eigen::Vector3d pRHandD = sigmaNew.retrieveContactPose(R_HAND_D).translation();
     
      
-    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))   
-        if(euclideanDistance(pLFoot, pLHandC) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false; 
-    
-    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))   
-        if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
-        
-    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_D))   
-        if(euclideanDistance(pLFoot, pLHandD) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandD) > DIST_THRES_MAX) return false; 
-    
-    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_D))   
-        if(euclideanDistance(pRFoot, pRHandD) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandD) > DIST_THRES_MAX) return false;
+//     if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))   
+//         if(euclideanDistance(pLFoot, pLHandC) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false; 
+//     
+//     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))   
+//         if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
+//         
+//     if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_D))   
+//         if(euclideanDistance(pLFoot, pLHandD) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandD) > DIST_THRES_MAX) return false; 
+//     
+//     if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_D))   
+//         if(euclideanDistance(pRFoot, pRHandD) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandD) > DIST_THRES_MAX) return false;
     
         
     //if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
@@ -793,6 +799,11 @@ bool Planner::distanceCheck(Stance sigmaNew)
              if(fabs(pLFoot(2) - pRFoot(2)) > WORKSPACE_RADIUS_FOOT) return false;
         if(sigmaNew.isActiveEndEffector(L_HAND_D) && sigmaNew.isActiveEndEffector(R_HAND_D))   
              if(fabs(pLHandD(2) - pRHandD(2)) > WORKSPACE_RADIUS_HAND) return false;
+             
+        if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_D))   
+             if(fabs(pLFoot(2) - pLHandD(2)) < 4.0*WORKSPACE_RADIUS_FOOT) return false;
+        if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_D))   
+             if(fabs(pRFoot(2) - pRHandD(2)) < 4.0*WORKSPACE_RADIUS_HAND) return false;
     }
         
     
@@ -901,7 +912,11 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
 }
 
 
-bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew){
+bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding){
+    
+    //adding = false;
+    
+    std::string added_task = getTaskStringName(sigmaLarge.getContact(sigmaLarge.getSize()-1)->getEndEffectorName());
     
     // build references
     std::vector<std::string> active_tasks;
@@ -911,22 +926,26 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
         active_tasks.push_back(getTaskStringName(ee));
         ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
     }
-    
+
     // set references
     std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-    ci->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME if it is not in the stack this is not needed  
+    ci->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
     for(int i = 0; i < all_tasks.size(); i++){
+        std::vector<std::string> subtasks = getSubtasksStringName(all_tasks[i]);
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
         if(it == active_tasks.end()){
-            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled); 
+            ci->setActivationState(subtasks[0], XBot::Cartesian::ActivationState::Disabled); 
+            ci->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
         }
         else{ 
-            ci->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled); 
+            ci->setActivationState(subtasks[0], XBot::Cartesian::ActivationState::Enabled); 
+            if(adding && added_task.compare(all_tasks[i]) == 0) ci->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
+            else ci->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Enabled); 
             int index = it - active_tasks.begin();
-            NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-        }
+            ci->setPoseReference(all_tasks[i], ref_tasks[index]);
+        } 
     }
-
+    
     // set initial guess (and starting postural in NSPG as well)
     Eigen::VectorXd cPrev(n_dof);
     Eigen::Vector3d posFB = qNear.getFBPosition();
@@ -1022,5 +1041,14 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
         }
     }
     
+}
+
+void Planner::retrieveContactPoses(Configuration q, Stance &sigma){
+    for(int i = 0; i < sigma.getSize(); i++)
+    {
+        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+        Eigen::Affine3d T = computeForwardKinematics(q, ee);
+        sigma.getContact(i)->setPose(T.translation(), T.linear());
+    }
 }
 

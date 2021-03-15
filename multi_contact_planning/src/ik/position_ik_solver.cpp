@@ -14,15 +14,13 @@ PositionCartesianSolver::PositionCartesianSolver(CartesianInterfaceImpl::Ptr ci)
     _err_tol(DEFAULT_ERR_TOL),
     _iter_callback([](){})
 {
-    //_all_tasks = {"LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"};
-//      _all_tasks = {"LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"};
-//     _all_tasks = {"l_sole", "r_sole", "TCP_L", "TCP_R", "l_ball_tip_d", "r_ball_tip_d"};
-    
+  
     _all_tasks = {"l_sole", "r_sole", "TCP_L", "TCP_R", "l_ball_tip_d", "r_ball_tip_d"};
     
     for(int i = 0; i < _all_tasks.size(); i++){
         std::vector<std::string> subtasks = getSubtasksStringName(_all_tasks[i]);
-        _all_subtasks.insert(std::end(_all_subtasks), std::begin(_all_tasks), std::end(_all_tasks));
+        _all_subtasks.push_back(subtasks[0]);
+        _all_subtasks.push_back(subtasks[1]);
     }
     
 }

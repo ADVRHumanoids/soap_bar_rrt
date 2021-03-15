@@ -75,8 +75,9 @@ class Planner {
         bool distanceCheck(Stance sigmaNew);
         
         void retrieveContactForces(Configuration q, Stance &sigma);
+        void retrieveContactPoses(Configuration q, Stance &sigma);
         
-        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew);
+        bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding);
         
 
     public:

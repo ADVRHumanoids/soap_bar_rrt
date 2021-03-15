@@ -1371,7 +1371,6 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     Eigen::MatrixXd pointCloud = _pc_manager->getPointCloud();
     Eigen::MatrixXd pointNormals = _pc_manager->getNormals();
 
-    
     // plan a solution
     std::vector<Stance> sigmaList;
     std::vector<Configuration> qList;
