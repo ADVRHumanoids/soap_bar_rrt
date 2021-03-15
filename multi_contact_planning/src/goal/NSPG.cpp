@@ -139,12 +139,12 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
 void NSPG::initializeBalanceCheck(Stance sigma){  
     
     std::vector<std::string> active_links;
-    std::vector<Eigen::Affine3d> ref_tasks;
+    //std::vector<Eigen::Affine3d> ref_tasks;
     for(int i = 0; i < sigma.getSize(); i++)
     {
         EndEffector ee = sigma.getContact(i)->getEndEffectorName();
         active_links.push_back(getTaskStringName(ee));   
-        ref_tasks.push_back(sigma.retrieveContactPose(ee));
+        //ref_tasks.push_back(sigma.retrieveContactPose(ee));
     }
 
     _cs->setContactLinks(active_links);

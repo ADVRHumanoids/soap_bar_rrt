@@ -700,7 +700,6 @@ void Planner::run(){
 
                         foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;                        
                     }
-
                 }
             }
 

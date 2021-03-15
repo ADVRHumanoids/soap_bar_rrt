@@ -625,21 +625,53 @@ void PlannerExecutor::init_interpolator()
     ///TODO: qdot, qddot limits?
 }
 
+/*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
     
-    std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-    std::vector<int> ind = {0,1,2,3,4};
-    for(int i = 0; i < all_tasks.size(); i++){
-        _NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setIndices(ind); 
-    }
+//     std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
+//     std::vector<int> ind = {0,1,2,3,4};
+//     for(int i = 0; i < all_tasks.size(); i++){
+//         _NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setIndices(ind); 
+//     }
+//     
+//     _NSPG->getIKSolver()->getCI()->update(0.0, 0.1);
     
-    _NSPG->getIKSolver()->getCI()->update(0.0, 0.1);
+    //std::vector<std::string> all_tasks = _NSPG->getIKSolver()->getCI()->getTaskList();
+    std::vector<std::string> all_tasks = {"LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"};
+    //"LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"
+    
+    std::cout << "all_tasks.size() = " << all_tasks.size() << std::endl;
+    
+    for(int i = 0; i < all_tasks.size(); i++){
+        std::string task_name;
+        
+        task_name = all_tasks[i];
+        
+        std::cout << "task_name = " << task_name << std::endl;
+        
+//         std::string link;
+//         link = _NSPG->getIKSolver()->getCI()->getTask(task).getDistalLink();
+//         std::cout << "link = " << link << std::endl;
+         
+        auto task = _NSPG->getIKSolver()->getCI()->getTask(task_name);
+        auto task_ptr = std::dynamic_pointer_cast<Cartesian::Subtask>(task);
+        //CartesianTask
+    
+//         std::string distal_link = task_ptr->getDistalLink();
+//         
+//         std::cout << "distal_link = " << distal_link << std::endl;
+        
+        std::vector<int> indices = task_ptr->getIndices();
+        std::cout << "indices.size() = " << indices.size() << std::endl;
+    }
+ 
     
     return true;   
 }
+*/
 
-/*
+/* 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
     
@@ -684,7 +716,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
 }
 */
  
-/*
+ 
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
 {
     std::vector<std::string> active_tasks;
@@ -774,7 +806,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     std::cout << "--------------- GS FAIL ---------------" << std::endl;
     return false;   
 }
-*/ 
+ 
 
 /*
 bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal::Request &req, multi_contact_planning::CartesioGoal::Response &res)
@@ -1595,18 +1627,56 @@ Eigen::Vector3d PlannerExecutor::getNormalAtPoint(Eigen::Vector3d p){
 
 bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew){
     
+//      std::cout << "QUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII" << std::endl;
+//     
+//     // build references
+//     std::vector<std::string> active_tasks;
+//     std::vector<Eigen::Affine3d> ref_tasks;
+//     for(int i = 0; i < sigmaLarge.getSize(); i++){
+//         EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
+//         active_tasks.push_back(getTaskStringName(ee));
+//         ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
+//     }
+//     
+//     std::cout << "QUOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" << std::endl;
+//     
+//     // set references
+//     //std::vector<std::string> all_tasks = {"LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"};
+//     std::vector<std::string> all_tasks = {"l_sole", "r_sole", "TCP_L", "TCP_R", "l_ball_tip_d", "r_ball_tip_d"}; 
+//     _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
+//     for(int i = 0; i < all_tasks.size(); i++){
+//         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
+//         if(it == active_tasks.end()){
+//             _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Disabled); 
+//         }
+//         else{ 
+//             _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled); 
+//             int index = it - active_tasks.begin();
+//             _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+//         }
+//     }
+    
+    std::cout << "QUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII" << std::endl;
+    
     // build references
     std::vector<std::string> active_tasks;
     std::vector<Eigen::Affine3d> ref_tasks;
     for(int i = 0; i < sigmaLarge.getSize(); i++){
         EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
-        active_tasks.push_back(getTaskStringName(ee));
+        //active_tasks.push_back(getTaskStringName(ee));
+        //ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
+        std::vector<std::string> tasks = getTasksStringName(ee);
+        active_tasks.push_back(tasks[0]);
+        ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
+        active_tasks.push_back(tasks[1]);
         ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
     }
     
+    std::cout << "QUOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" << std::endl;
+    
     // set references
-    std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-    _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME if it is not in the stack this is not needed  
+    std::vector<std::string> all_tasks = {"LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"};
+    _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
     for(int i = 0; i < all_tasks.size(); i++){
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
         if(it == active_tasks.end()){
@@ -1615,33 +1685,15 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
         else{ 
             _NSPG->getIKSolver()->getCI()->setActivationState(all_tasks[i], XBot::Cartesian::ActivationState::Enabled); 
             int index = it - active_tasks.begin();
-            _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
-        }
+            //_NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks.at(i), ref_tasks[index]);
+            std::string main_task = getMainTaskStringName(all_tasks[i]);
+            std::cout << "main_task = " << main_task << std::endl;
+            //_NSPG->getIKSolver()->getCI()->setPoseReference(main_task, ref_tasks[index]);
+        } 
     }
     
-    //////////////////////////////////////////// //TODO THIS IS AN ATTEMPT
-//     Eigen::VectorXi ind(6);
-//     ind << 0,1,2,3,4,5;
-//     for(int i = 0; i < all_tasks.size(); i++){
-//         _NSPG->getIKSolver()->getCI()->setIndices(all_tasks.at(i), ind);
-//     }
-    //auto t = _NSPG->getIKSolver()->getCI()->getIkProblem().getTask(0);
-    //auto cart = std::dynamic_pointer_cast<Cartesian::CartesianTask>(_NSPG->getIKSolver()->getCI()->getIkProblem().getTask(0));
-    
-    //ci->getTask(all_tasks.at(i))->setWeight(0.1*Eigen::MatrixXd::Identity(ci->getTask(all_tasks.at(i))->getWeight().rows(), ci->getTask(all_tasks.at(i))->getWeight().cols()));
-    
-    std::vector<int> ind = {0,1,2,3,4};
-    for(int i = 0; i < all_tasks.size(); i++){
-        _NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->setIndices(ind); 
-    }
-    _NSPG->getIKSolver()->getCI()->update( 0.0, 0.1);
-    _NSPG->getIKSolver()->getModel()->update();
-    _NSPG->getIKSolver()->UpdateSolver(_NSPG->getIKSolver()->getCI());
-    
-    
-      
-    //////////////////////////////////////////// //TODO THIS IS AN ATTEMPT
-    
+    _NSPG->getIKSolver()->getCI()->setActivationState("RightHandDZ", XBot::Cartesian::ActivationState::Disabled); 
+  
     // set postural
     Eigen::VectorXd cPrev(n_dof);
     Eigen::Vector3d posFB = qNear.getFBPosition();
@@ -1651,23 +1703,20 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
     cPrev.tail(n_dof-6) = qNear.getJointValues();
     _NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
     _NSPG->getIKSolver()->getModel()->update();
+    
+    std::cout << "QUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
+
 
     // search IK solution (joint limits)
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
     if (!_NSPG->getIKSolver()->solve()){
-        //foutLogMCP << "STOP BEFORE NSPG" << std::endl;
+        std::cout << "STOP BEFORE NSPG" << std::endl;
         return false;
     }
     
     // refine IK solution (balance and self-collisions)
     _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
-    
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    for(int i = 0; i < all_tasks.size(); i++){
-        std::cout << _NSPG->getIKSolver()->getCI()->getTask(all_tasks.at(i))->getIndices().size() << std::endl;
-    }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     if(!_NSPG->sample(time_budget, sigmaSmall, sigmaLarge))
     {

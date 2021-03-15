@@ -1,9 +1,79 @@
-solver_options:
-    regularization: 1e-2
-    back_end: "qpoases"
+#solver_options:
+    #regularization: 1e-2
+    #back_end: "qpoases"
+    
+#stack:
+    #- ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"]
+    #- ["Com"]
+    #- ["Postural"]
+    
+#constraints: ["JointLimits"] #, "VelocityLimits"]
+
+#JointLimits:
+    #type: "JointLimits"
+
+#VelocityLimits:
+    #type: "VelocityLimits"    
+    
+## ------------------------------------------------------------------------------------------------------------- 
+#LeftFoot:
+    #type: "Cartesian"
+    #distal_link: "l_sole"
+    #lambda: 1.0
+## -------------------------------------------------------------------------------------------------------------
+
+#RightFoot:
+    #type: "Cartesian"
+    #distal_link: "r_sole"
+    #lambda: 1.0
+
+## -------------------------------------------------------------------------------------------------------------    
+
+#LeftHandC:
+    #type: "Cartesian"
+    #distal_link: "TCP_L"
+    #lambda: 1.0
+
+## -------------------------------------------------------------------------------------------------------------
+    
+#RightHandC:
+    #type: "Cartesian"
+    #distal_link: "TCP_R"
+    #lambda: 1.0
+
+    ## -------------------------------------------------------------------------------------------------------------
+    
+#LeftHandD:
+    #type: "Cartesian"
+    #distal_link: "l_ball_tip_d"
+    #lambda: 1.0
+
+
+    ## -------------------------------------------------------------------------------------------------------------
+    
+#RightHandD:
+    #type: "Cartesian"
+    #distal_link: "r_ball_tip_d"
+    #lambda: 1.0
+    #indices: [0, 1, 2, 3, 4]
+
+
+    
+## -------------------------------------------------------------------------------------------------------------
+    
+#Com:
+    #type: "Com"
+    #lambda: 0.1
+    #weight: 0.1
+        
+#Postural:
+    #type: "Postural"
+    #lambda: 0.1
+
 
 stack:
-    - ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"]
+    #- ["LeftFoot", "RightFoot", "LeftHandC", "RightHandC", "LeftHandD", "RightHandD"]
+    - ["LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"]
     - ["Com"]
     - ["Postural"]
     
@@ -13,43 +83,111 @@ JointLimits:
     type: "JointLimits"
 
 VelocityLimits:
-    type: "VelocityLimits"
-
+    type: "VelocityLimits"    
+    
+# ------------------------------------------------------------------------------------------------------------- 
 LeftFoot:
     type: "Cartesian"
     distal_link: "l_sole"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
-    
+
+LeftFootNoZ:
+    #name: "LeftFootNoZ"
+    type: "Subtask"
+    task: "LeftFoot"
+    indices: [0, 1, 2, 3, 4]
+
+LeftFootZ:
+    type: "Subtask"
+    task: "LeftFoot"
+    indices: [5]
+
+# -------------------------------------------------------------------------------------------------------------
+
 RightFoot:
     type: "Cartesian"
     distal_link: "r_sole"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
-    
+
+RightFootNoZ:
+    type: "Subtask"
+    task: "RightFoot"
+    indices: [0, 1, 2, 3, 4]
+
+RightFootZ:
+    type: "Subtask"
+    task: "RightFoot"
+    indices: [5]
+
+# -------------------------------------------------------------------------------------------------------------    
+
 LeftHandC:
     type: "Cartesian"
     distal_link: "TCP_L"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
+    
+LeftHandCNoZ:
+    type: "Subtask"
+    task: "LeftHandC"
+    indices: [0, 1, 2, 3, 4]
+
+LeftHandCZ:
+    type: "Subtask"
+    task: "LeftHandC"
+    indices: [5]    
+    
+# -------------------------------------------------------------------------------------------------------------
     
 RightHandC:
     type: "Cartesian"
     distal_link: "TCP_R"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
+
+RightHandCNoZ:
+    type: "Subtask"
+    task: "RightHandC"
+    indices: [0, 1, 2, 3, 4]
+
+RightHandCZ:
+    type: "Subtask"
+    task: "RightHandC"
+    indices: [5]    
+    
+# -------------------------------------------------------------------------------------------------------------
     
 LeftHandD:
     type: "Cartesian"
     distal_link: "l_ball_tip_d"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
+
+LeftHandDNoZ:
+    type: "Subtask"
+    task: "LeftHandD"
+    indices: [0, 1, 2, 3, 4]
+
+LeftHandDZ:
+    type: "Subtask"
+    task: "LeftHandD"
+    indices: [5]    
+    
+# -------------------------------------------------------------------------------------------------------------
     
 RightHandD:
     type: "Cartesian"
     distal_link: "r_ball_tip_d"
     lambda: 1.0
-    #indices: [0, 1, 2, 3, 4]
+
+RightHandDNoZ:
+    type: "Subtask"
+    task: "RightHandD"
+    indices: [0, 1, 2, 3, 4]
+
+RightHandDZ:
+    type: "Subtask"
+    task: "RightHandD"
+    indices: [5]  
+    
+# -------------------------------------------------------------------------------------------------------------
     
 Com:
     type: "Com"

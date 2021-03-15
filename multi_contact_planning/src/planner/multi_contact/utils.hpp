@@ -27,6 +27,56 @@ inline std::string getTaskStringName(EndEffector ee){
     return ee_str;
 }
 
+inline std::vector<std::string> getTasksStringName(EndEffector ee){
+    std::vector<std::string> ee_str;
+
+    if(ee == L_HAND_C){
+        ee_str.push_back("LeftHandCNoZ");
+        ee_str.push_back("LeftHandCZ");
+    }
+    else if(ee == R_HAND_C){
+        ee_str.push_back("RightHandCNoZ");
+        ee_str.push_back("RightHandCZ");
+    }
+    else if(ee == L_HAND_D){
+        ee_str.push_back("LeftHandDNoZ");
+        ee_str.push_back("LeftHandDZ");
+    }
+    else if(ee == R_HAND_D){
+        ee_str.push_back("RightHandDNoZ");
+        ee_str.push_back("RightHandDZ");
+    }
+    else if(ee == L_FOOT){
+        ee_str.push_back("LeftFootNoZ");
+        ee_str.push_back("LeftFootZ");
+    }
+    else if(ee == R_FOOT){
+        ee_str.push_back("RightFootNoZ");
+        ee_str.push_back("RightFootZ");
+    }
+    
+    return ee_str;
+}
+
+inline std::string getMainTaskStringName(std::string ee_str){
+    std::string ee;
+    
+    if(ee_str.compare("LeftHandCNoZ") == 0) ee = "TCP_L";
+    else if(ee_str.compare("LeftHandCZ") == 0) ee = "TCP_L"; 
+    else if(ee_str.compare("RightHandCNoZ") == 0) ee = "TCP_R"; 
+    else if(ee_str.compare("RightHandCZ") == 0) ee = "TCP_R"; 
+    else if(ee_str.compare("LeftHandDNoZ") == 0) ee = "l_ball_tip_d"; 
+    else if(ee_str.compare("LeftHandDZ") == 0) ee = "l_ball_tip_d"; 
+    else if(ee_str.compare("RightHandDNoZ") == 0) ee = "r_ball_tip_d"; 
+    else if(ee_str.compare("RightHandDZ") == 0) ee = "r_ball_tip_d"; 
+    else if(ee_str.compare("LeftFootNoZ") == 0) ee = "l_sole"; 
+    else if(ee_str.compare("LeftFootZ") == 0) ee = "l_sole"; 
+    else if(ee_str.compare("RightFootNoZ") == 0) ee = "r_sole"; 
+    else if(ee_str.compare("RightFootZ") == 0) ee = "r_sole"; 
+
+    return ee;
+}
+
 inline EndEffector getTaskEndEffectorName(std::string ee_str){
     EndEffector ee;
 
