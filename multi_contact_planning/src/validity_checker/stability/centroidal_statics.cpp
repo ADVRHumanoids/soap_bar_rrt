@@ -110,6 +110,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
 
     std::vector<double> f_max(6,1000.);
     std::vector<double> f_min(6,-1000.);
+    f_min[2] = 30;
     if(!optimize_torque)
         f_max[3] = f_max[4] = f_max[5] = f_min[3] = f_min[4] = f_min[5] = 0.;
 
@@ -134,7 +135,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
         yaml << YAML::Key << "lib_name" << YAML::Value << libname;
         yaml << YAML::Key << "type" << YAML::Value << "Force";
         yaml << YAML::Key << "link" << YAML::Value << link;
-        yaml << YAML::Key << "weight" << YAML::Value << 1e-2;
+        yaml << YAML::Key << "weight" << YAML::Value << 1e-3;
         yaml << YAML::EndMap;
     }
 
@@ -212,18 +213,18 @@ bool CentroidalStatics::checkStability(const double eps)
 {
     double res;
     if(compute())
-    {   
+    {
         Eigen::VectorXd error;
         if(!_dyn_feas->getTaskError(error))
             return false;
         res = error.norm();
         if(res <= eps)
         {
-            std::cout << res << std::endl;
+//            std::cout << res << std::endl;
             return true;
         }
     }
-    std::cout << res << std::endl;
+//    std::cout << res << std::endl;
     return false;
 }
 

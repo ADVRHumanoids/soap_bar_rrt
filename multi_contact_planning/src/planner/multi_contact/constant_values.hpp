@@ -9,7 +9,7 @@ const int MAX_NUM_EXP_PER_VERTEX = 5; // maximum number of times that a certain 
 const int NUM_CONF_PER_VERTEX = 1; //5; // number of different configurations generated for an expansion attempt (both successful or not)
  
 const double WORKSPACE_RADIUS_FOOT = 0.2; //0.40;
-const double WORKSPACE_RADIUS_HAND = 0.2;
+const double WORKSPACE_RADIUS_HAND = 0.8;
 const double GOAL_SAMPLER_TIME_BUDGET = 1.5;
 const double GOAL_SAMPLER_TIME_BUDGET_COM = 1.0;
 
@@ -29,7 +29,7 @@ const double DIST_HANDS_THRES_MAX = 0.55;
 
 const double CS_THRES = 5*1e-2;
 
-const int SCENARIO = 0;
+const int SCENARIO = 1;
 const double RESOLUTION = 0.05;
 
 #endif
