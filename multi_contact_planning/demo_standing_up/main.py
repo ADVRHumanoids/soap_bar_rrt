@@ -71,8 +71,8 @@ if __name__ == '__main__':
     stances0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
     q_list1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/qList.txt")
     stances1 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/sigmaList.txt")
-    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#2/qList.txt")
-    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#2/sigmaList.txt")
+    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#3/qList.txt")
+    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#3/sigmaList.txt")
 
     q_list = q_list0 + q_list1 + q_list2
     stances = stances0 + stances1 + stances2
@@ -96,14 +96,13 @@ if __name__ == '__main__':
         gzhandler.set_robot_position(initial_pos)
 
         rospy.sleep(1.)
-        state = gzhandler.get_link_state('base_link', 'world')
-
         wall_pose = dict()
-        wall_pose['position'] = [2.09 + 0.5, 0, 0]
+
+        base_link = gzhandler.get_link_state('base_link', 'world')
+        wall_pose['position'] = [2.1 - 1.338267 + base_link.link_state.pose.position.x + 0.5, 0, 0]
         Rz = np.array([[np.cos(np.pi/2), -np.sin(np.pi/2), 0], [np.sin(np.pi/2), np.cos(np.pi/2), 0], [0, 0, 1]])
         quat = eigenpy.Quaternion(Rz)
         wall_pose['orientation'] = [quat.x, quat.y, quat.z, quat.w]
-        # wall_pose['orientation'] = [0,0,0,1]
         model_xml = open('/home/luca/.gazebo/models/brick_box_3x1x3/model.sdf').read()
         gzhandler.spawn_sdf_model('wall', model_xml, wall_pose, 'world')
 

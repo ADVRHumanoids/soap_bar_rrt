@@ -5,7 +5,10 @@ import rospy
 from multi_contact_planning.srv import StiffnessDamping
 import numpy as np
 from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
-from std_srvs.srv import Empty
+from std_srvs.srv import SetBool, SetBoolResponse
+from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
+
+init_stiff = dict()
 
 def is_empty(any_structure):
     if any_structure:
@@ -38,34 +41,45 @@ def get_robot() :
 def setStiffnessAndDamping(robot, N_ITER, multiplier, chain):
 
     K0 = robot.arm(0).getStiffness()
+    print robot.arm(0).getJointNames()
     K1 = robot.arm(1).getStiffness()
+    print robot.arm(1).getJointNames()
     K2 = robot.leg(0).getStiffness()
+    print robot.leg(0).getJointNames()
     K3 = robot.leg(1).getStiffness()
+    print robot.leg(1).getJointNames()
+
 
     Kd0 = list()
     Kd1 = list()
     Kd2 = list()
     Kd3 = list()
     if chain == "left_arm":
-        Kd0 = multiplier * K0
+        print ['case: left_arm .... chain: ', chain]
+        Kd0 = [1400, 1000, 1000, 1000, 1000, 1000, 1000]
         Kd1 = K1
         Kd2 = K2
         Kd3 = K3
     elif chain == "right_arm":
+        print ['case: right_arm .... chain: ', chain]
         Kd0 = K0
-        Kd1 = multiplier * K1
+        Kd1 = [1400, 1000, 1000, 1000, 1000, 1000, 1000]
         Kd2 = K2
         Kd3 = K3
     elif chain == "left_leg":
+        print ['case: left_leg .... chain: ', chain]
         Kd0 = K0
         Kd1 = K1
-        Kd2 = multiplier * K2
+        Kd2 = [800, 800, 800, 800, 800, 800]
         Kd3 = K3
     elif chain == "right_leg":
+        print ['case: right_leg .... chain: ', chain]
         Kd0 = K0
         Kd1 = K1
         Kd2 = K2
-        Kd3 = multiplier * K3
+        Kd3 = [800, 800, 800, 800, 800, 800]
+
+
 
     for k in range(N_ITER):
         stiff0 = list()
@@ -100,15 +114,90 @@ def resetCommand(req):
     return True
 
 def resetStiffness(robot, N_ITER):
-    K = robot.getStiffness()
+    global init_stiff
+    K = robot.getStiffnessMap()
     Kd = init_stiff
     for k in range(N_ITER):
-        stiff = list()
-        for K_s, K_e in zip(K, Kd):
-            stiff.append(K_s + float(k) / (N_ITER - 1) * (K_e - K_s))
+        stiff = dict()
+        for name, K_s, K_e in zip(K, K.values(), Kd.values()):
+            stiff[name] = (K_s + float(k) / (N_ITER - 1) * (K_e - K_s))
         robot.setStiffness(stiff)
         robot.move()
         rospy.sleep(0.5/N_ITER)
+
+    print "Stiffness of robot is: ", robot.getStiffness()
+
+def initStiffness(EmptyRequest):
+    setInitStiff(robot)
+    print 'init stiffness: '
+    print robot.getStiffness()
+    return EmptyResponse()
+
+def setInitStiff(robot):
+    stiff = dict()
+    stiff = robot.getStiffnessMap()
+    stiff['RShSag'] = 700
+    stiff['RShLat'] = 500
+    stiff['RShYaw'] = 500
+    stiff['RElbj'] = 500
+    stiff['RForearmPlate'] = 500
+    stiff['RWrj1'] = 500
+    stiff['RWrj2'] = 500
+    stiff['LShSag'] = 700
+    stiff['LShLat'] = 500
+    stiff['LShYaw'] = 500
+    stiff['LElbj'] = 500
+    stiff['LForearmPlate'] = 500
+    stiff['LWrj1'] = 500
+    stiff['LWrj2'] = 500
+    stiff['WaistYaw'] = 1000
+    stiff['WaistLat'] = 400
+    stiff['LHipLat'] = 400
+    stiff['LHipSag'] = 400
+    stiff['LHipYaw'] = 400
+    stiff['LKneePitch'] = 400
+    stiff['LAnklePitch'] = 0
+    stiff['LAnkleRoll'] = 0
+    stiff['RHipLat'] = 400
+    stiff['RHipSag'] = 400
+    stiff['RHipYaw'] = 400
+    stiff['RKneePitch'] = 400
+    stiff['RAnklePitch'] = 0
+    stiff['RAnkleRoll'] = 0
+
+    global init_stiff
+    init_stiff = stiff
+
+    K = robot.getStiffnessMap()
+    Kd = stiff
+    for k in range(100):
+        s = dict()
+        for name, K_s, K_e in zip(K, K.values(), Kd.values()):
+            s[name] = (K_s + float(k) / (100 - 1) * (K_e - K_s))
+        robot.setStiffness(s)
+        robot.move()
+        rospy.sleep(0.5/100)
+
+def ankleStiff(EmptyRequest):
+    setAnkleStiff(robot)
+    return EmptyResponse()
+
+def setAnkleStiff(robot):
+    K = robot.getStiffnessMap()
+    Kd = K
+    Kd['LAnklePitch'] = 500
+    Kd['LAnkleRoll'] = 500
+    Kd['LAnklePitch'] = 500
+    Kd['LAnkleRoll'] = 500
+    for k in range(100):
+        s = dict()
+        for name, K_s, K_e in zip(K, K.values(), Kd.values()):
+            s[name] = (K_s + float(k) / (100 - 1) * (K_e - K_s))
+        robot.setStiffness(s)
+        robot.move()
+        rospy.sleep(0.5/100)
+
+    print "Stiffness of robot is: ", robot.getStiffness()
 
 if __name__ == '__main__':
 
@@ -120,10 +209,14 @@ if __name__ == '__main__':
     model.syncFrom(robot)
 
     robot.setControlMode(xbot.ControlMode.Stiffness())
-    init_stiff = robot.getStiffness()
+    global init_stiff
+    init_stiff = robot.getStiffnessMap()
 
-    s = rospy.Service('xbot_mode/set_stiffness_damping', StiffnessDamping, executeCommand)
-    r = rospy.Service('xbot_mode/reset_stiffness', StiffnessDamping, resetCommand)
+    rospy.Service('xbot_mode/set_stiffness_damping', StiffnessDamping, executeCommand)
+    rospy.Service('xbot_mode/reset_stiffness', StiffnessDamping, resetCommand)
+    rospy.Service('xbot_mode/init_stiffness', Empty, initStiffness)
+    rospy.Service('xbot_mode/ankle_stiffness', Empty, ankleStiff)
+
     while not rospy.is_shutdown():
         robot.sense()
         rospy.spin()

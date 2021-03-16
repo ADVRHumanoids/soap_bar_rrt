@@ -13,14 +13,13 @@ import eigenpy
 import os
 import sys
 from moveit_msgs.msg import CollisionObject
+from std_srvs.srv import Empty
 from cartesio_acceleration_support import tasks
 from multi_contact_planning.srv import StiffnessDamping
 from std_srvs.srv import SetBool
 import xbot_interface.xbot_interface as xbot
 from xbot_msgs.msg import JointCommand
 import json
-import time
-import roslaunch
 
 # import coman_rising.py from cartesio_planning
 user = os.getenv("ROBOTOLOGY_ROOT")
@@ -67,6 +66,8 @@ class Connector:
         self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
         self.__reset_stiffness = rospy.ServiceProxy('xbot_mode/reset_stiffness', StiffnessDamping)
         self.__stiffness_pub = rospy.Publisher('xbotcore/command', JointCommand, queue_size=10, latch=True)
+        self.__init_stiffness = rospy.ServiceProxy('xbot_mode/init_stiffness', Empty)
+        self.__ankle_stiffness = rospy.ServiceProxy('xbot_mode/ankle_stiffness', Empty)
 
 
     def callback(self, data):
@@ -248,9 +249,11 @@ class Connector:
     def surface_reacher(self, turn, force_treshold):
 
         print 'starting surface reacher...'
-        self.ci.reset(0)
+
+        self.__ankle_stiffness()
         task = self.ctrl_tasks[self.__lifted_contact_ind]
-        task.setBaseLink('torso')
+        # task.setBaseLink('torso')
+        self.ci.reset(0)
         # velocity desired
         vel_ref = 0.1
         vel_task = list()
@@ -277,6 +280,7 @@ class Connector:
         task.setLambda(0)
 
         self.ci_time = 0
+        q = self.model.model.getJointPosition()
 
         while not self.impact_detector(turn, force_treshold):
 
@@ -302,7 +306,6 @@ class Connector:
         task.setLambda(lambda_value)
 
         print 'Surface reacher done'
-        task.setBaseLink('world')
         return q
 
         ############################################
@@ -611,6 +614,7 @@ class Connector:
 
         # activate fopt_node
         self.__set_fopt_active(True)
+        self.__init_stiffness()
 
     def set_limits(self, links, rot):
         # set friction cone rotation matrices
@@ -692,16 +696,8 @@ class Connector:
                 self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
                 self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
-
-            # change stiffness
-            if i > 4 and len(active_links_start) == 3 and self.model.simulation:
-                self.__set_stiffdamp(100, 2, self.__chain_map[self.__lifted_contact_link])
-                self.__half = True
-                self.model.robot.sense()
-
             # set start and goal configurations
             [q_start, q_goal] = self.computeStartAndGoal(0.025, i)
-
 
             # find rotation matrices and quaternions for start and goal active_links
             normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
@@ -726,7 +722,7 @@ class Connector:
                 all_links = self.model.ctrl_points.values()
                 [all_links.remove(active) for active in active_links_start]
                 lifted_link = all_links[0]
-                self.__set_stiffdamp(100, 3, self.__chain_map[lifted_link])
+                self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
 
             # set active_links_start for fopt_node
             if not self.__complete_solution and self.model.simulation:
@@ -867,7 +863,7 @@ class Connector:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
                 else:
-                    q = self.surface_reacher(i, 20)
+                    q = self.surface_reacher(i, 30)
                     self.q_list[i+1] = q
 
             # forza giusta vez!
@@ -878,8 +874,7 @@ class Connector:
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
             i = i + 1
-            if self.__half:
-                self.__reset_stiffness(100, 2, '')
+            self.__reset_stiffness(100, 3, '')
             print 'next config'
 
     def saveSolution(self):
