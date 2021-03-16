@@ -77,7 +77,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
         for(int i = 1; i <= (int)(side_x/resolution); i++)
         {
             x = center(0) - (side_x/2.0) + i*resolution;
-            y = center(1) + 0.8;
+            y = center(1) + 0.7; //0.8;
             for(int j = 1; j <= (int)(side_z/resolution); j++)
             {
                 z = center(2) - (side_z/2.0) + j*resolution;
@@ -90,7 +90,7 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
         for(int i = 1; i <= (int)(side_x/resolution); i++)
         {
             x = center(0) - (side_x/2.0) + i*resolution;
-            y = center(1) - 0.8;
+            y = center(1) - 0.7; //0.8;
             for(int j = 1; j <= (int)(side_z/resolution); j++)
             {
                 z = center(2) - (side_z/2.0) + j*resolution;

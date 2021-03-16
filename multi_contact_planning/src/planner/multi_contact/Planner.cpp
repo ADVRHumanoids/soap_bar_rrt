@@ -681,8 +681,8 @@ void Planner::run(){
                     
                     auto tic = std::chrono::high_resolution_clock::now();
 
-                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, adding);
-                    //bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, false);
+                    //bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, adding);
+                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, false);
                     if(resIKCS) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
                     else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
                     
@@ -789,12 +789,15 @@ bool Planner::distanceCheck(Stance sigmaNew)
         
     //if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
         //if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
-        
+
+    if(SCENARIO == 2){
+        if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))   
+             if(fabs(pLFoot(2) - pLHandC(2)) < 5.0*WORKSPACE_RADIUS_FOOT || fabs(pLFoot(2) - pLHandC(2)) > 8.0*WORKSPACE_RADIUS_FOOT) return false;
+        if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))   
+             if(fabs(pRFoot(2) - pRHandC(2)) < 5.0*WORKSPACE_RADIUS_HAND || fabs(pRFoot(2) - pRHandC(2)) > 8.0*WORKSPACE_RADIUS_HAND) return false;
+    }
+
     if(SCENARIO == 3){
-//         if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(R_FOOT))   
-//             if(euclideanDistance(pLFoot, pRFoot) > 0.6) return false;
-//         if(sigmaNew.isActiveEndEffector(L_HAND_D) && sigmaNew.isActiveEndEffector(R_HAND_D))   
-//             if(euclideanDistance(pLHandD, pRHandD) > 0.8) return false;
         if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(R_FOOT))   
              if(fabs(pLFoot(2) - pRFoot(2)) > WORKSPACE_RADIUS_FOOT) return false;
         if(sigmaNew.isActiveEndEffector(L_HAND_D) && sigmaNew.isActiveEndEffector(R_HAND_D))   
@@ -954,7 +957,7 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
     cPrev.segment(3,3) = rotFB;
     cPrev.tail(n_dof-6) = qNear.getJointValues();
     
-    if(SCENARIO == 3) NSPG->getIKSolver()->getModel()->getRobotState("home", cPrev);
+    if(SCENARIO == 2 || SCENARIO == 3) NSPG->getIKSolver()->getModel()->getRobotState("home", cPrev);
     
     NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
     NSPG->getIKSolver()->getModel()->update();

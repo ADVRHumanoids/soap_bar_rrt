@@ -51,18 +51,19 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
     random_map.insert(std::make_pair("VIRTUALJOINT_2", generateRandom()*50));
     random_map.insert(std::make_pair("VIRTUALJOINT_3", generateRandom()*50));              
     
-    
-    for (auto i:colliding_chains)
-    {
-        i.getJointPosition(chain_map);
-            
-        for (auto j : chain_map)
+    if(RAND_VEL_CHAINS){
+        for (auto i:colliding_chains)
         {
-            j.second = generateRandom() * velocityLim_map[j.first];
-            random_map.insert(std::make_pair(j.first, j.second));
+            i.getJointPosition(chain_map);
+                
+            for (auto j : chain_map)
+            {
+                j.second = generateRandom() * velocityLim_map[j.first];
+                random_map.insert(std::make_pair(j.first, j.second));
+            }
         }
     }
-   
+    
     return random_map;
 }
 
