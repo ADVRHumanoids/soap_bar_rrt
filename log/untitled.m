@@ -15,3 +15,10 @@ legend('collision check', 'centroidal statics check', 'IK solve')
 
 disp(["success rate is: ", good/length(success)*100])
 disp(["average: ", average])
+
+disp(["average ik time: ", sum(time_solve)/length(time_solve)])
+disp(["average collision time: ", sum(time_collision_check)/length(time_collision_check)])
+disp(["average cs time: ", sum(time_centroidal_statics_check)/length(time_centroidal_statics_check)])
+
+sum_times = sum(time_solve)/length(time_solve) + sum(time_collision_check)/length(time_collision_check) + sum(time_centroidal_statics_check)/length(time_centroidal_statics_check);
+disp(["average number of calls per feasible solution: ", average/sum_times])
