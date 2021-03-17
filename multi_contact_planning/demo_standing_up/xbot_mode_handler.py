@@ -99,7 +99,7 @@ def setStiffnessAndDamping(robot, N_ITER, multiplier, chain):
         robot.leg(0).setStiffness(stiff2)
         robot.leg(1).setStiffness(stiff3)
         robot.move()
-        rospy.sleep(0.5/N_ITER)
+        rospy.sleep(1.0/N_ITER)
 
     print "Stiffness of robot is: ", robot.getStiffness()
 
@@ -123,7 +123,7 @@ def resetStiffness(robot, N_ITER):
             stiff[name] = (K_s + float(k) / (N_ITER - 1) * (K_e - K_s))
         robot.setStiffness(stiff)
         robot.move()
-        rospy.sleep(0.5/N_ITER)
+        rospy.sleep(1.0/N_ITER)
 
     print "Stiffness of robot is: ", robot.getStiffness()
 
@@ -156,14 +156,14 @@ def setInitStiff(robot):
     stiff['LHipSag'] = 400
     stiff['LHipYaw'] = 400
     stiff['LKneePitch'] = 400
-    stiff['LAnklePitch'] = 0
-    stiff['LAnkleRoll'] = 0
+    stiff['LAnklePitch'] = 400
+    stiff['LAnkleRoll'] = 400
     stiff['RHipLat'] = 400
     stiff['RHipSag'] = 400
     stiff['RHipYaw'] = 400
     stiff['RKneePitch'] = 400
-    stiff['RAnklePitch'] = 0
-    stiff['RAnkleRoll'] = 0
+    stiff['RAnklePitch'] = 400
+    stiff['RAnkleRoll'] = 400
 
     global init_stiff
     init_stiff = stiff
@@ -176,7 +176,7 @@ def setInitStiff(robot):
             s[name] = (K_s + float(k) / (100 - 1) * (K_e - K_s))
         robot.setStiffness(s)
         robot.move()
-        rospy.sleep(0.5/100)
+        rospy.sleep(1.0/100)
 
 def ankleStiff(EmptyRequest):
     setAnkleStiff(robot)
@@ -195,7 +195,7 @@ def setAnkleStiff(robot):
             s[name] = (K_s + float(k) / (100 - 1) * (K_e - K_s))
         robot.setStiffness(s)
         robot.move()
-        rospy.sleep(0.5/100)
+        rospy.sleep(1.0/100)
 
     print "Stiffness of robot is: ", robot.getStiffness()
 
