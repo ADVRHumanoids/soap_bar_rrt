@@ -32,7 +32,7 @@ RightCoP:
     lib_name: libcartesio_acceleration_support.so
     type: "CoP"
     link: "r_sole"
-    x_limits: [-0.05, 0.1]
+    x_limits: [-0.1, 0.1]
     y_limits: [-0.05, 0.05]
     #x_limits: [-0.025, 0.05]
     #y_limits: [-0.025, 0.025]
@@ -66,14 +66,14 @@ r_sole_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "r_sole"
-    friction_coeff: 0.71
+    friction_coeff: 0.81
 #    local: true
 
 l_sole_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "l_sole"
-    friction_coeff: 0.71
+    friction_coeff: 0.81
 #    local: true
 
 r_ball_tip_fc:
