@@ -71,8 +71,8 @@ if __name__ == '__main__':
     stances0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/sigmaList.txt")
     q_list1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/qList.txt")
     stances1 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/sigmaList.txt")
-    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#3/qList.txt")
-    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#3/sigmaList.txt")
+    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#4/qList.txt")
+    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/#4/sigmaList.txt")
 
     q_list = q_list0 + q_list1 + q_list2
     stances = stances0 + stances1 + stances2
