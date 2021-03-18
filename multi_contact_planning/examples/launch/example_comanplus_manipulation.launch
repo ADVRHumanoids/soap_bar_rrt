@@ -56,7 +56,7 @@
         args="0 0 0 0 0 0 world planner/goal_sampler/world 30"/>
 
     <node type="rviz" name="rviz" pkg="rviz"
-        args="-d $(find multi_contact_planning)/configs/rviz/example_comanplus_manipulation.rviz" output="screen"/>
+        args="-d $(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/configs/rviz/example_comanplus_manipulation.rviz" output="screen"/>
     
     <!-- node if="$(arg use_goal_generator)" pkg="cartesian_interface" type="marker_spawner" name="goal_marker_spawner" output="screen">
         <param name="ns" value="planner/goal_sampler"/>
