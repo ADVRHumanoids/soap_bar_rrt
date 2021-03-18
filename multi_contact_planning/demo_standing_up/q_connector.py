@@ -241,7 +241,8 @@ class Connector:
         print wrench
         # wrench[direction] = 0 # FOR SIMULATION
         direction = [k for k, e in enumerate(self.stance_list[turn+1][self.__lifted_contact]['ref']['normal']) if e != 0]
-        if (abs(wrench[2]) >= magnitude):
+        print np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2]))
+        if (np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2])) >= magnitude):
             detect_bool = 1
 
         return detect_bool
@@ -250,7 +251,7 @@ class Connector:
 
         print 'starting surface reacher...'
 
-        self.__ankle_stiffness()
+        # self.__ankle_stiffness()
         task = self.ctrl_tasks[self.__lifted_contact_ind]
         # task.setBaseLink('torso')
         self.ci.reset(0)
@@ -631,8 +632,8 @@ class Connector:
         fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
         fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
         if len(links) == 2:
-            fmin_d = np.array([-100000., -100000., -100000., -100000., -100000., -100000.])
-            fmax_d = np.array([100000., 100000., 100000., 100000., 100000., 100000.])
+            fmin_d = np.array([-1000., -1000., -1000., -1000., -1000., -1000.])
+            fmax_d = np.array([1000., 1000., 1000., 1000., 1000., 1000.])
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d - fmin[index])/100. for index in range(len(fmin))]
@@ -646,11 +647,11 @@ class Connector:
             fmax_d = list()
             for index in range(len(links)):
                 if links[index] == 'l_sole' or links[index] == 'r_sole':
-                    fmin_d.append(np.array([-100000., -100000., -100000., -100000., -100000., -100000.]))
-                    fmax_d.append(np.array([100000., 100000., 100000., 100000., 100000., 100000.]))
+                    fmin_d.append(np.array([-1000., -1000., -1000., -1000., -1000., -1000.]))
+                    fmax_d.append(np.array([1000., 1000., 1000., 1000., 1000., 1000.]))
                 else:
-                    fmin_d.append(np.array([-100000., -100000., -100000., 0., 0., 0.]))
-                    fmax_d.append(np.array([100000., 100000., 100000., 0., 0., 0.]))
+                    fmin_d.append(np.array([-1000., -1000., -1000., 0., 0., 0.]))
+                    fmax_d.append(np.array([1000., 1000., 1000., 0., 0., 0.]))
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
@@ -696,8 +697,7 @@ class Connector:
                 self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
                 self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
 
-            # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.025, i)
+
 
             # find rotation matrices and quaternions for start and goal active_links
             normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
@@ -728,6 +728,9 @@ class Connector:
             if not self.__complete_solution and self.model.simulation:
                 self.set_limits(active_links_start, [self.rotation(n) for n in normals_start])
                 self.sendForces(i)
+
+            # set start and goal configurations
+            [q_start, q_goal] = self.computeStartAndGoal(0.025, i)
 
             # check the goal state whether we are adding or removing a contact
             adding = False
@@ -863,7 +866,7 @@ class Connector:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
                 else:
-                    q = self.surface_reacher(i, 30)
+                    q = self.surface_reacher(i, 20)
                     self.q_list[i+1] = q
 
             # forza giusta vez!
