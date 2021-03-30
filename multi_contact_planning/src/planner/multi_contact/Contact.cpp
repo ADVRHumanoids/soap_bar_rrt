@@ -1,6 +1,6 @@
 #include "Contact.hpp"
 
-Contact::Contact(EndEffector _name, Eigen::Affine3d _pose, Eigen::Vector3d _force, Eigen::Vector3d _normal){
+Contact::Contact(EndEffector _name, Eigen::Affine3d _pose, Eigen::VectorXd _force, Eigen::Vector3d _normal){
     name = _name;
     pose = _pose;
     force = _force;
@@ -22,7 +22,7 @@ void Contact::setPose(Eigen::VectorXd pos, Eigen::Matrix3d rot){
     pose.linear() = rot;
 }
 
-Eigen::Vector3d Contact::getForce(){
+Eigen::VectorXd Contact::getForce(){
     return force;
 }
 
@@ -30,6 +30,6 @@ Eigen::Vector3d Contact::getNormal(){
     return normal;
 }
 
-void Contact::setForce(Eigen::Vector3d _force){
+void Contact::setForce(Eigen::VectorXd _force){
     force = _force;
 }

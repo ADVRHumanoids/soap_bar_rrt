@@ -548,8 +548,8 @@ void Planner::run(){
     EndEffector pk;
     Eigen::Vector3d rRand;
 
-    std::shared_ptr<Vertex> vNear;
-    std::shared_ptr<Vertex> vNew;
+    //std::shared_ptr<Vertex> vNear;
+    //std::shared_ptr<Vertex> vNew;
     
     bool adding;
 
@@ -582,11 +582,11 @@ void Planner::run(){
             int iNear = findNearestVertexIndex(pk, rRand);
             foutLogMCP << "iNear = " << iNear << std::endl;
             foutLogMCP << "pk = " << pk << std::endl;
-
+            
             if(iNear != -1)
             {
                 // a vertex of the tree is available for expansion using ee pk (based on the condition specified in function findNearestVertexIndex)
-                vNear = tree->getVertex(iNear);
+                std::shared_ptr<Vertex> vNear = tree->getVertex(iNear);
                 Stance sigmaNear = vNear->getStance();
                 Configuration qNear = vNear->getConfiguration();
 
@@ -700,7 +700,7 @@ void Planner::run(){
                         retrieveContactForces(qNew, sigmaNew);
                     
                         // add new vertex    
-                        vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
+                        std::shared_ptr<Vertex> vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
                         tree->addVertex(vNew);
                         solutionFound = isGoalStance(vNew);
 
@@ -813,7 +813,112 @@ bool Planner::distanceCheck(Stance sigmaNew)
     return true;
 }
 
+void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
+    
+    foutLogMCP << "STABILITY CHECK" << std::endl;
+    
+    Configuration qCurr;
+    Stance sigmaCurr;
+    for(int i = 0; i < qList.size(); i++){
+        foutLogMCP << "************************************ i = " << i << std::endl;
+        
+        qCurr = qList.at(i);
+        sigmaCurr = sigmaList.at(i);
+        Eigen::Vector3d rCoMCurr = computeCoM(qCurr);
+    
+        foutLogMCP << "rCoM = " << rCoMCurr.transpose() << std::endl;
+        
+        Eigen::VectorXd cNew(n_dof);
+        Eigen::Vector3d posFB = qCurr.getFBPosition();
+        Eigen::Vector3d rotFB = qCurr.getFBOrientation();
+        cNew.segment(0,3) = posFB;
+        cNew.segment(3,3) = rotFB;
+        cNew.tail(n_dof-6) = qCurr.getJointValues();
+        NSPG->getIKSolver()->getModel()->setJointPosition(cNew);
+        NSPG->getIKSolver()->getModel()->update();
+        
+        std::vector<std::string> active_links;
+        std::vector<Eigen::Affine3d> ref_tasks;
+        std::vector<Eigen::Vector3d> normals;
+        for(int i = 0; i < sigmaCurr.getSize(); i++)
+        {
+            EndEffector ee = sigmaCurr.getContact(i)->getEndEffectorName();
+            Eigen::Vector3d nC_i = sigmaCurr.getContact(i)->getNormal();
+            std::vector<std::string> contact_links = getContactLinks(ee);
+            for(int j = 0; j < contact_links.size(); j++){
+                active_links.push_back(contact_links[j]);
+                normals.push_back(nC_i);
+            }
+        }
+        
+        _cs->setContactLinks(active_links);
+        
+        if(sigmaCurr.getSize() == 2) _cs->setOptimizeTorque(true);
+        else _cs->setOptimizeTorque(false);
+        
+        _cs->init(false);  
+        
+        for (int i = 0; i < sigmaCurr.getContacts().size(); i ++)
+        {
+            Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
+            _cs->setContactRotationMatrix(active_links[i], rot);
+        }
+        
+        if (_cs->checkStability(5*1e-2)) foutLogMCP << "CS CHECK TRUE" << std::endl;
+        else foutLogMCP << "CS CHECK FALSE" << std::endl;  
+        
+        /////////////////////// TRANSITION CHECK
+        if(i == 0) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+        else{
+            Stance sigmaPrev = sigmaList.at(i-1);
+            Stance sigmaLarge, sigmaSmall;
+            if(sigmaCurr.getSize() > sigmaPrev.getSize())
+            {
+                sigmaLarge = sigmaCurr;
+                sigmaSmall = sigmaPrev;
+            }
+            else
+            {
+                sigmaLarge = sigmaPrev;
+                sigmaSmall = sigmaCurr;
+            }
+            
+            std::vector<std::string> active_links;
+            std::vector<Eigen::Affine3d> ref_tasks;
+            std::vector<Eigen::Vector3d> normals;
+            for(int i = 0; i < sigmaSmall.getSize(); i++)
+            {
+                EndEffector ee = sigmaSmall.getContact(i)->getEndEffectorName();
+                Eigen::Vector3d nC_i = sigmaSmall.getContact(i)->getNormal();
+                std::vector<std::string> contact_links = getContactLinks(ee);
+                for(int j = 0; j < contact_links.size(); j++){
+                    active_links.push_back(contact_links[j]);
+                    normals.push_back(nC_i);
+                }
+            }
+            
+            _cs->setContactLinks(active_links);
+            
+            if(sigmaSmall.getSize() == 2) _cs->setOptimizeTorque(true);
+            else _cs->setOptimizeTorque(false);
+            
+            _cs->init(false);  
+            
+            for (int i = 0; i < sigmaSmall.getContacts().size(); i ++)
+            {
+                Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
+                _cs->setContactRotationMatrix(active_links[i], rot);
+            }
+            
+            if (_cs->checkStability(5*1e-2)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+            else foutLogMCP << "TRANSITION CHECK FALSE" << std::endl; 
+            
+        }
+    }
+}
 
+
+/*
 void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
     
     foutLogMCP << "STABILITY CHECK" << std::endl;
@@ -913,7 +1018,7 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
         }
     }
 }
-
+*/
 
 bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding){
     
@@ -932,7 +1037,19 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
 
     // set references
     std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
+    //std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d", "l_foot_upper_right_link", "l_foot_upper_left_link", "l_foot_lower_right_link", "l_foot_lower_left_link", "r_foot_upper_right_link", "r_foot_upper_left_link", "r_foot_lower_right_link", "r_foot_lower_left_link"};
     ci->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
+    //FIXME /////////////////////////////////////////////////////////////////////////////////
+    ci->setActivationState("l_foot_upper_right_link", XBot::Cartesian::ActivationState::Disabled);
+    ci->setActivationState("l_foot_upper_left_link", XBot::Cartesian::ActivationState::Disabled);
+    ci->setActivationState("l_foot_lower_right_link", XBot::Cartesian::ActivationState::Disabled);
+    ci->setActivationState("l_foot_lower_left_link", XBot::Cartesian::ActivationState::Disabled);
+    ci->setActivationState("r_foot_upper_right_link", XBot::Cartesian::ActivationState::Disabled);
+    ci->setActivationState("r_foot_upper_left_link", XBot::Cartesian::ActivationState::Disabled);
+    ci->setActivationState("r_foot_lower_right_link", XBot::Cartesian::ActivationState::Disabled);
+    ci->setActivationState("r_foot_lower_left_link", XBot::Cartesian::ActivationState::Disabled);
+    /////////////////////////////////////////////////////////////////////////////////////////
+    
     for(int i = 0; i < all_tasks.size(); i++){
         std::vector<std::string> subtasks = getSubtasksStringName(all_tasks[i]);
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
@@ -1007,11 +1124,94 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
     
     std::vector<std::string> active_links;
     std::vector<Eigen::Affine3d> ref_tasks;
+    std::vector<Eigen::Vector3d> normals;
+    for(int i = 0; i < sigma.getSize(); i++)
+    {
+        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+        Eigen::Vector3d nC_i = sigma.getContact(i)->getNormal();
+        std::vector<std::string> contact_links = getContactLinks(ee);
+        for(int j = 0; j < contact_links.size(); j++){
+            active_links.push_back(contact_links[j]);
+            normals.push_back(nC_i);
+        }
+    }
+    
+    _cs->setContactLinks(active_links);
+    
+    if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
+    else _cs->setOptimizeTorque(false);
+    
+    _cs->init(false);  
+    
+    for (int i = 0; i < sigma.getContacts().size(); i ++)
+    {
+        Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
+        _cs->setContactRotationMatrix(active_links[i], rot);
+    }
+    
+    if (_cs->checkStability(CS_THRES))
+    {
+        foutLogMCP << "----------STABILITY CHECK PASSED----------" << std::endl;
+        
+        std::map<std::string, Eigen::Vector6d> FCmap = _cs->getForces();
+        for(int i = 0; i < sigma.getSize(); i++)
+        {
+            EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+            Eigen::Affine3d Tee;
+            NSPG->getIKSolver()->getCI()->getCurrentPose(getTaskStringName(ee), Tee);
+            
+            Eigen::Vector6d wrench;
+            wrench.setZero();
+            std::vector<std::string> contact_links = getContactLinks(ee);
+            for(int j = 0; j < contact_links.size(); j++){
+                Eigen::Affine3d Tp;
+                NSPG->getIKSolver()->getCI()->getCurrentPose(contact_links[j], Tp);
+            
+                Eigen::Vector6d FC = FCmap.find(contact_links[j])->second;
+                
+                Eigen::Vector3d force = FC.head(3);
+                Eigen::Vector3d torque = (Tp.translation() - Tee.translation()).cross(force);
+                
+                wrench.head(3) += force;
+                wrench.tail(3) += torque;                    
+            }
+            
+            sigma.getContact(i)->setForce(wrench);
+        
+        }
+    }
+}
+
+/*
+void Planner::retrieveContactForces(Configuration q, Stance &sigma){
+    
+    Eigen::VectorXd c(n_dof);
+    Eigen::Vector3d posFB = q.getFBPosition();
+    Eigen::Vector3d rotFB = q.getFBOrientation();
+    c.segment(0,3) = posFB;
+    c.segment(3,3) = rotFB;
+    c.tail(n_dof-6) = q.getJointValues();
+    NSPG->getIKSolver()->getModel()->setJointPosition(c);
+    NSPG->getIKSolver()->getModel()->update();
+    
+    std::vector<std::string> active_links;
+    std::vector<Eigen::Affine3d> ref_tasks;
     for(int i = 0; i < sigma.getSize(); i++)
     {
         EndEffector ee = sigma.getContact(i)->getEndEffectorName();
         active_links.push_back(getTaskStringName(ee));
         ref_tasks.push_back(sigma.retrieveContactPose(ee));
+        
+//         // TODO delete this in the following, it s for debug
+//         foutLogMCP << "pose from ref_tasks" << std::endl;
+//         foutLogMCP << ref_tasks[i].translation() << std::endl;
+//         foutLogMCP << ref_tasks[i].linear() << std::endl;
+//         Eigen::Affine3d pose;
+//         NSPG->getIKSolver()->getCI()->getCurrentPose(active_links[i], pose);
+//         foutLogMCP << "pose from CI" << std::endl;
+//         foutLogMCP << pose.translation() << std::endl;
+//         foutLogMCP << pose.linear() << std::endl;
+        
     }
 
     _cs->setContactLinks(active_links);
@@ -1031,8 +1231,7 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
     if (_cs->checkStability(CS_THRES))
     {
         foutLogMCP << "----------STABILITY CHECK PASSED----------" << std::endl;
-        //for (auto i : _cs->getContactLinks())
-            //foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
+        for (auto i : _cs->getContactLinks()) foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
         
         std::map<std::string, Eigen::Vector6d> FCmap = _cs->getForces();
         for(int i = 0; i < sigma.getSize(); i++)
@@ -1041,10 +1240,98 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
             std::string ee_str = getTaskStringName(ee);
             Eigen::Vector6d FC = FCmap.find(ee_str)->second;
             sigma.getContact(i)->setForce(FC.head(3));
+            
+            foutLogMCP << "ee_str = " << ee_str << std::endl;
+            foutLogMCP << "FC = " << FC.transpose() << std::endl;
         }
     }
     
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+//     Eigen::Affine3d T1;
+//     NSPG->getIKSolver()->getCI()->getCurrentPose("l_sole", T1);
+//     foutLogMCP << "POSE l_sole" << std::endl;
+//     foutLogMCP << T1.translation() << std::endl;
+//     foutLogMCP << T1.linear() << std::endl;
+//     Eigen::Affine3d T2;
+//     NSPG->getIKSolver()->getCI()->getCurrentPose("l_foot_upper_left_link", T2);
+//     foutLogMCP << "POSE l_upper_left" << std::endl;
+//     foutLogMCP << T2.translation() << std::endl;
+//     foutLogMCP << T2.linear() << std::endl;
+    
+    active_links.clear();
+    ref_tasks.clear();
+    Eigen::Affine3d T;
+    for(int i = 0; i < sigma.getSize(); i++)
+    {
+        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+        std::vector<std::string> contact_links = getContactLinks(ee);
+        foutLogMCP << "pose end effector" << std::endl;
+        foutLogMCP << sigma.retrieveContactPose(ee).translation() << std::endl;
+        foutLogMCP << sigma.retrieveContactPose(ee).linear() << std::endl;
+        for(int j = 0; j < contact_links.size(); j++){
+            active_links.push_back(contact_links[j]);
+            NSPG->getIKSolver()->getCI()->getCurrentPose(contact_links[j], T);
+            ref_tasks.push_back(T);
+            
+            foutLogMCP << "pose contact link" << std::endl;
+            foutLogMCP << T.translation() << std::endl;
+            foutLogMCP << T.linear() << std::endl;
+                
+        }
+    }
+    
+    _cs->setContactLinks(active_links);
+    
+    if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
+    else _cs->setOptimizeTorque(false);
+    
+    _cs->init(false);  
+    
+    for (int i = 0; i < sigma.getContacts().size(); i ++)
+    {
+        auto nC_i = getNormalAtPoint(ref_tasks[i].translation().transpose());
+        Eigen::Matrix3d rot = generateRotationFrictionCone(nC_i);
+        _cs->setContactRotationMatrix(active_links[i], rot);
+    }
+    
+    if (_cs->checkStability(CS_THRES))
+    {
+        foutLogMCP << "----------STABILITY CHECK SURFACE PASSED----------" << std::endl;
+        for (auto i : _cs->getContactLinks()) foutLogMCP << i << ": \n" << _cs->getContactFrame(i) << std::endl;
+        
+        std::map<std::string, Eigen::Vector6d> FCmap = _cs->getForces();
+        for(int i = 0; i < sigma.getSize(); i++)
+        {
+            EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+            Eigen::Affine3d Tee;
+            NSPG->getIKSolver()->getCI()->getCurrentPose(getTaskStringName(ee), Tee);
+            
+            Eigen::Vector6d wrench;
+            wrench.setZero();
+            std::vector<std::string> contact_links = getContactLinks(ee);
+            for(int j = 0; j < contact_links.size(); j++){
+                Eigen::Affine3d Tp;
+                NSPG->getIKSolver()->getCI()->getCurrentPose(contact_links[j], Tp);
+            
+                Eigen::Vector6d FC = FCmap.find(contact_links[j])->second;
+                
+                Eigen::Vector3d force = FC.head(3);
+                Eigen::Vector3d torque = (Tp.translation() - Tee.translation()).cross(force);
+                
+                wrench.head(3) += force;
+                wrench.tail(3) += torque;                    
+            }
+            
+            foutLogMCP << "ee_str = " << getTaskStringName(ee) << std::endl;
+            foutLogMCP << "FC = " << wrench.transpose() << std::endl;
+        
+        }
+    }
+    else foutLogMCP << "----------STABILITY CHECK SURFACE NOT PASSED----------" << std::endl;
+    
 }
+*/
 
 void Planner::retrieveContactPoses(Configuration q, Stance &sigma){
     for(int i = 0; i < sigma.getSize(); i++)

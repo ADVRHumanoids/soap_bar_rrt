@@ -140,6 +140,38 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
 void NSPG::initializeBalanceCheck(Stance sigma){  
     
     std::vector<std::string> active_links;
+    std::vector<Eigen::Affine3d> ref_tasks;
+    std::vector<Eigen::Vector3d> normals;
+    for(int i = 0; i < sigma.getSize(); i++)
+    {
+        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+        Eigen::Vector3d nC_i = sigma.getContact(i)->getNormal();
+        std::vector<std::string> contact_links = getContactLinks(ee);
+        for(int j = 0; j < contact_links.size(); j++){
+            active_links.push_back(contact_links[j]);
+            normals.push_back(nC_i);
+        }
+    }
+    
+    _cs->setContactLinks(active_links);
+    
+    if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
+    else _cs->setOptimizeTorque(false);
+    
+    _cs->init(false);  
+    
+    for (int i = 0; i < sigma.getContacts().size(); i ++)
+    {
+        Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
+        _cs->setContactRotationMatrix(active_links[i], rot);
+    }
+}
+
+
+/*
+void NSPG::initializeBalanceCheck(Stance sigma){  
+    
+    std::vector<std::string> active_links;
     //std::vector<Eigen::Affine3d> ref_tasks;
     for(int i = 0; i < sigma.getSize(); i++)
     {
@@ -162,7 +194,7 @@ void NSPG::initializeBalanceCheck(Stance sigma){
         _cs->setContactRotationMatrix(active_links[i], rot);
     }
 }
-
+*/
 
 bool NSPG::balanceCheck(Stance sigma){
     if (_cs->checkStability(CS_THRES)) return true; 

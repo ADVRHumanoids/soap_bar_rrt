@@ -1,7 +1,10 @@
 stack:
-    - ["LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"]
+    - ["LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ", "LeftFootA", "LeftFootB", "LeftFootC", "LeftFootD", "RightFootA", "RightFootB", "RightFootC", "RightFootD"]
+    #- ["LeftFootNoZ", "RightFootNoZ", "LeftHandCNoZ", "RightHandCNoZ", "LeftHandDNoZ", "RightHandDNoZ", "LeftFootZ", "RightFootZ", "LeftHandCZ", "RightHandCZ", "LeftHandDZ", "RightHandDZ"]
     - ["Com"]
     - ["Postural"]
+    #- ["LeftFootA", "LeftFootB", "LeftFootC", "LeftFootD", "RightFootA", "RightFootB", "RightFootC", "RightFootD"]
+    
     
 constraints: ["JointLimits"] #, "VelocityLimits"]
 
@@ -9,7 +12,7 @@ JointLimits:
     type: "JointLimits"
 
 VelocityLimits:
-    type: "VelocityLimits"    
+    type: "VelocityLimits"
     
 # ------------------------------------------------------------------------------------------------------------- 
 LeftFoot:
@@ -122,3 +125,44 @@ Com:
 Postural:
     type: "Postural"
     lambda: 0.1
+    
+LeftFootA:
+    type: "Cartesian"
+    distal_link: "l_foot_upper_right_link"
+    lambda: 1.0
+
+LeftFootB:
+    type: "Cartesian"
+    distal_link: "l_foot_upper_left_link"
+    lambda: 1.0
+
+LeftFootC:
+    type: "Cartesian"
+    distal_link: "l_foot_lower_right_link"
+    lambda: 1.0
+
+LeftFootD:
+    type: "Cartesian"
+    distal_link: "l_foot_lower_left_link"
+    lambda: 1.0
+
+RightFootA:
+    type: "Cartesian"
+    distal_link: "r_foot_upper_right_link"
+    lambda: 1.0
+
+RightFootB:
+    type: "Cartesian"
+    distal_link: "r_foot_upper_left_link"
+    lambda: 1.0
+
+RightFootC:
+    type: "Cartesian"
+    distal_link: "r_foot_lower_right_link"
+    lambda: 1.0
+
+RightFootD:
+    type: "Cartesian"
+    distal_link: "r_foot_lower_left_link"
+    lambda: 1.0
+    

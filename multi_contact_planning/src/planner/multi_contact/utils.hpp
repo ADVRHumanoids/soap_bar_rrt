@@ -27,6 +27,31 @@ inline std::string getTaskStringName(EndEffector ee){
     return ee_str;
 }
 
+inline std::vector<std::string> getContactLinks(EndEffector ee){
+    std::vector<std::string> contact_links;
+    
+    
+    if(ee == L_HAND_C) contact_links.push_back("TCP_L");
+    else if(ee == R_HAND_C) contact_links.push_back("TCP_R");
+    else if(ee == L_HAND_D) contact_links.push_back("l_ball_tip_d"); 
+    else if(ee == R_HAND_D) contact_links.push_back("r_ball_tip_d");
+    else if(ee == L_FOOT){
+        contact_links.push_back("l_foot_upper_right_link");
+        contact_links.push_back("l_foot_upper_left_link");
+        contact_links.push_back("l_foot_lower_right_link");
+        contact_links.push_back("l_foot_lower_left_link");
+    }
+    else if(ee == R_FOOT){
+        contact_links.push_back("r_foot_upper_right_link");
+        contact_links.push_back("r_foot_upper_left_link");
+        contact_links.push_back("r_foot_lower_right_link");
+        contact_links.push_back("r_foot_lower_left_link");
+    }
+    
+    return contact_links;
+}
+
+
 // inline std::vector<std::string> getTasksStringName(EndEffector ee){
 //     std::vector<std::string> ee_str;
 // 
