@@ -167,7 +167,7 @@ class GazeboRobotHandler:
         start_posture = self.model.getJointPosition()[6:]
         v = self.model.getJointVelocity()[6:]
 
-        duration = 3
+        duration = 10
 
         initial_time = rospy.get_time()
         time = initial_time
