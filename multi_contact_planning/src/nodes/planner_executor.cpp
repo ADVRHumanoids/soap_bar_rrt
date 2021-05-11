@@ -145,11 +145,17 @@ PlannerExecutor::PlannerExecutor():
     _n()
 {
 
+    std::cout << " INITIALIZED 0" << std::endl;
     init_load_config();
+    std::cout << " INITIALIZED 1" << std::endl;
     init_load_model();
+    std::cout << " INITIALIZED 2" << std::endl;
     init_load_planner();
+    std::cout << " INITIALIZED 3" << std::endl;
     init_load_validity_checker();
+    std::cout << " INITIALIZED 4" << std::endl;
     init_goal_generator();
+    std::cout << " INITIALIZED 5" << std::endl;
     init_subscribe_start_goal();
     init_trj_publisiher();
     init_planner_srv();
