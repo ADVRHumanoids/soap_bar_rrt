@@ -144,6 +144,8 @@ public:
     void init(bool enable_log = true);
 
     bool isTorqueOptimized(){ return _optimize_torque;}
+    
+    XBot::Cartesian::CartesianInterface::Ptr getCI(){ return _ci; }
 
 
 private:

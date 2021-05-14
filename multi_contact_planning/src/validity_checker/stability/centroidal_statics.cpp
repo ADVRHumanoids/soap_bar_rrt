@@ -80,8 +80,16 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
         yaml << link + "_fc" << link + "_lims";
     if(_optimize_torque)
     {
-        for(auto link : contact_links)
+        //for(auto link : contact_links)
+        //    yaml << link + "_cop";
+        for(auto link : contact_links) // FIXME 
+        {
+            if (link == "TCP_R" || link == "TCP_L" || link == "l_ball_tip_d" || link == "r_ball_tip_d")
+                continue;
             yaml << link + "_cop";
+            yaml << link + "_nt";
+        }
+    
     }
     yaml << YAML::EndSeq;
 
@@ -108,11 +116,11 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
         yaml << YAML::EndMap;
     }
 
+    /*
     std::vector<double> f_max(6,1000.);
     std::vector<double> f_min(6,-1000.);
     if(!optimize_torque)
         f_max[3] = f_max[4] = f_max[5] = f_min[3] = f_min[4] = f_min[5] = 0.;
-
     for(auto link : contact_links)
     {
         yaml << YAML::Key << link + "_lims";
@@ -125,7 +133,37 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
         yaml << YAML::Key << "max" << YAML::Value << f_max;
         yaml << YAML::EndMap;
     }
+    */
+    
+    std::vector<double> f_max(6,1000.);
+    std::vector<double> f_min(6,-1000.);
+    std::vector<double> f_max_hands = {1000., 1000., 1000., 0., 0., 0.};
+    std::vector<double> f_min_hands = {-1000., -1000., -1000., 0., 0., 0.};
+    if(!optimize_torque)
+        f_max[3] = f_max[4] = f_max[5] = f_min[3] = f_min[4] = f_min[5] = 0.;
 
+    for(auto link : contact_links)
+    {
+        yaml << YAML::Key << link + "_lims";
+        yaml << YAML::BeginMap;
+        yaml << YAML::Key << "name" << YAML::Value << link + "_lims";
+        yaml << YAML::Key << "lib_name" << YAML::Value << libname;
+        yaml << YAML::Key << "type" << YAML::Value << "ForceLimits";
+        yaml << YAML::Key << "link" << YAML::Value << link;
+        if (link == "TCP_R" || link == "TCP_L" || link == "l_ball_tip_d" || link == "r_ball_tip_d")
+        {
+            yaml << YAML::Key << "min" << YAML::Value << f_min_hands;
+            yaml << YAML::Key << "max" << YAML::Value << f_max_hands;
+        }
+        else
+        {
+            yaml << YAML::Key << "min" << YAML::Value << f_min;
+            yaml << YAML::Key << "max" << YAML::Value << f_max;
+        }
+        yaml << YAML::EndMap;
+    }
+        
+    
     for(auto link : contact_links)
     {
         yaml << YAML::Key << link;
@@ -152,6 +190,17 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
             yaml << YAML::Key << "link" << YAML::Value << link;
             yaml << YAML::Key << "x_limits" << x;
             yaml << YAML::Key << "y_limits" << x;
+            yaml << YAML::EndMap;
+            
+            yaml << YAML::Key << link + "_nt";
+            yaml << YAML::BeginMap;
+            yaml << YAML::Key << "name" << YAML::Value << link + "_nt";
+            yaml << YAML::Key << "lib_name" << YAML::Value << libname;
+            yaml << YAML::Key << "type" << YAML::Value << "NormalTorque";
+            yaml << YAML::Key << "link" << YAML::Value << link;
+            yaml << YAML::Key << "x_limits" << x;
+            yaml << YAML::Key << "y_limits" << y;
+            yaml << YAML::Key << "friction_coeff" << YAML::Value << friction_coeff;
             yaml << YAML::EndMap;
         }
     }

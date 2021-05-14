@@ -145,18 +145,16 @@ void NSPG::initializeBalanceCheck(Stance sigma){
     for(int i = 0; i < sigma.getSize(); i++)
     {
         EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+        std::string contact_link = getTaskStringName(ee);
         Eigen::Vector3d nC_i = sigma.getContact(i)->getNormal();
-        std::vector<std::string> contact_links = getContactLinks(ee);
-        for(int j = 0; j < contact_links.size(); j++){
-            active_links.push_back(contact_links[j]);
-            normals.push_back(nC_i);
-        }
+        active_links.push_back(contact_link);
+        normals.push_back(nC_i);
     }
     
     _cs->setContactLinks(active_links);
     
-    if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
-    else _cs->setOptimizeTorque(false);
+    //(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
+    //else _cs->setOptimizeTorque(false);
     
     _cs->init(false);  
     
@@ -165,38 +163,49 @@ void NSPG::initializeBalanceCheck(Stance sigma){
         Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
         _cs->setContactRotationMatrix(active_links[i], rot);
     }
-}
-
-
-/*
-void NSPG::initializeBalanceCheck(Stance sigma){  
     
-    std::vector<std::string> active_links;
-    //std::vector<Eigen::Affine3d> ref_tasks;
-    for(int i = 0; i < sigma.getSize(); i++)
-    {
-        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
-        active_links.push_back(getTaskStringName(ee));   
-        //ref_tasks.push_back(sigma.retrieveContactPose(ee));
+    // set (possibly different) friction coefficients for the hands
+    XBot::Cartesian::CartesianInterface::Ptr ci_CS = _cs->getCI();
+    auto tasks_CS = ci_CS->getTaskList();
+    for(int i = 0; i < tasks_CS.size(); i++){
+        XBot::Cartesian::TaskDescription::Ptr task_fc = nullptr;
+        
+        if(tasks_CS[i].compare("TCP_R_fc") == 0) task_fc = ci_CS->getTask("TCP_R_fc");
+        if(tasks_CS[i].compare("TCP_L_fc") == 0) task_fc = ci_CS->getTask("TCP_L_fc");
+        if(tasks_CS[i].compare("l_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("l_ball_tip_d_fc");
+        if(tasks_CS[i].compare("r_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("r_ball_tip_d_fc");
+                    
+        if(task_fc != nullptr){
+            auto task_fc_0 = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task_fc);
+            task_fc_0->setFrictionCoeff(MU_FRICTION_HANDS*sqrt(2)); 
+        }
     }
-
-    _cs->setContactLinks(active_links);
-
-    if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
-    else _cs->setOptimizeTorque(false);
     
-    _cs->init(false);  
-
-    for (int i = 0; i < sigma.getContacts().size(); i ++)
-    {
-        auto nC_i = sigma.getContact(i)->getNormal();
-        Eigen::Matrix3d rot = generateRotationFrictionCone(nC_i);
-        _cs->setContactRotationMatrix(active_links[i], rot);
-    }
 }
-*/
 
 bool NSPG::balanceCheck(Stance sigma){
+    
+    /*
+    // check that the friction coefficients have been properly set (this is for DEBUG ONLY)
+    XBot::Cartesian::CartesianInterface::Ptr ci_CS = _cs->getCI();
+    auto tasks_CS = ci_CS->getTaskList();
+    for(int i = 0; i < tasks_CS.size(); i++){
+        XBot::Cartesian::TaskDescription::Ptr task_fc = nullptr;
+        
+        if(tasks_CS[i].compare("TCP_R_fc") == 0) task_fc = ci_CS->getTask("TCP_R_fc");
+        if(tasks_CS[i].compare("TCP_L_fc") == 0) task_fc = ci_CS->getTask("TCP_L_fc");
+        if(tasks_CS[i].compare("l_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("l_ball_tip_d_fc");
+        if(tasks_CS[i].compare("r_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("r_ball_tip_d_fc");
+        if(tasks_CS[i].compare("l_sole_fc") == 0) task_fc = ci_CS->getTask("l_sole_fc");
+        if(tasks_CS[i].compare("r_sole_fc") == 0) task_fc = ci_CS->getTask("r_sole_fc");
+                    
+        if(task_fc != nullptr){
+            auto task_fc_0 = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task_fc);
+            std::cout << task_fc_0->getLinkName() << " " << task_fc_0->getFrictionCoeff() << std::endl;
+        }
+    }
+    */
+    
     if (_cs->checkStability(CS_THRES)) return true; 
     return false;
 }

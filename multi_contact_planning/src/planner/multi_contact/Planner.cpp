@@ -60,7 +60,7 @@ _nh(nh)
 
     std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
     _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2), true, Eigen::Vector2d(-0.1, 0.1), Eigen::Vector2d(-0.5, 0.5)));
-
+    
     // set initial configuration
     qInit = _qInit;
     
@@ -843,18 +843,16 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
         for(int i = 0; i < sigmaCurr.getSize(); i++)
         {
             EndEffector ee = sigmaCurr.getContact(i)->getEndEffectorName();
+            std::string contact_link = getTaskStringName(ee);
             Eigen::Vector3d nC_i = sigmaCurr.getContact(i)->getNormal();
-            std::vector<std::string> contact_links = getContactLinks(ee);
-            for(int j = 0; j < contact_links.size(); j++){
-                active_links.push_back(contact_links[j]);
-                normals.push_back(nC_i);
-            }
+            active_links.push_back(contact_link);
+            normals.push_back(nC_i);
         }
         
         _cs->setContactLinks(active_links);
         
-        if(sigmaCurr.getSize() == 2) _cs->setOptimizeTorque(true);
-        else _cs->setOptimizeTorque(false);
+        //if(sigmaCurr.getSize() == 2) _cs->setOptimizeTorque(true);
+        //else _cs->setOptimizeTorque(false);
         
         _cs->init(false);  
         
@@ -862,6 +860,23 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
         {
             Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
             _cs->setContactRotationMatrix(active_links[i], rot);
+        }
+        
+        // set (possibly different) friction coefficients for the hands
+        XBot::Cartesian::CartesianInterface::Ptr ci_CS = _cs->getCI();
+        auto tasks_CS = ci_CS->getTaskList();
+        for(int i = 0; i < tasks_CS.size(); i++){
+            XBot::Cartesian::TaskDescription::Ptr task_fc = nullptr;
+            
+            if(tasks_CS[i].compare("TCP_R_fc") == 0) task_fc = ci_CS->getTask("TCP_R_fc");
+            if(tasks_CS[i].compare("TCP_L_fc") == 0) task_fc = ci_CS->getTask("TCP_L_fc");
+            if(tasks_CS[i].compare("l_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("l_ball_tip_d_fc");
+            if(tasks_CS[i].compare("r_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("r_ball_tip_d_fc");
+                        
+            if(task_fc != nullptr){
+                auto task_fc_0 = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task_fc);
+                task_fc_0->setFrictionCoeff(MU_FRICTION_HANDS*sqrt(2)); 
+            }
         }
         
         if (_cs->checkStability(5*1e-2)) foutLogMCP << "CS CHECK TRUE" << std::endl;
@@ -889,18 +904,16 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
             for(int i = 0; i < sigmaSmall.getSize(); i++)
             {
                 EndEffector ee = sigmaSmall.getContact(i)->getEndEffectorName();
+                std::string contact_link = getTaskStringName(ee);
                 Eigen::Vector3d nC_i = sigmaSmall.getContact(i)->getNormal();
-                std::vector<std::string> contact_links = getContactLinks(ee);
-                for(int j = 0; j < contact_links.size(); j++){
-                    active_links.push_back(contact_links[j]);
-                    normals.push_back(nC_i);
-                }
+                active_links.push_back(contact_link);
+                normals.push_back(nC_i);
             }
             
             _cs->setContactLinks(active_links);
             
-            if(sigmaSmall.getSize() == 2) _cs->setOptimizeTorque(true);
-            else _cs->setOptimizeTorque(false);
+            //if(sigmaSmall.getSize() == 2) _cs->setOptimizeTorque(true);
+            //else _cs->setOptimizeTorque(false);
             
             _cs->init(false);  
             
@@ -908,6 +921,23 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
             {
                 Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
                 _cs->setContactRotationMatrix(active_links[i], rot);
+            }
+            
+            // set (possibly different) friction coefficients for the hands
+            XBot::Cartesian::CartesianInterface::Ptr ci_CS = _cs->getCI();
+            auto tasks_CS = ci_CS->getTaskList();
+            for(int i = 0; i < tasks_CS.size(); i++){
+                XBot::Cartesian::TaskDescription::Ptr task_fc = nullptr;
+                
+                if(tasks_CS[i].compare("TCP_R_fc") == 0) task_fc = ci_CS->getTask("TCP_R_fc");
+                if(tasks_CS[i].compare("TCP_L_fc") == 0) task_fc = ci_CS->getTask("TCP_L_fc");
+                if(tasks_CS[i].compare("l_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("l_ball_tip_d_fc");
+                if(tasks_CS[i].compare("r_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("r_ball_tip_d_fc");
+                            
+                if(task_fc != nullptr){
+                    auto task_fc_0 = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task_fc);
+                    task_fc_0->setFrictionCoeff(MU_FRICTION_HANDS*sqrt(2)); 
+                }
             }
             
             if (_cs->checkStability(5*1e-2)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
@@ -1039,6 +1069,7 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
     std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
     //std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d", "l_foot_upper_right_link", "l_foot_upper_left_link", "l_foot_lower_right_link", "l_foot_lower_left_link", "r_foot_upper_right_link", "r_foot_upper_left_link", "r_foot_lower_right_link", "r_foot_lower_left_link"};
     ci->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
+    
     //FIXME /////////////////////////////////////////////////////////////////////////////////
     ci->setActivationState("l_foot_upper_right_link", XBot::Cartesian::ActivationState::Disabled);
     ci->setActivationState("l_foot_upper_left_link", XBot::Cartesian::ActivationState::Disabled);
@@ -1128,18 +1159,16 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
     for(int i = 0; i < sigma.getSize(); i++)
     {
         EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+        std::string contact_link = getTaskStringName(ee);
         Eigen::Vector3d nC_i = sigma.getContact(i)->getNormal();
-        std::vector<std::string> contact_links = getContactLinks(ee);
-        for(int j = 0; j < contact_links.size(); j++){
-            active_links.push_back(contact_links[j]);
-            normals.push_back(nC_i);
-        }
+        active_links.push_back(contact_link);
+        normals.push_back(nC_i);
     }
     
     _cs->setContactLinks(active_links);
     
-    if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
-    else _cs->setOptimizeTorque(false);
+    //if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
+    //else _cs->setOptimizeTorque(false);
     
     _cs->init(false);  
     
@@ -1147,6 +1176,23 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
     {
         Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
         _cs->setContactRotationMatrix(active_links[i], rot);
+    }
+    
+    // set (possibly different) friction coefficients for the hands
+    XBot::Cartesian::CartesianInterface::Ptr ci_CS = _cs->getCI();
+    auto tasks_CS = ci_CS->getTaskList();
+    for(int i = 0; i < tasks_CS.size(); i++){
+        XBot::Cartesian::TaskDescription::Ptr task_fc = nullptr;
+        
+        if(tasks_CS[i].compare("TCP_R_fc") == 0) task_fc = ci_CS->getTask("TCP_R_fc");
+        if(tasks_CS[i].compare("TCP_L_fc") == 0) task_fc = ci_CS->getTask("TCP_L_fc");
+        if(tasks_CS[i].compare("l_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("l_ball_tip_d_fc");
+        if(tasks_CS[i].compare("r_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("r_ball_tip_d_fc");
+                    
+        if(task_fc != nullptr){
+            auto task_fc_0 = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task_fc);
+            task_fc_0->setFrictionCoeff(MU_FRICTION_HANDS*sqrt(2)); 
+        }
     }
     
     if (_cs->checkStability(CS_THRES))
@@ -1162,22 +1208,9 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
             
             Eigen::Vector6d wrench;
             wrench.setZero();
-            std::vector<std::string> contact_links = getContactLinks(ee);
-            for(int j = 0; j < contact_links.size(); j++){
-                Eigen::Affine3d Tp;
-                NSPG->getIKSolver()->getCI()->getCurrentPose(contact_links[j], Tp);
-            
-                Eigen::Vector6d FC = FCmap.find(contact_links[j])->second;
-                
-                Eigen::Vector3d force = FC.head(3);
-                Eigen::Vector3d torque = (Tp.translation() - Tee.translation()).cross(force);
-                
-                wrench.head(3) += force;
-                wrench.tail(3) += torque;                    
-            }
-            
+            std::string contact_link = getTaskStringName(ee);
+            wrench = FCmap.find(contact_link)->second;
             sigma.getContact(i)->setForce(wrench);
-        
         }
     }
 }
