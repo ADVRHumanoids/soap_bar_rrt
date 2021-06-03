@@ -56,7 +56,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = False
+        self.__complete_solution = True
         self.__node_counter = 0
         self.__sleep = 0.1
         self.__half = False
@@ -224,14 +224,14 @@ class Connector:
         forces = [j['ref']['force'] for j in self.stance_list[i]]
         active_ind = [ind['ind'] for ind in self.stance_list[i]]
         active_links = [self.model.ctrl_points[j] for j in active_ind]
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f + [0., 0., 0.])) for c, f in zip(active_links, forces)]
+        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f + [0., 0., 0.])) for c, f in zip(active_links, forces)]
 
         non_active_links = self.model.ctrl_points.values()
         for link in active_links:
             if link in non_active_links:
                 non_active_links.remove(link)
 
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array([0., 0., 0., 0., 0., 0.])) for c in non_active_links]
+        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array([0., 0., 0., 0., 0., 0.])) for c in non_active_links]
 
     def impact_detector(self, turn, magnitude):
 
@@ -240,7 +240,7 @@ class Connector:
         wrench = self.model.ft_map[task.getName()].getWrench()
         print wrench
         # wrench[direction] = 0 # FOR SIMULATION
-        direction = [k for k, e in enumerate(self.stance_list[turn+1][self.__lifted_contact]['ref']['normal']) if e != 0]
+        # direction = [k for k, e in enumerate(self.stance_list[turn+1][self.__lifted_contact]['ref']['normal']) if e != 0]
         print np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2]))
         if (np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2])) >= magnitude):
             detect_bool = 1
@@ -251,15 +251,16 @@ class Connector:
 
         print 'starting surface reacher...'
 
-        # self.__ankle_stiffness()
         task = self.ctrl_tasks[self.__lifted_contact_ind]
         # task.setBaseLink('torso')
-        self.ci.reset(0)
+        print task.getName()
+
+
         # velocity desired
-        vel_ref = 0.1
+        vel_ref = 0.05
         vel_task = list()
         for stance in self.stance_list[turn + 1]:
-            if stance['ind'] == self.__lifted_contact_ind:
+            if stance['ind'] == self.__lifted_contact:
                 vel_task = vel_ref * (-np.array(stance['ref']['normal']))
 
         if task.getBaseLink() == 'world':
@@ -298,13 +299,14 @@ class Connector:
             self.ci_time += self.ik_dt
 
             self.model.robot.sense()
-            self.model.model.syncFrom(self.model.robot)
+            self.model.model.syncFromEffort(self.model.robot)
             self.model.f_est.update()
             rospy.sleep(self.ik_dt)
 
         task.enable()
         task.setControlMode(pyci.ControlType.Position)
         task.setLambda(lambda_value)
+        # task.setBaseLink('world')
 
         print 'Surface reacher done'
         return q
@@ -380,7 +382,7 @@ class Connector:
 
         return np.dot(Rz, np.dot(Rx, Ry))
 
-    def NSPGsample(self, q_start, q_postural, active_links, quat_list, optimize_torque, timeout):
+    def NSPGsample(self, q_start, q_postural, active_links, quat_list, optimize_torque, timeout, max_counter=0):
         # create NSPG
         vc_context = self.make_vc_context(active_links, quat_list, optimize_torque)
         nspg = NSPG.NSPG(self.ik_solver, vc_context)
@@ -393,7 +395,7 @@ class Connector:
         self.model.model.update()
 
         print '[NSPG]: start sampling!'
-        if not nspg.sample(timeout):
+        if not nspg.sample(timeout, max_counter):
             print '[NSPG]: unable to find a feasible solution!'
             self.saveSolution()
             exit()
@@ -429,7 +431,7 @@ class Connector:
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3: # and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
 
@@ -589,7 +591,7 @@ class Connector:
                 self.model.model.update()
                 self.model.robot.setPositionReference(q[6:, index])
                 self.model.robot.move()
-                rospy.sleep(0.01)
+                rospy.sleep(0.03)
 
         return list(q[:, -1])
 
@@ -641,7 +643,7 @@ class Connector:
             for k in range(1, 101):
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
-                rospy.sleep(0.1/100)
+                rospy.sleep(1.0/100)
         else:
             fmin_d = list()
             fmax_d = list()
@@ -659,7 +661,7 @@ class Connector:
             for k in range(1, 101):
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
-                rospy.sleep(0.1/100)
+                rospy.sleep(1.0/100)
 
     def run(self):
         s = len(self.q_list) - 1
@@ -668,6 +670,9 @@ class Connector:
             self.init()
             raw_input('click')
         i = 0
+        for index in range(i):
+            self.__solution.append({'indices': [], 'q': []})
+        # self.surface_reacher(4,1000)
 
         while i < s:
             # self.__lifted_contact_link = 'r_ball_tip'
@@ -677,6 +682,7 @@ class Connector:
 
             # reset the counter
             self.__counter = 0
+
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
             active_links_goal = [self.model.ctrl_points[j] for j in active_ind_goal]
@@ -684,7 +690,7 @@ class Connector:
             active_links_start = [self.model.ctrl_points[j] for j in active_ind_start]  # names
 
             if self.__complete_solution:
-                self.__solution.append({'indices': active_links_start, 'q': []})
+                self.__solution.append({'indices': active_links_start, 'q': [], 'normals': [], 'forces': []})
 
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
@@ -706,23 +712,29 @@ class Connector:
             normals_start = [j['ref']['normal'] for j in self.stance_list[i]]
             quat_list_start = self.normalsToQuat(normals_start)
 
+            [self.__solution[i]['normals'].append(normal) for normal in normals_start]
+
+            forces = [j['ref']['force'] for j in self.stance_list[i]]
+            [self.__solution[i]['forces'].append(force) for force in forces]
+
             # find optimize_torque for start and goal stances
-            optimize_torque_goal = False
-            if len(active_links_goal) == 2 or i == 2:
-                optimize_torque_goal = True
-            else:
-                optimize_torque_goal = False
-            optimize_torque_start = False
-            if len(active_links_start) == 2 or i == 2:
-                optimize_torque_start = True
-            else:
-                optimize_torque_start = False
+            optimize_torque_goal = True
+            # if len(active_links_goal) == 2 or i == 2:
+            #     optimize_torque_goal = True
+            # else:
+            #     optimize_torque_goal = False
+            optimize_torque_start = True
+            # if len(active_links_start) == 2 or i == 2:
+            #     optimize_torque_start = True
+            # else:
+            #     optimize_torque_start = False
 
             if len(active_links_start) == 3:
                 all_links = self.model.ctrl_points.values()
                 [all_links.remove(active) for active in active_links_start]
                 lifted_link = all_links[0]
-                self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
+                if self.model.simulation:
+                    self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
 
             # set active_links_start for fopt_node
             if not self.__complete_solution and self.model.simulation:
@@ -787,7 +799,7 @@ class Connector:
             # rospy.sleep(self.__sleep)
 
             # update GroundCollisionCheck
-            if len(active_links_start) == 3:# and i != 3 and i != 2:
+            if len(active_links_start) == 3 and i != 3 and i != 2:
                 for iterator in range(len(self.stance_list[i-1])):
                     if self.stance_list[i-1][iterator]['ind'] == self.__lifted_contact:
                         normal = self.stance_list[i-1][iterator]['ref']['normal']
@@ -825,22 +837,23 @@ class Connector:
                     print 'Modifying the goal...'
                     # rospy.sleep(self.__sleep)
                     if adding:
-                        q_goal = self.NSPGsample(q_goal, q_goal, active_links_start, quat_list_start, optimize_torque_start, 20.)
+                        q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20., 25)
                         self.q_list.insert(i + 1, q_goal)
                         self.stance_list.insert(i + 1, self.stance_list[i + 1])
                         self.setForces(q_goal, i)
                     else:
-                        q_goal = self.NSPGsample(q_goal, q_goal, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
+                        q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20., 25)
                         self.q_list.insert(i + 1, q_goal)
                         self.stance_list.insert(i + 1, self.stance_list[i + 1])
                         self.setForces(q_goal, i)
                     self.planner_client.updateManifold(active_links_start)
                     print 'Planner reset'
                     # rospy.sleep(self.__sleep)
+                    raw_input('setting start and goal poses')
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
                     print 'Start and goal poses reset'
                     # rospy.sleep(self.__sleep)
-                    res = self.planner_client.solve(planner_type='RRTstar', plan_time=3 + counter + 1, interpolation_time=0.01, goal_threshold=0.5)
+                    res = self.planner_client.solve(planner_type='RRTstar', plan_time=3 + counter + 1, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
                     if counter == 5:
                         print '[Error]: unable to connect start and goal poses'
@@ -857,16 +870,16 @@ class Connector:
                     self.model.model.update()
                     self.model.robot.setPositionReference(q[6:])
                     self.model.robot.move()
-                    rospy.sleep(0.01)
+                    rospy.sleep(0.03)
 
             # rospy.sleep(self.__sleep)
 
-            if len(active_links_start) == 3:# and i != 3 and i != 2:
-                if self.__complete_solution or self.normal[2] > 0.01:
+            if len(active_links_start) == 3 and i != 3 and i != 2:
+                if self.__complete_solution: # or self.normal[2] > 0.01:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
                 else:
-                    q = self.surface_reacher(i, 20)
+                    q = self.surface_reacher(i, 40)
                     self.q_list[i+1] = q
 
             # forza giusta vez!
@@ -877,7 +890,8 @@ class Connector:
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
             i = i + 1
-            self.__reset_stiffness(100, 3, '')
+            if self.model.simulation:
+                self.__reset_stiffness(100, 3, '')
             print 'next config'
 
     def saveSolution(self):
@@ -913,9 +927,10 @@ class Connector:
             # set active contacts
             all_links = self.model.ctrl_points.values()
             active_links = self.__solution[i]['indices']
-            normals = [j['ref']['normal'] for j in self.stance_list[i]]
-            self.set_limits(active_links, [self.rotation(n) for n in normals])
-            self.sendForces(i)
+            normals = self.__solution[i]['normals']
+            if self.model.simulation:
+                self.set_limits(active_links, [self.rotation(n) for n in normals])
+                self.sendForces(i)
 
             if len(active_links) == 3 and self.model.simulation:
                 [all_links.remove(active) for active in active_links]
@@ -937,7 +952,10 @@ class Connector:
                     self.model.robot.setPositionReference(q[6:])
                     self.model.robot.setVelocityReference(dq[6:])
                     self.model.robot.move()
-                rospy.sleep(0.01)
+                    rospy.sleep(0.02)
+                else:
+                    rospy.sleep(0.01)
+
 
             print ('{}% done...'.format(int((float(i)/float(len(self.__solution))) * 100)))
 

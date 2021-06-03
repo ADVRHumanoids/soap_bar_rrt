@@ -94,8 +94,8 @@ class Cogimon:
 
             self.ft_map = self.sensors_init(arm_estimation_flag=True)
 
-            self.ft_map['LFoot'] = self.ft_map.pop('l_leg_ft')
-            self.ft_map['RFoot'] = self.ft_map.pop('r_leg_ft')
+            self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
+            self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
             self.f_est.update()
 
         # joint limits for the planner

@@ -806,29 +806,29 @@ bool Planner::distanceCheck(Stance sigmaNew)
     Eigen::Vector3d pRHandD = sigmaNew.retrieveContactPose(R_HAND_D).translation();
     
     //PHASE1
-//    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))
-//        if(euclideanDistance(pLFoot, pLHandC) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX)
-//            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
+    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))
+        if(euclideanDistance(pLFoot, pLHandC) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX)
+            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
     
-//    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))
-//        if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX)
-//            return false;// || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
+    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))
+        if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX)
+            return false;// || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
         
-//    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
-//        if(sqrt((pLHandC(0) - pRHandC(0)) * (pLHandC(0) - pRHandC(0))) > 0.3)
-//            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
+    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
+        if(sqrt((pLHandC(0) - pRHandC(0)) * (pLHandC(0) - pRHandC(0))) > 0.3)
+            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
 
     //PHASE2
-    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))
-        if(euclideanDistance(pLFoot, pLHandC) < 0.3)
-            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
+//    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))
+//        if(euclideanDistance(pLFoot, pLHandC) < 0.4)
+//            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
 
-    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))
-        if(euclideanDistance(pRFoot, pRHandC) < 0.3)
-            return false;// || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
-    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
-        if(sqrt((pLHandC(2) - pRHandC(2)) * (pLHandC(2) - pRHandC(2))) > 0.85)
-            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
+//    if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))
+//        if(euclideanDistance(pRFoot, pRHandC) < 0.4)
+//            return false;// || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
+//    if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
+//        if(sqrt((pLHandC(2) - pRHandC(2)) * (pLHandC(2) - pRHandC(2))) > 0.85)
+//            return false;// || euclideanDistance(pLFoot, pLHandC) > DIST_THRES_MAX) return false;
     
         
 //    if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_D))

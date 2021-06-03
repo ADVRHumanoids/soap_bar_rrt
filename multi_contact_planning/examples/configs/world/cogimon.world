@@ -20,6 +20,7 @@
       <uri>/home/luca/src/MultiDoF-superbuild/robots/iit-cogimon-ros-pkg/cogimon_gazebo/database/cogimon</uri>
     </include>
     <physics type='ode'>
+	<real_time_update_rate>10000</real_time_update_rate>
         <max_step_size>0.00050</max_step_size>
     </physics>
   </world>

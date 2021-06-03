@@ -54,30 +54,33 @@ def setStiffnessAndDamping(robot, N_ITER, multiplier, chain):
     Kd1 = list()
     Kd2 = list()
     Kd3 = list()
+
+    scale = 1.5
+
     if chain == "left_arm":
         print ['case: left_arm .... chain: ', chain]
-        Kd0 = [1400, 1000, 1000, 1000, 1000, 1000, 1000]
+        Kd0 = [1400 * scale, 1000 * scale, 1000 * scale, 1000 * scale, 1000 * scale, 1000 * scale, 1000 * scale]
         Kd1 = K1
         Kd2 = K2
         Kd3 = K3
     elif chain == "right_arm":
         print ['case: right_arm .... chain: ', chain]
         Kd0 = K0
-        Kd1 = [1400, 1000, 1000, 1000, 1000, 1000, 1000]
+        Kd1 = [1400 * scale, 1000 * scale, 1000 * scale, 1000 * scale, 1000 * scale, 1000 * scale, 1000 * scale]
         Kd2 = K2
         Kd3 = K3
     elif chain == "left_leg":
         print ['case: left_leg .... chain: ', chain]
         Kd0 = K0
         Kd1 = K1
-        Kd2 = [800, 800, 800, 800, 800, 800]
+        Kd2 = [800 * scale, 800 * scale, 800 * scale, 800 * scale, 800 * scale, 800 * scale]
         Kd3 = K3
     elif chain == "right_leg":
         print ['case: right_leg .... chain: ', chain]
         Kd0 = K0
         Kd1 = K1
         Kd2 = K2
-        Kd3 = [800, 800, 800, 800, 800, 800]
+        Kd3 = [800 * scale, 800 * scale, 800 * scale, 800 * scale, 800 * scale, 800 * scale]
 
 
 
@@ -135,35 +138,36 @@ def initStiffness(EmptyRequest):
 
 def setInitStiff(robot):
     stiff = dict()
+    scale = 1.5
     stiff = robot.getStiffnessMap()
-    stiff['RShSag'] = 700
-    stiff['RShLat'] = 500
-    stiff['RShYaw'] = 500
-    stiff['RElbj'] = 500
-    stiff['RForearmPlate'] = 500
-    stiff['RWrj1'] = 500
-    stiff['RWrj2'] = 500
-    stiff['LShSag'] = 700
-    stiff['LShLat'] = 500
-    stiff['LShYaw'] = 500
-    stiff['LElbj'] = 500
-    stiff['LForearmPlate'] = 500
-    stiff['LWrj1'] = 500
-    stiff['LWrj2'] = 500
-    stiff['WaistYaw'] = 1000
-    stiff['WaistLat'] = 400
-    stiff['LHipLat'] = 400
-    stiff['LHipSag'] = 400
-    stiff['LHipYaw'] = 400
-    stiff['LKneePitch'] = 400
-    stiff['LAnklePitch'] = 400
-    stiff['LAnkleRoll'] = 400
-    stiff['RHipLat'] = 400
-    stiff['RHipSag'] = 400
-    stiff['RHipYaw'] = 400
-    stiff['RKneePitch'] = 400
-    stiff['RAnklePitch'] = 400
-    stiff['RAnkleRoll'] = 400
+    stiff['RShSag'] = 700 * scale
+    stiff['RShLat'] = 500 * scale
+    stiff['RShYaw'] = 500 * scale
+    stiff['RElbj'] = 500 * scale
+    stiff['RForearmPlate'] = 500 * scale
+    stiff['RWrj1'] = 500 * scale
+    stiff['RWrj2'] = 500 * scale
+    stiff['LShSag'] = 700 * scale
+    stiff['LShLat'] = 500 * scale
+    stiff['LShYaw'] = 500 * scale
+    stiff['LElbj'] = 500 * scale
+    stiff['LForearmPlate'] = 500 * scale
+    stiff['LWrj1'] = 500 * scale
+    stiff['LWrj2'] = 500 * scale
+    stiff['WaistYaw'] = 1000 * scale
+    stiff['WaistLat'] = 400 * scale
+    stiff['LHipLat'] = 400 * scale
+    stiff['LHipSag'] = 400 * scale
+    stiff['LHipYaw'] = 400 * scale
+    stiff['LKneePitch'] = 400 * scale
+    stiff['LAnklePitch'] = 400 * scale
+    stiff['LAnkleRoll'] = 400 * scale
+    stiff['RHipLat'] = 400 * scale
+    stiff['RHipSag'] = 400 * scale
+    stiff['RHipYaw'] = 400 * scale
+    stiff['RKneePitch'] = 400 * scale
+    stiff['RAnklePitch'] = 400 * scale
+    stiff['RAnkleRoll'] = 400 * scale
 
     global init_stiff
     init_stiff = stiff

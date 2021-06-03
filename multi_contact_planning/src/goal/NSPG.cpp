@@ -67,14 +67,14 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
     std::normal_distribution<double> z_dist(-dir(2)*10, 2.0);
 
     // Move the floating base randomly
-     random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*randDistribution(randGenerator)));
-     random_map.insert(std::make_pair("VIRTUALJOINT_2", 50*randDistribution(randGenerator)));
-     random_map.insert(std::make_pair("VIRTUALJOINT_3", 50*randDistribution(randGenerator)));
+//     random_map.insert(std::make_pair("VIRTUALJOINT_1", 50*randDistribution(randGenerator)));
+//     random_map.insert(std::make_pair("VIRTUALJOINT_2", 50*randDistribution(randGenerator)));
+//     random_map.insert(std::make_pair("VIRTUALJOINT_3", 50*randDistribution(randGenerator)));
 
     // Move the floating base in the opposite direction of the non active contact
-//   random_map.insert(std::make_pair("VIRTUALJOINT_1", x_dist(randGenerator)));
-//   random_map.insert(std::make_pair("VIRTUALJOINT_2", y_dist(randGenerator)));
-//    random_map.insert(std::make_pair("VIRTUALJOINT_3", z_dist(randGenerator)));
+    random_map.insert(std::make_pair("VIRTUALJOINT_1", x_dist(randGenerator)));
+    random_map.insert(std::make_pair("VIRTUALJOINT_2", y_dist(randGenerator)));
+    random_map.insert(std::make_pair("VIRTUALJOINT_3", z_dist(randGenerator)));
     
     
 //    for (auto i:colliding_chains)
@@ -139,20 +139,14 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
      
         _ik_solver->getCI()->setReferencePosture(joint_map);
         
-        auto tic_solve = std::chrono::high_resolution_clock::now();
         ik_solved = _ik_solver->solve();
-        auto toc_solve = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float> fsec_solve = toc_solve - tic_solve;
-        _logger->add("time_solve", fsec_solve.count());
-        auto tic_check = std::chrono::high_resolution_clock::now();
         collisionCheckRes = _vc_context.vc_aggregate.check("collisions");
-        auto toc1 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float> fsec_check = toc1 - tic_check;
-        _logger->add("time_collision_check", fsec_check.count());
         balanceCheckRes = balanceCheck(sigmaSmall);
-        auto toc2 = std::chrono::high_resolution_clock::now();
-        fsec_check = toc2 - toc1;
-        _logger->add("time_centroidal_statics_check", fsec_check.count());
+
+        if (!collisionCheckRes)
+            std::cout << "collision" << std::endl;
+        if (!balanceCheckRes)
+            std::cout << "unstable" << std::endl;
         
         _rspub->publishTransforms(ros::Time::now(), "/planner");
                         

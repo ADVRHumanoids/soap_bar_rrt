@@ -1,5 +1,6 @@
 import cartesio_planning.validity_check
 import numpy as np
+import rospy
 
 def readFromFileStances(path):
     f = open(path, "r")
@@ -78,19 +79,17 @@ def checkStability(model, stances, qlist):
         forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
         model.cs.setForces(forces)
 
-        optimize_torque = False
-        active_ind = [ind['ind'] for ind in stance]
-        if len(active_ind) == 2:
-            optimize_torque = True
-
+        optimize_torque = True
         model.cs.setOptimizeTorque(optimize_torque)
 
         normals = [j['ref']['normal'] for j in stance]
+        print [rotation(elem) for elem in normals]
         [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
 
         check.append(model.state_vc(q))
 
         get_forces = model.cs.getForces()
+        rospy.sleep(2)
 
     return check
 

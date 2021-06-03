@@ -19,6 +19,26 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
     _pub = nh.advertise<visualization_msgs::MarkerArray> ( "normals_plane", 1, true);
     
     /////////////////////////////////////////////////////////////////////////////////////////////////
+    // CROUCHING
+    if(scenario == 4){
+        center << 0.0, 0.0, 0.0;
+        side_x = 5.0;
+        side_y = 2.0;
+        side_z = 3.0;
+        for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
+        {
+            x = center(0) - (side_x/2.0) + i*resolution;
+            for(int j = 1; j <= (int)(side_y/resolution); j++)
+            {
+                y = center(1) - (side_y/2.0) + j*resolution;
+                z = center(2) + 0.0;
+                _pcl_pointcloud->points[index].x = x;
+                _pcl_pointcloud->points[index].y = y;
+                _pcl_pointcloud->points[index].z = z;
+                index ++;
+            }
+        }
+    }
     // STAND UP
     if(scenario == 1){
         center << 0.0, 0.0, 0.0;

@@ -1,8 +1,9 @@
 solver_options:
     regularization: 1e-1
-    back_end: "qpoases"
+    back_end: "osqp"
 
 stack:
+    #- ["UnderactuatedDyn"]
     - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"]#, "UnderactuatedDyn"]
 
 constraints:
@@ -17,6 +18,8 @@ constraints:
     - "r_ball_tip_F_lims"
     - "LeftCoP"
     - "RightCoP"
+    - "RightNormalTorque"
+    - "LeftNormalTorque"
 
 
 LeftCoP:
@@ -27,6 +30,22 @@ LeftCoP:
     y_limits: [-0.05, 0.05]
     #x_limits: [-0.025, 0.05]
     #y_limits: [-0.025, 0.025]
+
+RightNormalTorque:
+    lib_name: libcartesio_acceleration_support.so
+    type: "NormalTorque"
+    link: "r_sole"
+    x_limits: [-0.1, 0.1]
+    y_limits: [-0.05, 0.05]
+    friction_coeff: 0.81
+
+LeftNormalTorque:
+    lib_name: libcartesio_acceleration_support.so
+    type: "NormalTorque"
+    link: "l_sole"
+    x_limits: [-0.1, 0.1]
+    y_limits: [-0.05, 0.05]
+    friction_coeff: 0.81
 
 RightCoP:
     lib_name: libcartesio_acceleration_support.so
@@ -80,14 +99,14 @@ r_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "r_ball_tip"
-    friction_coeff: 0.71
+    friction_coeff: 0.81
 #    local: true
 
 l_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "l_ball_tip"
-    friction_coeff: 0.71
+    friction_coeff: 0.81
 #    local: true
 
 r_sole_F_lims:
