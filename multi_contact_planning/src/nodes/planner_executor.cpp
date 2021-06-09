@@ -774,6 +774,7 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
  
     //LF
     pos_ref.push_back(Eigen::Vector3d(0.4, 0.7, 0.3));
+    //pos_ref.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
     //RF
     pos_ref.push_back(Eigen::Vector3d(0.4, -0.7, 0.3));
     //LH
@@ -1652,7 +1653,9 @@ Eigen::Vector3d PlannerExecutor::getNormalAtPoint(Eigen::Vector3d p){
 
 bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding){
     
-    std::string added_task = getTaskStringName(sigmaLarge.getContact(sigmaLarge.getSize()-1)->getEndEffectorName());
+    //std::string added_task = getTaskStringName(sigmaLarge.getContact(sigmaLarge.getSize()-1)->getEndEffectorName());
+    adding = true;
+    std::string added_task = "l_sole";
     
     // build references
     std::vector<std::string> active_tasks;
@@ -1661,11 +1664,38 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
         EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
         active_tasks.push_back(getTaskStringName(ee));
         ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
+        
+        /*
+        //TODO attempt to generate the reference pose in the local frame
+        //std::cout << "getTaskStringName(ee) = " << getTaskStringName(ee) << std::endl;
+        //if(getTaskStringName(ee).compare(added_task) == 0) std::cout << "CIAO CIAO" << std::endl;
+        if(getTaskStringName(ee).compare(added_task) == 0){
+            Eigen::Affine3d ref_pose;
+            Eigen::Vector3d ref_pos;
+            Eigen::Matrix3d ref_rot = Eigen::MatrixXd::Identity(3,3);
+            ref_pose.translation() = ref_pos;
+            ref_pose.linear() = ref_rot;
+            ref_tasks.push_back(ref_pose);
+        }
+        else ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
+        */    
     }
 
     // set references
     std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
     _NSPG->getIKSolver()->getCI()->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
+    
+    //FIXME /////////////////////////////////////////////////////////////////////////////////
+    _NSPG->getIKSolver()->getCI()->setActivationState("l_foot_upper_right_link", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("l_foot_upper_left_link", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("l_foot_lower_right_link", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("l_foot_lower_left_link", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("r_foot_upper_right_link", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("r_foot_upper_left_link", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("r_foot_lower_right_link", XBot::Cartesian::ActivationState::Disabled);
+    _NSPG->getIKSolver()->getCI()->setActivationState("r_foot_lower_left_link", XBot::Cartesian::ActivationState::Disabled);
+    /////////////////////////////////////////////////////////////////////////////////////////
+    
     for(int i = 0; i < all_tasks.size(); i++){
         std::vector<std::string> subtasks = getSubtasksStringName(all_tasks[i]);
         std::vector<std::string>::iterator it = std::find(active_tasks.begin(), active_tasks.end(), all_tasks[i]);
@@ -1674,9 +1704,13 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
             _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
         }
         else{ 
-            _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[0], XBot::Cartesian::ActivationState::Enabled); 
+            _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[0], XBot::Cartesian::ActivationState::Enabled);
+            //_NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); // REMOVE
+             
             if(adding && added_task.compare(all_tasks[i]) == 0) _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
+            //if(adding) _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
             else _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Enabled); 
+             
             int index = it - active_tasks.begin();
             _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks[i], ref_tasks[index]);
         } 
@@ -1698,13 +1732,13 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
     // search IK solution (joint limits)
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
-    if (!_NSPG->getIKSolver()->solve()){
-        std::cout << "STOP BEFORE NSPG" << std::endl;
-        return false;
-    }
+//     if (!_NSPG->getIKSolver()->solve()){
+//         std::cout << "STOP BEFORE NSPG" << std::endl;
+//         //return false;
+//     }
     
     // refine IK solution (balance and self-collisions)
-    _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+   // _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
     
     if(!_NSPG->sample(time_budget, sigmaSmall, sigmaLarge))
     {

@@ -15,7 +15,7 @@ const double GOAL_SAMPLER_TIME_BUDGET_COM = 3.0;
 
 const double ROBOT_MASS = 70.0;
 const double GRAVITY = -9.81;
-const double MU_FRICTION = 0.6; //0.5;
+const double MU_FRICTION = 0.8; //0.5;
 const double MU_FRICTION_HANDS = 0.8; //0.5;
 const double FORCE_THRES_HAND = 15.0;
 const double FORCE_THRES_FOOT = 65.0;

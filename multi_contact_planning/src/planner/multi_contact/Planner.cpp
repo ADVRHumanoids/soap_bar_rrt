@@ -681,8 +681,9 @@ void Planner::run(){
                     
                     auto tic = std::chrono::high_resolution_clock::now();
 
-                    //bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, adding);
-                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, false);
+                    if(SCENARIO == 2) adding = false;
+                    bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, adding);
+                    //bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, false);
                     if(resIKCS) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
                     else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
                     

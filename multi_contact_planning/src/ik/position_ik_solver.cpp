@@ -55,6 +55,8 @@ bool PositionCartesianSolver::solve()
 
         getError(error);
         tol_satisfied = error.cwiseAbs().maxCoeff() < _err_tol;
+        
+        //std::cout << "error = " << error.transpose() << std::endl;  
 
         iter++;
         //_iter_callback(); //TODO why this?
@@ -83,6 +85,13 @@ void PositionCartesianSolver::getError(Eigen::VectorXd& error) const
             R_d = T_d.linear();                              
             Eigen::Vector3d pos_error = T_c.translation() - T_d.translation();
             Eigen::Vector3d rot_error = 0.5 * (R_c.col(0).cross(R_d.col(0)) + R_c.col(1).cross(R_d.col(1)) + R_c.col(2).cross(R_d.col(2)));
+            
+            Eigen::Vector3d o_c = R_c.eulerAngles(0, 1, 2);  
+            //std::cout << "o_c = " << o_c.transpose() << std::endl; 
+            Eigen::Vector3d o_d = R_d.eulerAngles(0, 1, 2);  
+            //std::cout << "o_d = " << o_d.transpose() << std::endl;  
+            //Eigen::Vector3d rot_error(angleSignedDistance(o_d(0), o_c(0)), angleSignedDistance(o_d(1), o_c(1)), angleSignedDistance(o_d(2), o_c(2)));
+            
     
             Eigen::VectorXd error6_i(6);
             error6_i << pos_error, rot_error;
@@ -99,7 +108,7 @@ void PositionCartesianSolver::getError(Eigen::VectorXd& error) const
 }
 
 void PositionCartesianSolver::getJacobian(Eigen::MatrixXd & J) const
-{ // TODO test this, it should work only in case the base frame is the world
+{ // TODO test this, it should work only in case the base frame is the world, in any case this is never called in this project
     J.setZero(_n, _model->getJointNum());
 
     int jac_idx = 0;

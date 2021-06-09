@@ -250,6 +250,21 @@ inline Eigen::Matrix3d generateRotationAroundAxis(EndEffector ee, Eigen::Vector3
     return rot;
 }
 
+inline double angleSignedDistance(double a, double b){
+	//double d = fabs(a - b) % 2.0*M_PI;
+	double d = fabs(a - b);
+	while(d > 2.0*M_PI) d = d - 2.0*M_PI; 
+
+	double r = 0.0;
+	if(d > M_PI) r = 2.0*M_PI - d;
+	else r = d;
+	double sign = 0.0;
+	if( (a-b>=0.0 && a-b<=M_PI) || (a-b<=-M_PI && a-b>=-2.0*M_PI) ) sign = +1.0;
+	else sign = -1.0;
+
+	r = sign * r;
+	return r; 
+}
 
 
 #endif

@@ -89,13 +89,27 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     
     initializeBalanceCheck(sigmaSmall);
     
-    bool collisionCheckRes = _vc_context.vc_aggregate.check("collisions");
-    bool balanceCheckRes = balanceCheck(sigmaSmall);
-    bool ik_solved = true;
+//     bool ik_solved = _ik_solver->solve();  
+//     bool collisionCheckRes = false;
+//     bool balanceCheckRes = false;
+//     if(ik_solved) collisionCheckRes = _vc_context.vc_aggregate.check("collisions"); 
+//     if(ik_solved && collisionCheckRes) balanceCheckRes = balanceCheck(sigmaSmall);  
+//     
+//     if(!ik_solved) return false;
+//     
+//     _rspub->publishTransforms(ros::Time::now(), "/planner");
+    
+    bool ik_solved = true;  
+    bool collisionCheckRes = _vc_context.vc_aggregate.check("collisions"); 
+    bool balanceCheckRes = balanceCheck(sigmaSmall);  
+    
         
     while(!collisionCheckRes || !balanceCheckRes || !ik_solved)
     {
         auto tic = std::chrono::high_resolution_clock::now();
+        
+        // reset robot in qnear
+        //_ik_solver->getModel()->setJointPosition(x);
        
         // Acquire colliding chains
         auto colliding_chains = _vc_context.planning_scene->getCollidingChains();
@@ -116,8 +130,8 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
         _ik_solver->getCI()->setReferencePosture(joint_map);
         
         ik_solved = _ik_solver->solve();
-        collisionCheckRes = _vc_context.vc_aggregate.check("collisions");
-        balanceCheckRes = balanceCheck(sigmaSmall);
+        if(ik_solved) collisionCheckRes = _vc_context.vc_aggregate.check("collisions"); 
+        if(ik_solved && collisionCheckRes) balanceCheckRes = balanceCheck(sigmaSmall);        
         
         _rspub->publishTransforms(ros::Time::now(), "/planner");
                         
@@ -136,6 +150,84 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     std::cout << "[NSPG]: done!" << std::endl;
     return true;
 }
+
+/*
+bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge) 
+{
+    // BE SURE THAT _ik_solver AND _vc_context HAS THE SAME MODEL
+    Eigen::VectorXd x, dqlimits;
+    XBot::JointNameMap chain_map, joint_map, velocity_map, random_map;
+    
+    // Start initializing joint_map
+    _ik_solver->getModel()->getJointPosition(joint_map);
+    _ik_solver->getModel()->getVelocityLimits(dqlimits);
+    _ik_solver->getModel()->getJointPosition(x);
+    
+    // Fill velocity_map with the velocity limits
+    _ik_solver->getModel()->eigenToMap(x, velocity_map);
+    _ik_solver->getModel()->eigenToMap(dqlimits, velocity_map);
+    
+    float T = 0.0;
+    double dt = 0.01;
+    int iter = 0;
+    int iterMax = 100;
+    
+    initializeBalanceCheck(sigmaSmall);
+    
+    bool collisionCheckRes = _vc_context.vc_aggregate.check("collisions");
+    bool balanceCheckRes = balanceCheck(sigmaSmall);
+    //bool ik_solved = true; //FIXME use next line for goal sampler service 
+    bool ik_solved = _ik_solver->solve();  
+        
+    while(!collisionCheckRes || !balanceCheckRes || !ik_solved)
+    {
+        auto tic = std::chrono::high_resolution_clock::now();
+        
+        // reset robot in qnear
+        _ik_solver->getModel()->setJointPosition(x);
+       
+        // Acquire colliding chains
+        auto colliding_chains = _vc_context.planning_scene->getCollidingChains();
+        
+        // Generate a random velocity vector for colliding chains' joints only every n iterations
+        if (iter % iterMax == 0)
+        {
+            _ik_solver->getModel()->eigenToMap(x, joint_map);
+            random_map = generateRandomVelocities(colliding_chains);
+        }
+        
+        // Update joint_map with integrated random velocities       
+        for (auto i : random_map)
+            joint_map[i.first] += i.second * dt;
+        
+        iter ++;
+     
+        _ik_solver->getCI()->setReferencePosture(joint_map);
+        
+        ik_solved = _ik_solver->solve();
+        //collisionCheckRes = _vc_context.vc_aggregate.check("collisions");
+        //balanceCheckRes = balanceCheck(sigmaSmall);
+        if(ik_solved) collisionCheckRes = _vc_context.vc_aggregate.check("collisions"); 
+        if(ik_solved && collisionCheckRes) balanceCheckRes = balanceCheck(sigmaSmall);        
+        
+        _rspub->publishTransforms(ros::Time::now(), "/planner");
+                        
+        auto toc = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> fsec = toc-tic;
+        T += fsec.count();
+        
+        if(T >= timeout)
+        {
+            std::cout << "[NSPG]: timeout" <<std::endl;
+            return false;
+        }
+        
+    }
+    
+    std::cout << "[NSPG]: done!" << std::endl;
+    return true;
+}
+*/
 
 void NSPG::initializeBalanceCheck(Stance sigma){  
     
