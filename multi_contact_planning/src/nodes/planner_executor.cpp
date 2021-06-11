@@ -773,8 +773,8 @@ bool PlannerExecutor::goal_sampler_service(multi_contact_planning::CartesioGoal:
     active_tasks.push_back("TCP_R");
  
     //LF
-    pos_ref.push_back(Eigen::Vector3d(0.4, 0.7, 0.3));
-    //pos_ref.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+    //pos_ref.push_back(Eigen::Vector3d(0.4, 0.7, 0.3));
+    pos_ref.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
     //RF
     pos_ref.push_back(Eigen::Vector3d(0.4, -0.7, 0.3));
     //LH
@@ -1654,7 +1654,7 @@ Eigen::Vector3d PlannerExecutor::getNormalAtPoint(Eigen::Vector3d p){
 bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding){
     
     //std::string added_task = getTaskStringName(sigmaLarge.getContact(sigmaLarge.getSize()-1)->getEndEffectorName());
-    adding = true;
+    adding = false;
     std::string added_task = "l_sole";
     
     // build references
@@ -1664,21 +1664,6 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
         EndEffector ee = sigmaLarge.getContact(i)->getEndEffectorName();
         active_tasks.push_back(getTaskStringName(ee));
         ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
-        
-        /*
-        //TODO attempt to generate the reference pose in the local frame
-        //std::cout << "getTaskStringName(ee) = " << getTaskStringName(ee) << std::endl;
-        //if(getTaskStringName(ee).compare(added_task) == 0) std::cout << "CIAO CIAO" << std::endl;
-        if(getTaskStringName(ee).compare(added_task) == 0){
-            Eigen::Affine3d ref_pose;
-            Eigen::Vector3d ref_pos;
-            Eigen::Matrix3d ref_rot = Eigen::MatrixXd::Identity(3,3);
-            ref_pose.translation() = ref_pos;
-            ref_pose.linear() = ref_rot;
-            ref_tasks.push_back(ref_pose);
-        }
-        else ref_tasks.push_back(sigmaLarge.retrieveContactPose(ee));
-        */    
     }
 
     // set references
@@ -1705,12 +1690,8 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
         }
         else{ 
             _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[0], XBot::Cartesian::ActivationState::Enabled);
-            //_NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); // REMOVE
-             
             if(adding && added_task.compare(all_tasks[i]) == 0) _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
-            //if(adding) _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Disabled); 
             else _NSPG->getIKSolver()->getCI()->setActivationState(subtasks[1], XBot::Cartesian::ActivationState::Enabled); 
-             
             int index = it - active_tasks.begin();
             _NSPG->getIKSolver()->getCI()->setPoseReference(all_tasks[i], ref_tasks[index]);
         } 
@@ -1726,20 +1707,17 @@ bool PlannerExecutor::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Confi
     _NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
     _NSPG->getIKSolver()->getModel()->update();
     
-    std::cout << "QUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
-
-
-    // search IK solution (joint limits)
+    // search IK solution (joint limits) --> qNominal
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
-//     if (!_NSPG->getIKSolver()->solve()){
-//         std::cout << "STOP BEFORE NSPG" << std::endl;
-//         //return false;
-//     }
+    if (!_NSPG->getIKSolver()->solve()){
+        std::cout << "STOP BEFORE NSPG" << std::endl;
+        return false;
+    }
     
     // refine IK solution (balance and self-collisions)
-   // _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
-    
+    _NSPG->_rspub->publishTransforms(ros::Time::now(), "/planner");
+   
     if(!_NSPG->sample(time_budget, sigmaSmall, sigmaLarge))
     {
         _NSPG->getIKSolver()->getModel()->getJointPosition(c);

@@ -38,4 +38,7 @@ const int GOAL_INDEX = 2;
 
 const bool RAND_VEL_CHAINS = false;
 
+
+const bool FREE_YAW_ROTATION = false;
+
 #endif

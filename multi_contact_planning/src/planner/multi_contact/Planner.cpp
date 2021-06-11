@@ -681,9 +681,9 @@ void Planner::run(){
                     
                     auto tic = std::chrono::high_resolution_clock::now();
 
-                    if(SCENARIO == 2) adding = false;
+                    //if(SCENARIO == 2) adding = false;
+                    adding = adding && FREE_YAW_ROTATION;
                     bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, adding);
-                    //bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, false);
                     if(resIKCS) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
                     else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
                     
@@ -1053,8 +1053,6 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
 
 bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding){
     
-    //adding = false;
-    
     std::string added_task = getTaskStringName(sigmaLarge.getContact(sigmaLarge.getSize()-1)->getEndEffectorName());
     
     // build references
@@ -1068,7 +1066,6 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
 
     // set references
     std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-    //std::vector<std::string> all_tasks = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d", "l_foot_upper_right_link", "l_foot_upper_left_link", "l_foot_lower_right_link", "l_foot_lower_left_link", "r_foot_upper_right_link", "r_foot_upper_left_link", "r_foot_lower_right_link", "r_foot_lower_left_link"};
     ci->setActivationState("com", XBot::Cartesian::ActivationState::Disabled); //FIXME useless if CoM not in stack
     
     //FIXME /////////////////////////////////////////////////////////////////////////////////
@@ -1111,8 +1108,7 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
     NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
     NSPG->getIKSolver()->getModel()->update();
     
-    
-    // search IK solution (joint limits)
+    // search IK solution (joint limits) --> qNominal
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
     if (!NSPG->getIKSolver()->solve()){
