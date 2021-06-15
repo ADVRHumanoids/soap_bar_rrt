@@ -59,7 +59,19 @@ _nh(nh)
     _pub = _nh.advertise<multi_contact_planning::SetContactFrames>("contacts", 10, true);
 
     std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-    _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2), true, Eigen::Vector2d(-0.1, 0.1), Eigen::Vector2d(-0.5, 0.5)));
+    //_cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2), true, Eigen::Vector2d(-0.1, 0.1), Eigen::Vector2d(-0.05, 0.05)));
+    
+    Eigen::Vector2d CoP_xlim;
+    Eigen::Vector2d CoP_ylim;
+    if(SCENARIO == 3){ 
+        CoP_xlim << -0.1, 0.1;
+        CoP_ylim << -0.05, 0.05;
+    }
+    else{
+        CoP_xlim << -0.04, 0.04;
+        CoP_ylim << -0.04, 0.04;
+    }
+    _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2), true, CoP_xlim, CoP_ylim));
     
     // set initial configuration
     qInit = _qInit;
@@ -788,10 +800,15 @@ bool Planner::distanceCheck(Stance sigmaNew)
 //         if(euclideanDistance(pRFoot, pRHandD) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandD) > DIST_THRES_MAX) return false;
     
         
-    //if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
-        //if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
+//     if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   
+//         if(euclideanDistance(pLHandC, pRHandC) > DIST_HANDS_THRES_MAX) return false;
 
-    if(SCENARIO == 2){
+    if(SCENARIO == 2 && INIT_INDEX == 0){
+        if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
+            if(euclideanDistance(pLHandC, pRHandC) < DIST_HANDS_THRES_MAX) return false;
+    }
+
+    if(SCENARIO == 2 && INIT_INDEX > 0){
         if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_C))   
              if(fabs(pLFoot(2) - pLHandC(2)) < 5.0*WORKSPACE_RADIUS_FOOT || fabs(pLFoot(2) - pLHandC(2)) > 8.0*WORKSPACE_RADIUS_FOOT) return false;
         if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))   

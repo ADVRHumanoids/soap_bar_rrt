@@ -17,7 +17,19 @@ NSPG::NSPG ( PositionCartesianSolver::Ptr ik_solver, ValidityCheckContext vc_con
         _rspub = std::make_shared<XBot::Cartesian::Utils::RobotStatePublisher>(_ik_solver->getModel());         
         
         std::vector<std::string> links = {"r_sole", "l_sole", "TCP_R", "TCP_L", "l_ball_tip_d", "r_ball_tip_d"};
-        _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(_ik_solver->getModel(), links, MU_FRICTION*sqrt(2), true, Eigen::Vector2d(-0.1, 0.1), Eigen::Vector2d(-0.5, 0.5)));
+        //_cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(_ik_solver->getModel(), links, MU_FRICTION*sqrt(2), true, Eigen::Vector2d(-0.1, 0.1), Eigen::Vector2d(-0.05, 0.05)));
+        
+        Eigen::Vector2d CoP_xlim;
+        Eigen::Vector2d CoP_ylim;
+        if(SCENARIO == 3){ 
+            CoP_xlim << -0.1, 0.1;
+            CoP_ylim << -0.05, 0.05;
+        }
+        else{
+            CoP_xlim << -0.04, 0.04;
+            CoP_ylim << -0.04, 0.04;
+        }
+        _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(_ik_solver->getModel(), links, MU_FRICTION*sqrt(2), true, CoP_xlim, CoP_ylim));
 
     }
     
