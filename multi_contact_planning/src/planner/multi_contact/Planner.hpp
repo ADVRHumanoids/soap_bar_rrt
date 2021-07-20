@@ -91,12 +91,14 @@ class Planner {
                 XBot::Cartesian::Planning::ValidityCheckContext _vc_context,
                 ros::NodeHandle& nh);
         std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics> _cs;
-        ~Planner();
+        ~Planner() = default;
         void run();
         bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
         int getTreeSize();
         
         void checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
+        
+        void clearTree();
 
 };
 

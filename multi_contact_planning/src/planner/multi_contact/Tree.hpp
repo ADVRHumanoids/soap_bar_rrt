@@ -16,7 +16,7 @@ class Tree {
 
 	public:
 		Tree();
-		~Tree();
+		~Tree() = default;
 
 		std::shared_ptr<Vertex> getVertex(int i);
 		void addVertex(std::shared_ptr<Vertex> v);

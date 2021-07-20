@@ -108,7 +108,7 @@ _nh(nh)
 
 }
 
-Planner::~Planner(){ }
+//Planner::~Planner(){ }
 
 bool Planner::isGoalStance(std::shared_ptr<Vertex> v){
 
@@ -1225,6 +1225,8 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
             std::string contact_link = getTaskStringName(ee);
             wrench = FCmap.find(contact_link)->second;
             sigma.getContact(i)->setForce(wrench);
+            
+            foutLogMCP << "---wrench = " << wrench.transpose() << std::endl;
         }
     }
 }
@@ -1387,5 +1389,9 @@ void Planner::retrieveContactPoses(Configuration q, Stance &sigma){
         Eigen::Affine3d T = computeForwardKinematics(q, ee);
         sigma.getContact(i)->setPose(T.translation(), T.linear());
     }
+}
+
+void Planner::clearTree(){
+    tree->clear();
 }
 

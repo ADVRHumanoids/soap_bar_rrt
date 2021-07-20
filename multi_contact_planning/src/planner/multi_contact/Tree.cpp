@@ -4,7 +4,7 @@ Tree::Tree(){
 	verticesList.clear();
 }
 
-Tree::~Tree(){}
+//Tree::~Tree(){}
 
 std::shared_ptr<Vertex> Tree::getVertex(int i){
 	return verticesList.at(i);

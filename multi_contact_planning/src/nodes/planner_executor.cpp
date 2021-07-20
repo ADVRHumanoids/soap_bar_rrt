@@ -72,7 +72,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
             std::shared_ptr<Contact> c = sigma.getContact(j);
             EndEffector ee = c->getEndEffectorName();
             Eigen::Affine3d T = c->getPose();
-            Eigen::Vector3d F = c->getForce();
+            Eigen::VectorXd F = c->getForce();
             Eigen::Vector3d n = c->getNormal();
 
             fileOut << ee << std::endl;
@@ -1414,29 +1414,45 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
     if(index_config == -1){
 
         if(runPlanner){
-            // create/initialize the planner
-            Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
-            std::cout << "planner created!" << std::endl;
+            
+            for(int i = 0; i < NUM_SIM; i++){
+                _model->setJointPosition(q_init);
+                _model->update();
+                _start_model->setJointPosition(q_init);
+                _start_model->update();
+                _goal_model->setJointPosition(q_goal);
+                _goal_model->update();
+            
+                // create/initialize the planner
+                Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
+                //std::shared_ptr<Planner> planner = std::make_shared<Planner>(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
+                std::cout << "planner created!" << std::endl;
 
-            // run planner
-            float t_elapsed = 0.0;
-            auto t_start_chrono = std::chrono::steady_clock::now();
-            planner->run();
-            std::cout << "Planning completed!" << std::endl;
-            auto t_curr_chrono = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono).count();
-            t_elapsed = (float)t_curr_chrono / 1000.0;
-            std::cout << "Planning Time:: " << t_elapsed << std::endl;
+                // run planner
+                float t_elapsed = 0.0;
+                auto t_start_chrono = std::chrono::steady_clock::now();
+                planner->run();
+                std::cout << "Planning completed!" << std::endl;
+                auto t_curr_chrono = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start_chrono).count();
+                t_elapsed = (float)t_curr_chrono / 1000.0;
+                std::cout << "Planning Time:: " << t_elapsed << std::endl;
 
-            // retrieve solution
-            sigmaList.clear();
-            qList.clear();
-            sol_found = planner->retrieveSolution(sigmaList, qList);
-            if(sol_found) std::cout << "Solution FOUND!" << std::endl;
-            else std::cout << "Solution NOT FOUND!" << std::endl;
-            std::cout << "sigmaList.size() = " << sigmaList.size() << std::endl;
-            std::cout << "qList.size() = " << qList.size() << std::endl;
-            writeOnFileConfigs(qList, "qList");
-            writeOnFileStances(sigmaList, "sigmaList");
+                // retrieve solution
+                sigmaList.clear();
+                qList.clear();
+                sol_found = planner->retrieveSolution(sigmaList, qList);
+                if(sol_found) std::cout << "Solution FOUND!" << std::endl;
+                else std::cout << "Solution NOT FOUND!" << std::endl;
+                std::cout << "sigmaList.size() = " << sigmaList.size() << std::endl;
+                std::cout << "qList.size() = " << qList.size() << std::endl;
+                writeOnFileConfigs(qList, "qList");
+                writeOnFileStances(sigmaList, "sigmaList");
+                
+                //planner.reset();
+                
+                //delete planner;
+                planner->clearTree();
+            }
         }
         else{
             sigmaList.clear();
@@ -1448,7 +1464,8 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
             
             /////////////////////////////////////
             // create/initialize the planner  
-            Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
+            //Planner* planner = new Planner(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
+            std::shared_ptr<Planner> planner = std::make_shared<Planner>(qInit, activeEEsInit, qGoal, activeEEsGoal, pointCloud, pointNormals, allowedEEs, _model, _NSPG, _vc_context, _nh);
             std::cout << "planner created!" << std::endl;
             planner->checkSolutionCS(sigmaList, qList);
            

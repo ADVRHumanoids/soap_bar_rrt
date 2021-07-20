@@ -1,8 +1,10 @@
 #ifndef CONSTANT_VALUES_HPP
 #define	CONSTANT_VALUES_HPP
 
+const int NUM_SIM = 1;
+
 // planner
-const int MAX_ITERATIONS = 10000;
+const int MAX_ITERATIONS = 500; //10000;
 const double EXPLOITATION_RATE = 1.0; //0.9; // between 0 and 1 (it is a threshold for the probability)
 const double GOAL_TOLERANCE = 0.05; // it means 5 cm
 const int MAX_NUM_EXP_PER_VERTEX = 5; // maximum number of times that a certain vertex can be used for an expansion attempt (both succ or not)
@@ -26,6 +28,7 @@ const double CS_THRES = 5*1e-2;
 
 // nspg
 const bool RAND_VEL_CHAINS = false;
+
 
 // SCENARIO 1, PHASE 0
 const int SCENARIO = 1;

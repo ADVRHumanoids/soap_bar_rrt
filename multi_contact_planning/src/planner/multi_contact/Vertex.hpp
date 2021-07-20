@@ -26,7 +26,7 @@ class Vertex {
 
 		Vertex(Stance _sigma, Configuration _q, int _parentIndex);
         Vertex(Stance _sigma, Configuration _q, Configuration _q_transition, int _parentIndex);
-		~Vertex();
+		~Vertex() = default;
 
 		Stance getStance();
 		Configuration getConfiguration();
