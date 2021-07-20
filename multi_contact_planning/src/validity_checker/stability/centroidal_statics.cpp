@@ -87,7 +87,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
             if (link == "TCP_R" || link == "TCP_L" || link == "l_ball_tip_d" || link == "r_ball_tip_d")
                 continue;
             yaml << link + "_cop";
-            yaml << link + "_nt";
+//            yaml << link + "_nt";
         }
     
     }

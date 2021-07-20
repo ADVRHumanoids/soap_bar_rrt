@@ -52,6 +52,7 @@ class Cogimon:
 
         # visualization tools
         self.rspub = pyci.RobotStatePublisher(self.model)
+        self.rspub_replay = pyci.RobotStatePublisher(self.replay_model)
 
         self.start_viz = visual_tools.RobotViz(self.model,
                                                '/cogimon/start',
@@ -65,7 +66,7 @@ class Cogimon:
 
         self.sol_viz = visual_tools.RobotViz(self.replay_model,
                                              '/cogimon/solution',
-                                             color=[0.5, 0, 0.5, 0.5],
+                                             color=[0.5, 0, 0.5, 0.1],
                                              tf_prefix='ci/')
 
         self.planner_viz = visual_tools.RobotViz(self.replay_model,
@@ -85,8 +86,8 @@ class Cogimon:
                                                    self.ctrl_points.values(),
                                                    0.5*np.sqrt(2),
                                                    optimize_torque=False,
-                                                   xlims_cop=np.array([-0.015, 0.065]),
-                                                   ylims_cop=np.array([-0.015, 0.015]))
+                                                   xlims_cop=np.array([-0.025, 0.065]),
+                                                   ylims_cop=np.array([-0.025, 0.025]))
 
         if self.simulation:
             self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
@@ -95,6 +96,7 @@ class Cogimon:
 
             self.ft_map['l_sole'] = self.ft_map.pop('l_leg_ft')
             self.ft_map['r_sole'] = self.ft_map.pop('r_leg_ft')
+            self.f_est.update()
 
         # joint limits for the planner
         qmin, qmax = self.model.getJointLimits()
@@ -109,10 +111,10 @@ class Cogimon:
         self.qmax = qmax
 
         # state validity checker
-        def is_state_valid(q):
+        def is_state_valid(q, collision_only=False):
             self.model.setJointPosition(q)
             self.model.update()
-            return self.is_model_state_valid()
+            return self.is_model_state_valid(collision_only)
 
         self.state_vc = is_state_valid
 
@@ -120,11 +122,13 @@ class Cogimon:
         self.rspub.publishTransforms('ci')
 
     # validity checker
-    def is_model_state_valid(self):
+    def is_model_state_valid(self, collision_only):
         self.ps.update()
-        self.rspub.publishTransforms('ci')
+        # self.rspub.publishTransforms('ci')
 
         in_collision = self.ps.checkCollisions()
+        if collision_only:
+            return not in_collision
         stable = self.cs.checkStability(5 * 1e-2)
 
         if in_collision:

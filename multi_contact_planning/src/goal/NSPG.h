@@ -36,6 +36,7 @@ namespace XBot { namespace Cartesian { namespace Planning {
         PositionCartesianSolver::Ptr _ik_solver;
         Planning::ValidityCheckContext _vc_context;
         std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics> _cs;
+        std::vector<std::string> _active_links;
         
         double generateRandom();
         bool balanceCheck(Stance sigma);

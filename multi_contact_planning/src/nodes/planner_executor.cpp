@@ -21,7 +21,7 @@ using namespace XBot::Cartesian;
 std::string env(std::getenv("ROBOTOLOGY_ROOT"));
 
 void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
-    std::string filePrefix = env + "/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
 
@@ -36,7 +36,7 @@ void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::
 }
 
 void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
-    std::string filePrefix = env + "/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;
@@ -61,7 +61,7 @@ void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std
 }
 
 void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName){
-    std::string filePrefix = env + "/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
 
@@ -84,7 +84,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
 }
 
 void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
-    std::string filePrefix = env + "/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;
@@ -241,17 +241,18 @@ void PlannerExecutor::init_load_model()
         
         q1 << 0.759541, 0.0925172, 0.730835, 2.71415, 1.64804, -2.78167, 0.0077494, -1.71118, -0.0198973, 0.829911, -0.617268, 0.0637515, -0.550414, -1.50116, -0.576022, 0.514271, -0.500356, 0.104535, 0.425875, 0.077989, -0.94867, 0.0520036, 0.872267, -0.907853, -0.267958, 0.206271, 0.0805234, -0.933177, -0.2558, -0.273087, -0.964502, 0.679464, 0.561918, -0.236882;
         
+        /*
         q2 << 1.58871, 0.0223469, 0.637945, 2.81551, 1.77831, -2.76061, 0.452002, -1.11945, 0.376866, 0.64416, -0.872665, -0.226634, -0.482266, -0.975, -0.58049, 0.55925, -0.872665, 0.256492, 0.0890082, -0.0296354, -1.01587, 1.07963, 0.14952, -0.864876, 0.690062, 0.809135, -0.146463, -0.943517, -1.21241, -0.186094, -0.878702, -0.766646, 0.841216, 0.190342;
             
         q3 << 1.76207, -0.0338754, 0.908798, 2.94557, -3.00842, 3.31202, 0.365677, -0.184716, -0.212292, 0.979485, -0.734834, -0.203572, 0.165889, 0.178129, -0.189333, 0.490139, -0.5617, 0.0652543, -0.0335189, -0.210854, -1.16491, 0.866977, -0.115734, -0.74658, 0.254145, 0.622937, 0.0555549, -1.26494, -0.840133, -1.00947, 0.0352932, -0.941131, 0.210595, 1.42731;
-         
+        */
         
-        /*
+
         // LUCA
         q2 << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
         
         q3 <<  1.35264, 0.0321436, 0.637171, 0.300612, 0.163697, -0.0510181, -0.0339955, -1.63838, 0.430584, 2.0376, -0.574465, 0.169645, -1.65806, -1.52197, -1.10393,1.94623, -0.563225, 0.261799, 0.192883, 0.172189, -0.53815, 0.383079, 0.445875, -1.10583, 0.887176, 0.050227, -0.290198, -0.689682, -0.804219, -0.497053, -1.74136, -0.168326, 1.00714, 0.339376;
-        */
+
     }
     
     if(SCENARIO == 2){
@@ -296,6 +297,10 @@ void PlannerExecutor::init_load_model()
     
     q_init = qs.at(INIT_INDEX);
     q_goal = qs.at(GOAL_INDEX);
+
+    q_init << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
+
+    q_goal <<  1.35264, 0.0321436, 0.637171, 0.300612, 0.163697, -0.0510181, -0.0339955, -1.63838, 0.430584, 2.0376, -0.574465, 0.169645, -1.65806, -1.52197, -1.10393,1.94623, -0.563225, 0.261799, 0.192883, 0.172189, -0.53815, 0.383079, 0.445875, -1.10583, 0.887176, 0.050227, -0.290198, -0.689682, -0.804219, -0.497053, -1.74136, -0.168326, 1.00714, 0.339376;
     
     if(SCENARIO == 1){
         if(INIT_INDEX == 0) activeEEsInit = {L_FOOT, R_FOOT};
