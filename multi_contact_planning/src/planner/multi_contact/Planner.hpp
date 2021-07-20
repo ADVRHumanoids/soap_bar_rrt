@@ -2,10 +2,10 @@
 #define PLANNER_H
 
 #include <stdio.h>
-#include <stdlib.h>   
+#include <stdlib.h>
 #include <vector>
 #include <map>
-#include <iostream>   
+#include <iostream>
 #include <chrono>
 #include <fstream>
 #include <random>
@@ -50,10 +50,10 @@ class Planner {
         XBot::Cartesian::CartesianInterfaceImpl::Ptr ci;
 
         XBot::Cartesian::Planning::ValidityCheckContext vc_context;
-        
+
         ros::NodeHandle _nh;
         ros::Publisher _pub;
-        
+
         int n_dof;
         Eigen::VectorXd qmin, qmax;
 
@@ -70,15 +70,15 @@ class Planner {
         Eigen::Vector3d getNormalAtPointByIndex(int index);
         Eigen::Vector3d computeCoM(Configuration q);
         Eigen::Affine3d computeForwardKinematics(Configuration q, EndEffector ee);
-        
+
         bool similarityCheck(Stance sigmaNew);
         bool distanceCheck(Stance sigmaNew);
-        
+
         void retrieveContactForces(Configuration q, Stance &sigma);
         void retrieveContactPoses(Configuration q, Stance &sigma);
-        
+
         bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding);
-        
+
 
     public:
 
@@ -91,12 +91,14 @@ class Planner {
                 XBot::Cartesian::Planning::ValidityCheckContext _vc_context,
                 ros::NodeHandle& nh);
         std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics> _cs;
-        ~Planner();
+        ~Planner() = default;
         void run();
         bool retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Configuration> &qList);
         int getTreeSize();
-        
+
         void checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
+
+        void clearTree();
 
 };
 
