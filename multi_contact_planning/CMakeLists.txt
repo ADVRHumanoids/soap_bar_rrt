@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 project(multi_contact_planning) ########################################### PF
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
 option(COMPILE_TESTS "Compile internal tests" FALSE)
 
@@ -88,6 +88,7 @@ add_service_files(
     FILES
     CartesioPlanner.srv
     CartesioGoal.srv
+    StiffnessDamping.srv
     )
 
 ## Generate actions in the 'action' folder
@@ -393,6 +394,10 @@ install(DIRECTORY launch/
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
     FILES_MATCHING PATTERN "*.launch"
     PATTERN ".svn" EXCLUDE
+    )
+
+install(DIRECTORY examples/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/examples
     )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
