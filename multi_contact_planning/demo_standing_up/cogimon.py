@@ -83,9 +83,9 @@ class Cogimon:
 
         # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
         self.cs = validity_check.CentroidalStatics(self.model,
-                                                   self.ctrl_points.values(),
+                                                   list(self.ctrl_points.values()),
                                                    0.5*np.sqrt(2),
-                                                   optimize_torque=False,
+                                                   optimize_torque=True,
                                                    xlims_cop=np.array([-0.025, 0.065]),
                                                    ylims_cop=np.array([-0.025, 0.025]))
 
@@ -132,9 +132,9 @@ class Cogimon:
         stable = self.cs.checkStability(5 * 1e-2)
 
         if in_collision:
-            print "collision state!"
+            print("collision state!")
         if not stable:
-            print "not stable state!"
+            print("not stable state!")
 
         return not in_collision and stable
 

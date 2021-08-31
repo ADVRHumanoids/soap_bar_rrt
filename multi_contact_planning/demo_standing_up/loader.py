@@ -18,9 +18,9 @@ def readFromFileStances(path):
             # 2. split into tokes given ' '
             # 3. remove empty '' with filter
             # 4. cast to float with map
-            stance.append(dict(ind=int(f.readline()), ref=dict(pose=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))),
-                                                               force=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))),
-                                                               normal=map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' '))))))
+            stance.append(dict(ind=int(f.readline()), ref=dict(pose=list(map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' ')))),
+                                                               force=list(map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' ')))),
+                                                               normal=list(map(float, filter(lambda a: a != '', f.readline().strip('\n').split(' ')))))))
 
         stances.append(stance)
 
@@ -37,7 +37,7 @@ def readFromFileConfigs(path):
         if q == '':
             break
 
-        q = map(float, filter(lambda a: a != '', q.strip('\n').split(' ')))
+        q = list(map(float, filter(lambda a: a != '', q.strip('\n').split(' '))))
         q_list.append(q)
 
     return q_list
@@ -83,7 +83,7 @@ def checkStability(model, stances, qlist):
         model.cs.setOptimizeTorque(optimize_torque)
 
         normals = [j['ref']['normal'] for j in stance]
-        print [rotation(elem) for elem in normals]
+        print([rotation(elem) for elem in normals])
         [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
 
         check.append(model.state_vc(q))
@@ -98,14 +98,14 @@ if __name__ == '__main__':
     q_list = readFromFileConfigs("/home/luca/src/MultiDoF-superbuild/external/soap_bar_rrt/multi_contact_planning/planning_data/qList.txt")
 
 
-    print len(stances)
-    print len(q_list)
+    print(len(stances))
+    print(len(q_list))
 
     ee = [0,1,4,5]
 
     lifted_contact = [x for x in ee if x not in [i['ind'] for i in stances[1]]]
 
-    print lifted_contact
+    print(lifted_contact)
 
 
 

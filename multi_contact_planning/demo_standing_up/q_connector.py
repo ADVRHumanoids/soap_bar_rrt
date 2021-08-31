@@ -1,4 +1,3 @@
-import cogimon
 from cartesian_interface.pyci_all import *
 import rospy
 import yaml
@@ -22,8 +21,7 @@ from xbot_msgs.msg import JointCommand
 import json
 
 # import coman_rising.py from cartesio_planning
-user = os.getenv("ROBOTOLOGY_ROOT")
-folder = user + "/external/cartesio_planning/examples/python"
+folder = "/home/luca/hhcm_ws/external/src/cartesio_planning/examples/python"
 sys.path.append(folder)
 import coman_rising
 
@@ -56,7 +54,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = False
+        self.__complete_solution = True
         self.__node_counter = 0
         self.__sleep = 0.1
         self.__half = False
@@ -97,7 +95,7 @@ class Connector:
         ik_cfg['solver_options'] = {'regularization': 1e-3, 'back_end': 'qpoases'}
 
         ik_cfg['stack'] = [
-            self.model.ctrl_points.values()# + ['torso']
+            list(self.model.ctrl_points.values())# + ['torso']
         ]
 
         ik_cfg['constraints'] = ['JointLimits']
@@ -129,7 +127,7 @@ class Connector:
         ik_cfg['solver_options'] = {'regularization': 1e-3, 'back_end': 'qpoases'}
 
         ik_cfg['stack'] = [
-            self.model.ctrl_points.values(), ['postural']
+            list(self.model.ctrl_points.values()), ['postural']
         ]
 
         ik_cfg['constraints'] = ['JointLimits']
@@ -157,7 +155,6 @@ class Connector:
                     'distal_link': c,
                     'lambda': 1.
                 }
-
         ik_str = yaml.dump(ik_cfg)
 
         return ik_str
@@ -245,10 +242,10 @@ class Connector:
         task = self.ctrl_tasks[self.__lifted_contact_ind]
         detect_bool = 0
         wrench = self.model.ft_map[task.getName()].getWrench()
-        print wrench
+        print(wrench)
         # wrench[direction] = 0 # FOR SIMULATION
         # direction = [k for k, e in enumerate(self.stance_list[turn+1][self.__lifted_contact]['ref']['normal']) if e != 0]
-        print np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2]))
+        print(np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2])))
         if (np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2])) >= magnitude):
             detect_bool = 1
 
@@ -256,11 +253,11 @@ class Connector:
 
     def surface_reacher(self, turn, force_treshold):
 
-        print 'starting surface reacher...'
+        print('starting surface reacher...')
 
         task = self.ctrl_tasks[self.__lifted_contact_ind]
         # task.setBaseLink('torso')
-        print task.getName()
+        print(task.getName())
 
 
         # velocity desired
@@ -278,11 +275,11 @@ class Connector:
 
         vel_task = np.append(t_vel, [0.0, 0.0, 0.0])
 
-        print task.getName()
-        print task.getBaseLink()
+        print(task.getName())
+        print(task.getBaseLink())
 
-        print vel_task
-        raw_input('click to start surface reacher')
+        print(vel_task)
+        input('click to start surface reacher')
         task.enable()
         task.setControlMode(pyci.ControlType.Velocity)
         lambda_value = task.getLambda()
@@ -294,10 +291,10 @@ class Connector:
         while not self.impact_detector(turn, force_treshold):
 
             task.setVelocityReference(vel_task)
-            print task.getPoseReference()[1]
+            print(task.getPoseReference()[1])
 
             if not self.ci_solve_integrate(self.ci_time):
-                print ('unable to solve')
+                print('unable to solve')
                 break
 
             q = self.model.model.getJointPosition()
@@ -315,7 +312,7 @@ class Connector:
         task.setLambda(lambda_value)
         # task.setBaseLink('world')
 
-        print 'Surface reacher done'
+        print('Surface reacher done')
         return q
 
         ############################################
@@ -361,7 +358,7 @@ class Connector:
         indices = {}
         for m in forces:
             index = {ind: m for ind in self.model.ctrl_points.keys() if self.model.ctrl_points[ind] == m}
-            indices[index.keys()[0]] = index.values()[0]
+            indices[list(index.keys())[0]] = list(index.values())[0]
 
         for ind in indices:
             for index in range(len(self.stance_list[iterator + 1])):
@@ -401,13 +398,13 @@ class Connector:
         self.model.model.setJointPosition(q_postural)
         self.model.model.update()
 
-        print '[NSPG]: start sampling!'
+        print('[NSPG]: start sampling!')
         if not nspg.sample(timeout, max_counter):
-            print '[NSPG]: unable to find a feasible solution!'
+            print('[NSPG]: unable to find a feasible solution!')
             self.saveSolution()
             exit()
         else:
-            print '[NSPG]: feasible goal pose found!'
+            print('[NSPG]: feasible goal pose found!')
 
         # set nspg solution as new goal state
         new_q_goal = nspg.getModel().getJointPosition()
@@ -440,51 +437,17 @@ class Connector:
         # the next contact pose
         if len(self.stance_list[i]) == 3 and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
-            # find the lifted contact
-
-
-            # hardcoded stuff for phase0
-            if i == 4 and self.__complete_solution:
-                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            elif i == 4 and not self.__complete_solution:
-                # self.model.robot.sense()
-                # self.model.model.syncFrom(self.model.robot)
-                # q = self.model.model.getJointPosition()
-                # q[0:5] = self.q_list[i][0:5]
-                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            elif i != 4 and self.__complete_solution:
-                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            elif i != 4 and not self.__complete_solution:
-                self.model.robot.sense()
-                self.model.model.syncFrom(self.model.robot)
-                q = self.model.model.getJointPosition()
-                # q[0:5] = self.q_list[i][0:5]
-                q = self.model.model.getJointPosition()
-                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-
-            # q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            # self.q_bounder(q_start)
-
-            # q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            # self.q_bounder(q_start)
-
+            q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             q_goal = self.setClearence(i+1, self.q_list[i+1], clearence, 'goal')
+            self.q_bounder(q_start)
             self.q_bounder(q_goal)
 
         else:
-            if self.__complete_solution:
-                q_start = self.q_list[i]
-                self.q_bounder(q_start)
-            else:
-                self.model.robot.sense()
-                self.model.model.syncFrom(self.model.robot)
-                # q_start = self.model.model.getJointPosition()
-                # q_start[0:5] = self.q_list[i][0:5]
-                q_start = self.q_list[i]
-                self.q_bounder(q_start)
+            q_start = self.q_list[i]
+            self.q_bounder(q_start)
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
-            self.planner_client.publishGroundCheck(self.model.ctrl_points.values()[0], [0, 0, 1], False)
+            self.planner_client.publishGroundCheck(list(self.model.ctrl_points.values())[0], [0, 0, 1], False)
 
         return q_start, q_goal
 
@@ -554,7 +517,7 @@ class Connector:
 
         # check for any self-collision
         if not self.model.state_vc(q[:, -1], True):
-            raw_input('pose not valid!')
+            input('pose not valid!')
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]
             normals = [j['ref']['normal'] for j in self.stance_list[i]]
@@ -606,9 +569,9 @@ class Connector:
         # set control mode
         self.model.robot.setControlMode(xbot.ControlMode.Position())
 
-        print 'waiting for set_activation service...'
+        print('waiting for set_activation service...')
         rospy.wait_for_service('force_opt/set_activation')
-        print 'done!'
+        print('done!')
         self.__set_fopt_active = rospy.ServiceProxy('force_opt/set_activation', SetBool)
 
         # create ci_client
@@ -675,7 +638,7 @@ class Connector:
         i = 0
         if not self.__complete_solution:
             self.init()
-            raw_input('click')
+            input('click')
         i = 0
         for index in range(i):
             self.__solution.append({'indices': [], 'q': []})
@@ -701,14 +664,14 @@ class Connector:
 
             self.planner_client.updateManifold(active_links_start)
             # raw_input('Manifold updated')
-            print 'Manifold updated'
+            print('Manifold updated')
             # rospy.sleep(self.__sleep)
 
             if len(active_links_start) < 4:
                 self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
                                          x not in [j['ind'] for j in self.stance_list[i]]][0]
                 self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
-                self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
+                self.__lifted_contact_ind = list(dict(self.model.ctrl_points)).index(self.__lifted_contact)
 
 
 
@@ -725,20 +688,12 @@ class Connector:
                 forces = [j['ref']['force'] for j in self.stance_list[i]]
                 [self.__solution[i]['forces'].append(force) for force in forces]
 
-            # find optimize_torque for start and goal stances
+            # optimize torque variable to enable surface contacts
             optimize_torque_goal = True
-            # if len(active_links_goal) == 2 or i == 2:
-            #     optimize_torque_goal = True
-            # else:
-            #     optimize_torque_goal = False
             optimize_torque_start = True
-            # if len(active_links_start) == 2 or i == 2:
-            #     optimize_torque_start = True
-            # else:
-            #     optimize_torque_start = False
 
             if len(active_links_start) == 3:
-                all_links = self.model.ctrl_points.values()
+                all_links = list(self.model.ctrl_points.values())
                 [all_links.remove(active) for active in active_links_start]
                 lifted_link = all_links[0]
                 if self.model.simulation:
@@ -795,7 +750,7 @@ class Connector:
             # self.setForces(q_goal, i)
 
             if not self.model.state_vc(q_goal):
-                print ['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one']
+                print(['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one'])
                 # rospy.sleep(self.__sleep)
 
                 if adding:
@@ -813,7 +768,7 @@ class Connector:
             self.model.goal_viz.publishMarkers([])
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
-            print 'Start and Goal poses set'
+            print('Start and Goal poses set')
             if i > 0:
                 self.model.replay_model.setJointPosition(self.q_list[i-1])
                 self.model.replay_model.update()
@@ -827,11 +782,11 @@ class Connector:
                         normal = self.stance_list[i-1][iterator]['ref']['normal']
                         break
                 self.planner_client.publishGroundCheck(self.__lifted_contact_link, normal, True)
-                print 'GroundCollision check updated!'
+                print('GroundCollision check updated!')
                 # rospy.sleep(self.__sleep)
 
             if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
-                print 'Start and Goal poses are the same, skipping!'
+                print('Start and Goal poses are the same, skipping!')
                 s = len(self.q_list) - 1
                 i = i + 1
                 self.__half = False
@@ -841,9 +796,9 @@ class Connector:
             # publish the contacts
             contacts = {c: r for c, r in zip(active_links_start, quat_list_start)}
             self.planner_client.publishContacts(contacts, optimize_torque_start)
-            print contacts
+            print(contacts)
             # raw_input("Contacts published")
-            print 'Contacts published'
+            print('Contacts published')
             # rospy.sleep(self.__sleep)
 
             res = self.planner_client.solve(planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
@@ -856,7 +811,7 @@ class Connector:
             elif res[0] == 5:
                 counter = 0
                 while res[0] == 5 and counter < 5:
-                    print 'Modifying the goal...'
+                    print('Modifying the goal...')
                     # rospy.sleep(self.__sleep)
                     if adding:
                         q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20., 25)
@@ -869,16 +824,16 @@ class Connector:
                         self.stance_list[i + 1] = self.stance_list[i + 1]
                         self.setForces(q_goal, i)
                     self.planner_client.updateManifold(active_links_start)
-                    print 'Planner reset'
+                    print('Planner reset')
                     # rospy.sleep(self.__sleep)
-                    raw_input('setting start and goal poses')
+                    input('setting start and goal poses')
                     self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
-                    print 'Start and goal poses reset'
+                    print('Start and goal poses reset')
                     # rospy.sleep(self.__sleep)
                     res = self.planner_client.solve(planner_type='RRTstar', plan_time=3 + counter + 1, interpolation_time=0.01, goal_threshold=0.05)
                     counter = counter + 1
                     if counter == 5:
-                        print '[Error]: unable to connect start and goal poses'
+                        print('[Error]: unable to connect start and goal poses')
                         self.saveSolution()
                         exit()
                 rospy.sleep(self.__sleep)
@@ -896,7 +851,7 @@ class Connector:
 
             # rospy.sleep(self.__sleep)
 
-            if len(active_links_start) == 3: # and i != 3 and i != 2:
+            if len(active_links_start) == 3 and i != 3 and i != 2:
                 if self.__complete_solution: # or self.normal[2] > 0.01:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
@@ -914,12 +869,12 @@ class Connector:
             i = i + 1
             if self.model.simulation:
                 self.__reset_stiffness(100, 3, '')
-            print 'next config'
+            print('next config')
 
     def saveSolution(self):
         with open('solution.txt', 'w') as fout:
             json.dump(self.__solution, fout)
-        print 'Solution saved!'
+        print('Solution saved!')
 
     def openSolution(self, filename):
         with open(filename) as json_file:
@@ -944,7 +899,7 @@ class Connector:
     def play_solution(self):
         if self.model.simulation:
             self.init()
-            raw_input('init done. click to continue...')
+            input('init done. click to continue...')
         for i in range(len(self.__solution)):
             # set active contacts
             all_links = self.model.ctrl_points.values()
@@ -979,7 +934,7 @@ class Connector:
                     rospy.sleep(0.01)
 
 
-            print ('{}% done...'.format(int((float(i)/float(len(self.__solution))) * 100)))
+            print('{}% done...'.format(int((float(i)/float(len(self.__solution))) * 100)))
 
             if self.model.simulation:
                 self.__reset_stiffness(100, 2, '')
