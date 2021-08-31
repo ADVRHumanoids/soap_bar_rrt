@@ -49,15 +49,25 @@ Eigen::Affine3d Stance::retrieveContactPose(EndEffector pk){
     // this assumption must always be verified before calling this function!
 
     for(int i = 0; i < contactsList.size(); i++){
-        if(contactsList.at(i)->getEndEffectorName() == pk) return contactsList.at(i)->getPose();
+        if(contactsList.at(i)->getEndEffectorName() == pk)
+        {
+            return contactsList.at(i)->getPose();
+            break;
+        }
     }
+    return Eigen::Affine3d::Identity();
 
 }
 
 Eigen::Vector3d Stance::retrieveContactNormal(EndEffector pk){
     for(int i = 0; i < contactsList.size(); i++){
-        if(contactsList.at(i)->getEndEffectorName() == pk) return contactsList.at(i)->getNormal();
+        if(contactsList.at(i)->getEndEffectorName() == pk)
+        {
+            return contactsList.at(i)->getNormal();
+            break;
+        }
     }
+    return Eigen::Vector3d::Zero();
 }
 
 void Stance::print(){
