@@ -10,10 +10,10 @@
     <!--env name="MATLOGGER_DISABLE_LOG" value="1"/-->
 
     <param name="robot_description"
-        textfile="$(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/utils/urdf/cogimon.urdf"/>
+        textfile="$(find multi_contact_planning)/examples/utils/urdf/cogimon.urdf"/>
 
     <param name="robot_description_semantic"
-        textfile="$(env ROBOTOLOGY_ROOT)/external/soap_bar_rrt/multi_contact_planning/examples/utils/srdf/cogimon.srdf"/>
+        textfile="$(find multi_contact_planning)/examples/utils/srdf/cogimon.srdf"/>
 
     <!--param name="planner/problem_description_constraint"
         textfile="$(find multi_contact_planning)/configs/problem/comanplus_constraint_stack.yaml"/-->
