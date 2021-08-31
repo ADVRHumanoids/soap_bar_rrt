@@ -13,7 +13,7 @@ static std::default_random_engine rotationGenerator;
 static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
 std::string env(getenv("ROBOTOLOGY_ROOT"));
-static std::ofstream foutLogMCP(env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
+static std::ofstream foutLogMCP(env + "/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
 
 Planner::Planner(Configuration _qInit,
                  std::vector<EndEffector> _activeEEsInit,
@@ -708,14 +708,24 @@ void Planner::run(){
                     if(resIKCS){
                         // adjust orientations in sigmaNew
                         retrieveContactPoses(qNew, sigmaNew);
-
                         // set forces in sigmaNew
                         retrieveContactForces(qNew, sigmaNew);
-
-                        // add new vertex
+                        // construct new vertex
                         std::shared_ptr<Vertex> vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
-                        tree->addVertex(vNew);
                         solutionFound = isGoalStance(vNew);
+
+                        // add vertex
+                        if(solutionFound){
+                            // adjust orientations in sigmaNew
+                            retrieveContactPoses(qGoal, sigmaGoal);
+                            // set forces in sigmaNew
+                            retrieveContactForces(qGoal, sigmaGoal);
+
+                            std::shared_ptr<Vertex> vGoal = std::make_shared<Vertex>(sigmaGoal, qGoal, iNear);
+                            tree->addVertex(vGoal);
+                        }
+                        else
+                            tree->addVertex(vNew);
 
                         foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
                     }
@@ -792,6 +802,14 @@ bool Planner::distanceCheck(Stance sigmaNew)
 
         if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_C))
             if(euclideanDistance(pRFoot, pRHandC) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandC) > DIST_THRES_MAX) return false;
+
+        // CHECK LUCA PHASE2
+        if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(R_FOOT))
+            if(sqrt((pRFoot(0) - pLFoot(0)) * (pRFoot(0) - pLFoot(0))) > DIST_THRES_FEET) return false;
+
+        if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))
+            if(sqrt((pLHandC(0) - pRHandC(0)) * (pLHandC(0) - pRHandC(0))) > DIST_THRES_HANDS) return false;
+        // END
 
         if(sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(L_HAND_D))
             if(euclideanDistance(pLFoot, pLHandD) < DIST_THRES_MIN || euclideanDistance(pLFoot, pLHandD) > DIST_THRES_MAX) return false;
