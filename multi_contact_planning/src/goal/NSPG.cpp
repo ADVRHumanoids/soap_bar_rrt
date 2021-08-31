@@ -199,6 +199,24 @@ void NSPG::initializeBalanceCheck(Stance sigma){
 }
 
 bool NSPG::balanceCheck(Stance sigma){
-    if (_cs->checkStability(CS_THRES)) return true;
-    return false;
+//    if (_cs->checkStability(CS_THRES)) return true;
+//    return false;
+
+    auto check = _cs->checkStability(CS_THRES);
+
+//    if (check)
+//    {
+//        auto force_map = _cs->getForces();
+
+//        for (auto force : force_map)
+//        {
+//            if (force.second.head(3).norm() < 50.0)
+//            {
+//                check = false;
+//                break;
+//            }
+//        }
+//    }
+
+    return check;
 }
