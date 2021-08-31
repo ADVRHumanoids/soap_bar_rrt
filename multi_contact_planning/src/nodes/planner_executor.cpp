@@ -21,7 +21,7 @@ using namespace XBot::Cartesian;
 std::string env(std::getenv("ROBOTOLOGY_ROOT"));
 
 void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
 
@@ -36,7 +36,7 @@ void PlannerExecutor::writeOnFileConfigs(std::vector<Configuration> qList, std::
 }
 
 void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;
@@ -61,7 +61,7 @@ void PlannerExecutor::readFromFileConfigs(std::vector<Configuration> &qList, std
 }
 
 void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
 
@@ -72,7 +72,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
             std::shared_ptr<Contact> c = sigma.getContact(j);
             EndEffector ee = c->getEndEffectorName();
             Eigen::Affine3d T = c->getPose();
-            Eigen::Vector3d F = c->getForce();
+            Eigen::Vector6d F = c->getForce();
             Eigen::Vector3d n = c->getNormal();
 
             fileOut << ee << std::endl;
@@ -84,7 +84,7 @@ void PlannerExecutor::writeOnFileStances(std::vector<Stance> sigmaList, std::str
 }
 
 void PlannerExecutor::readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/external/src/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;
@@ -298,9 +298,14 @@ void PlannerExecutor::init_load_model()
     q_init = qs.at(INIT_INDEX);
     q_goal = qs.at(GOAL_INDEX);
 
-    q_init << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
+    // PHASE1 LUCA
+    q_init << 0.345159, -0.0659159, 0.727154, 2.77275, 1.69407, -2.83265, 0.0208293, -1.77879, -0.0364217, 0.99962, -0.668932, 0.0467975, -0.00478575, -1.70346, -0.0622767, 0.890602, -0.634987, 0.0427115, -0.0236055, 0.0327607, -0.707632, 0.659625, 0.0465484, -0.996233, 0.676377, 0.443535, -0.279072, -0.69928, -0.614039, -0.100137, -0.940449, -0.642097, 0.31942, 0.179788;
+    q_goal << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
 
-    q_goal <<  1.35264, 0.0321436, 0.637171, 0.300612, 0.163697, -0.0510181, -0.0339955, -1.63838, 0.430584, 2.0376, -0.574465, 0.169645, -1.65806, -1.52197, -1.10393,1.94623, -0.563225, 0.261799, 0.192883, 0.172189, -0.53815, 0.383079, 0.445875, -1.10583, 0.887176, 0.050227, -0.290198, -0.689682, -0.804219, -0.497053, -1.74136, -0.168326, 1.00714, 0.339376;
+    // PHASE2 LUCA
+//    q_init << 1.338267, -0.00217744, 0.705991, 2.59735, 1.95099, -2.44997, 0.182659, -1.73621, -0.0713825, 1.16209, -0.707202, -0.196242, -1.0651, -1.11442, -1.21558, 0.961322, -0.811172, 0.261799, 0.307117, -0.176011, -0.901178, 0.485413, 0.240006, -0.226283, 0.734657, -0.072093, -0.440681, -0.70564, -0.605065, -0.34431, -0.717141, -0.192935, 0.314359, 0.0750764;
+
+//    q_goal << 1.35264, 0.0321436, 0.637171, 0.300612, 0.163697, -0.0510181, -0.0339955, -1.63838, 0.430584, 2.0376, -0.574465, 0.169645, -1.65806, -1.52197, -1.10393,1.94623, -0.563225, 0.261799, 0.192883, 0.172189, -0.53815, 0.383079, 0.445875, -1.10583, 0.887176, 0.050227, -0.290198, -0.689682, -0.804219, -0.497053, -1.74136, -0.168326, 1.00714, 0.339376;
     
     if(SCENARIO == 1){
         if(INIT_INDEX == 0) activeEEsInit = {L_FOOT, R_FOOT};
