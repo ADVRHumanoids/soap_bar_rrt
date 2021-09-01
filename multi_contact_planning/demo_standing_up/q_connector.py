@@ -222,14 +222,17 @@ class Connector:
 
     def sendForces(self, i, replay=False):
         forces = []
+        active_links = []
         if replay == True:
+            active_links = self.__solution[i]['indices']
+            # active_links = [self.model.ctrl_points[j] for j in active_ind]
             forces = self.__solution[i]['forces']
         else:
             forces = [j['ref']['force'] for j in self.stance_list[i]]
+            active_ind = [ind['ind'] for ind in self.stance_list[i]]
+            active_links = [self.model.ctrl_points[j] for j in active_ind]
 
-        active_ind = [ind['ind'] for ind in self.stance_list[i]]
-        active_links = [self.model.ctrl_points[j] for j in active_ind]
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f + [0., 0., 0.])) for c, f in zip(active_links, forces)]
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
 
         non_active_links = self.model.ctrl_points.values()
         for link in active_links:
@@ -602,7 +605,7 @@ class Connector:
 
         return list(q[:, -1])
 
-    def init(self):
+    def init(self, replay=False):
         # set control mode
         self.model.robot.setControlMode(xbot.ControlMode.Position())
 
@@ -615,12 +618,19 @@ class Connector:
         self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
 
         # set initial contacts
-        init_ind = [ind['ind'] for ind in self.stance_list[0]]
-        init_links = [self.model.ctrl_points[j] for j in init_ind]
-        init_normals = [j['ref']['normal'] for j in self.stance_list[0]]
-        self.set_limits(init_links, [self.rotation(n) for n in init_normals])
-        # self.set_limits(['r_sole', 'l_sole'], [self.rotation(n) for n in [[0, 0, 1], [0, 0, 1]]])
-        self.sendForces(0)
+        if replay:
+            init_links = self.__solution[0]['indices']
+            init_normals = self.__solution[0]['normals']
+            self.set_limits(init_links, [self.rotation(n) for n in init_normals])
+            self.sendForces(0, replay=True)
+
+        else:
+            init_ind = [ind['ind'] for ind in self.stance_list[0]]
+            init_links = [self.model.ctrl_points[j] for j in init_ind]
+            init_normals = [j['ref']['normal'] for j in self.stance_list[0]]
+            self.set_limits(init_links, [self.rotation(n) for n in init_normals])
+            # self.set_limits(['r_sole', 'l_sole'], [self.rotation(n) for n in [[0, 0, 1], [0, 0, 1]]])
+            self.sendForces(0)
 
         # activate fopt_node
         self.__set_fopt_active(True)
@@ -641,8 +651,8 @@ class Connector:
         fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
         fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
         if len(links) == 2:
-            fmin_d = np.array([-1000., -1000., -1000., -1000., -1000., 0.])
-            fmax_d = np.array([1000., 1000., 1000., 1000., 1000., 0.])
+            fmin_d = np.array([-500., -500., -500., -500., -500., 0.])
+            fmax_d = np.array([500., 500., 500., 500., 500., 0.])
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d - fmin[index])/100. for index in range(len(fmin))]
@@ -656,11 +666,11 @@ class Connector:
             fmax_d = list()
             for index in range(len(links)):
                 if links[index] == 'l_sole' or links[index] == 'r_sole':
-                    fmin_d.append(np.array([-1000., -1000., -1000., -1000., -1000., -0.]))
-                    fmax_d.append(np.array([1000., 1000., 1000., 1000., 1000., 0.]))
+                    fmin_d.append(np.array([-500., -500., -500., -500., -500., -0.]))
+                    fmax_d.append(np.array([500., 500., 500., 500., 500., 0.]))
                 else:
-                    fmin_d.append(np.array([-1000., -1000., -1000., 0., 0., 0.]))
-                    fmax_d.append(np.array([1000., 1000., 1000., 0., 0., 0.]))
+                    fmin_d.append(np.array([-500., -500., -500., 0., 0., 0.]))
+                    fmax_d.append(np.array([500., 500., 500., 0., 0., 0.]))
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
@@ -943,7 +953,7 @@ class Connector:
 
     def play_solution(self):
         if self.model.simulation:
-            self.init()
+            self.init(replay=True)
             raw_input('init done. click to continue...')
         for i in range(len(self.__solution)):
             # set active contacts
@@ -952,7 +962,7 @@ class Connector:
             normals = self.__solution[i]['normals']
             if self.model.simulation:
                 self.set_limits(active_links, [self.rotation(n) for n in normals])
-                # self.sendForces(i, replay=True)
+                self.sendForces(i, replay=True)
 
             if len(active_links) == 3 and self.model.simulation:
                 [all_links.remove(active) for active in active_links]
