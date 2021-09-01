@@ -22,7 +22,7 @@ NSPG::NSPG ( PositionCartesianSolver::Ptr ik_solver, ValidityCheckContext vc_con
         Eigen::Vector2d CoP_xlim;
         Eigen::Vector2d CoP_ylim;
         if(SCENARIO == 3){
-            CoP_xlim << -0.1, 0.1;
+            CoP_xlim << -0.10, 0.10;
             CoP_ylim << -0.05, 0.05;
         }
         else{
@@ -97,7 +97,7 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     float T = 0.0;
     double dt = 0.005;
     int iter = 0;
-    int iterMax = 50;
+    int iterMax = 100;
 
     initializeBalanceCheck(sigmaSmall);
 
@@ -199,6 +199,23 @@ void NSPG::initializeBalanceCheck(Stance sigma){
 }
 
 bool NSPG::balanceCheck(Stance sigma){
-    if (_cs->checkStability(CS_THRES)) return true;
-    return false;
+//    if (_cs->checkStability(CS_THRES)) return true;
+//    return false;
+
+    auto check = _cs->checkStability(CS_THRES);
+
+    if (check)
+    {
+        auto force_map = _cs->getForces();
+        for (auto force : force_map)
+        {
+            if (force.second.head(3).norm() < 40.0)
+            {
+                check = false;
+                break;
+            }
+        }
+    }
+
+    return check;
 }
