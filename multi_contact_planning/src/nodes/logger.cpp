@@ -4,6 +4,8 @@
 #include <geometry_msgs/WrenchStamped.h>
 
 XBot::MatLogger2::Ptr logger;
+geometry_msgs::WrenchStamped reference_l_sole, reference_r_sole, reference_l_ball_tip, reference_r_ball_tip;
+bool callbackDone = false;
 
 void callback_value (const geometry_msgs::WrenchStampedConstPtr& msg)
 {
@@ -13,6 +15,47 @@ void callback_value (const geometry_msgs::WrenchStampedConstPtr& msg)
     logger->add(msg->header.frame_id.substr(3) + "_value_tx", msg->wrench.torque.x);
     logger->add(msg->header.frame_id.substr(3) + "_value_ty", msg->wrench.torque.y);
     logger->add(msg->header.frame_id.substr(3) + "_value_tz", msg->wrench.torque.z);
+
+    if (callbackDone && msg->header.frame_id.substr(3) == "l_sole")
+    {
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fx", reference_l_sole.wrench.force.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fy", reference_l_sole.wrench.force.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fz", reference_l_sole.wrench.force.z);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tx", reference_l_sole.wrench.torque.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_ty", reference_l_sole.wrench.torque.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tz", reference_l_sole.wrench.torque.z);
+    }
+
+    if (callbackDone && msg->header.frame_id.substr(3) == "r_sole")
+    {
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fx", reference_r_sole.wrench.force.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fy", reference_r_sole.wrench.force.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fz", reference_r_sole.wrench.force.z);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tx", reference_r_sole.wrench.torque.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_ty", reference_r_sole.wrench.torque.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tz", reference_r_sole.wrench.torque.z);
+    }
+
+    if (callbackDone && msg->header.frame_id.substr(3) == "l_ball_tip")
+    {
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fx", reference_l_ball_tip.wrench.force.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fy", reference_l_ball_tip.wrench.force.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fz", reference_l_ball_tip.wrench.force.z);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tx", reference_l_ball_tip.wrench.torque.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_ty", reference_l_ball_tip.wrench.torque.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tz", reference_l_ball_tip.wrench.torque.z);
+    }
+
+    if (callbackDone && msg->header.frame_id.substr(3) == "r_ball_tip")
+    {
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fx", reference_r_ball_tip.wrench.force.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fy", reference_r_ball_tip.wrench.force.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_fz", reference_r_ball_tip.wrench.force.z);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tx", reference_r_ball_tip.wrench.torque.x);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_ty", reference_r_ball_tip.wrench.torque.y);
+        logger->add(msg->header.frame_id.substr(3) + "_reference_tz", reference_r_ball_tip.wrench.torque.z);
+    }
+
 }
 
 void callback_reference (const geometry_msgs::WrenchStampedConstPtr& msg)
@@ -23,6 +66,16 @@ void callback_reference (const geometry_msgs::WrenchStampedConstPtr& msg)
     logger->add(msg->header.frame_id.substr(3) + "_reference_tx", msg->wrench.torque.x);
     logger->add(msg->header.frame_id.substr(3) + "_reference_ty", msg->wrench.torque.y);
     logger->add(msg->header.frame_id.substr(3) + "_reference_tz", msg->wrench.torque.z);
+
+    if (msg->header.frame_id.substr(3) == "l_sole")
+        reference_l_sole = *msg;
+    else if (msg->header.frame_id.substr(3) == "r_sole")
+        reference_r_sole = *msg;
+    else if (msg->header.frame_id.substr(3) == "l_ball_tip")
+        reference_l_ball_tip = *msg;
+    else if (msg->header.frame_id.substr(3) == "r_ball_tip")
+        reference_r_ball_tip = *msg;
+    callbackDone = true;
 }
 
 int main (int argc, char** argv)
@@ -55,14 +108,11 @@ int main (int argc, char** argv)
         if (topic_name.find("value") == std::string::npos)
         {
             sub_vect[i] = nh.subscribe<geometry_msgs::WrenchStamped>(argv[i+1], 10, callback_reference);
-            std::cout << "reference" << std::endl;
         }
         else
         {
             sub_vect[i] = nh.subscribe<geometry_msgs::WrenchStamped>(argv[i+1], 10, callback_value);
-            std::cout << "value" << std::endl;
         }
-        std::getchar();
     }
 
     ros::Rate rate(100);
