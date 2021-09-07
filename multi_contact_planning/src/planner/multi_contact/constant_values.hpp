@@ -4,7 +4,7 @@
 const int NUM_SIM = 1;
 
 // planner
-const int MAX_ITERATIONS = 500; //10000;
+const int MAX_ITERATIONS = 5000; //10000;
 const double EXPLOITATION_RATE = 1.0; //0.9; // between 0 and 1 (it is a threshold for the probability)
 const double GOAL_TOLERANCE = 0.05; // it means 5 cm
 const int MAX_NUM_EXP_PER_VERTEX = 5; // maximum number of times that a certain vertex can be used for an expansion attempt (both succ or not)
@@ -29,7 +29,7 @@ const double CS_THRES = 5*1e-2;
 // nspg
 const bool RAND_VEL_CHAINS = false;
 
-
+/*
 // SCENARIO 1, PHASE 0
 const int SCENARIO = 1;
 const int INIT_INDEX = 0;
@@ -41,6 +41,7 @@ const double WORKSPACE_RADIUS_HAND = 0.63;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
+*/
 
 /*
 // SCENARIO 1, PHASE 1
@@ -65,6 +66,30 @@ const double MU_FRICTION = 0.5;
 const double MU_FRICTION_HANDS = 0.5;  
 const double WORKSPACE_RADIUS_FOOT = 0.43;  
 const double WORKSPACE_RADIUS_HAND = 0.43;
+const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
+const bool FREE_YAW_ROTATION = false;
+const double DIST_HANDS_THRES_MAX = 1.0;
+*/
+
+/* //LUCA
+const int SCENARIO = 1;
+const int INIT_INDEX = 0;
+const int GOAL_INDEX = 1;
+const double MU_FRICTION = 0.5;  
+const double MU_FRICTION_HANDS = 0.5;  
+const double WORKSPACE_RADIUS_FOOT = 0.23;  
+const double WORKSPACE_RADIUS_HAND = 0.23;
+const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
+const bool FREE_YAW_ROTATION = false;
+const double DIST_HANDS_THRES_MAX = 1.0;
+
+const int SCENARIO = 1;
+const int INIT_INDEX = 2;
+const int GOAL_INDEX = 3;
+const double MU_FRICTION = 0.5;  
+const double MU_FRICTION_HANDS = 0.5;  
+const double WORKSPACE_RADIUS_FOOT = 0.15;
+const double WORKSPACE_RADIUS_HAND = 0.8;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;

@@ -706,6 +706,7 @@ void Planner::run(){
                     timeIKandCS += t_fsec;
                     
                     if(resIKCS){
+                        /*
                         // adjust orientations in sigmaNew 
                         retrieveContactPoses(qNew, sigmaNew);
                             
@@ -718,6 +719,28 @@ void Planner::run(){
                         solutionFound = isGoalStance(vNew);
 
                         foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;                        
+                        */
+                        
+                        // adjust orientations in sigmaNew 
+                        retrieveContactPoses(qNew, sigmaNew);
+                        // set forces in sigmaNew
+                        retrieveContactForces(qNew, sigmaNew);                    
+                        // construct new vertex    
+                        std::shared_ptr<Vertex> vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
+                        solutionFound = isGoalStance(vNew);
+                        if(solutionFound){
+                            // adjust orientations in sigmaNew 
+                            retrieveContactPoses(qGoal, sigmaGoal);
+                            // set forces in sigmaNew
+                            retrieveContactForces(qGoal, sigmaGoal);                    
+                            // construct new vertex    
+                            vNew = std::make_shared<Vertex>(sigmaGoal, qGoal, iNear);
+                        }
+                        // add vertex
+                        tree->addVertex(vNew);
+
+                        foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
+
                     }
                 }
             }

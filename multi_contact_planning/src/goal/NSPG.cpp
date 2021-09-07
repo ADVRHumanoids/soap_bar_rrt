@@ -94,10 +94,18 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     _ik_solver->getModel()->eigenToMap(x, velocity_map);
     _ik_solver->getModel()->eigenToMap(dqlimits, velocity_map);
     
+    /* mio
     float T = 0.0;
     double dt = 0.01;
     int iter = 0;
     int iterMax = 100;
+    */
+    
+    // luca
+    float T = 0.0;
+    double dt = 0.005;
+    int iter = 0;
+    int iterMax = 50;
     
     initializeBalanceCheck(sigmaSmall);
         
