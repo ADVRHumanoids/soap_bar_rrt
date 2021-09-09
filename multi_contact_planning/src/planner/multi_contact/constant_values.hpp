@@ -82,6 +82,7 @@ const double WORKSPACE_RADIUS_HAND = 0.23;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
+*/
 
 const int SCENARIO = 1;
 const int INIT_INDEX = 2;
@@ -93,9 +94,8 @@ const double WORKSPACE_RADIUS_HAND = 0.8;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
-*/
 
-/* 
+/*
 // SCENARIO 2, PHASE 0
 const int SCENARIO = 2;
 const int INIT_INDEX = 0;
@@ -107,7 +107,7 @@ const double WORKSPACE_RADIUS_HAND = 0.63;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
-*/ 
+*/
 
 /*
 // SCENARIO 2, PHASE 1

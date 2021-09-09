@@ -518,10 +518,12 @@ void PlannerExecutor::init_load_validity_checker()
     _vc_context.planning_scene->acm.setEntry("LFoot", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RBall", "<octomap>", true);
     _vc_context.planning_scene->acm.setEntry("RFoot", "<octomap>", true);
-    _vc_context.planning_scene->acm.setEntry("LWrMot2", "<octomap>", true);
-    _vc_context.planning_scene->acm.setEntry("LWrMot3", "<octomap>", true);
-    _vc_context.planning_scene->acm.setEntry("RWrMot2", "<octomap>", true);
-    _vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);
+    if(SCENARIO != 2){ // NOT PARALLEL WALLS CLIMBING
+        _vc_context.planning_scene->acm.setEntry("LWrMot2", "<octomap>", true);
+        _vc_context.planning_scene->acm.setEntry("LWrMot3", "<octomap>", true);
+        _vc_context.planning_scene->acm.setEntry("RWrMot2", "<octomap>", true);
+        _vc_context.planning_scene->acm.setEntry("RWrMot3", "<octomap>", true);
+    }
     ///////////////////////////////////////////////////////////////////////
 
 
