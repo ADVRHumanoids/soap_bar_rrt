@@ -58,10 +58,10 @@ XBot::JointNameMap NSPG::generateRandomVelocities(std::vector<XBot::ModelChain> 
     _ik_solver->getCI()->getReferencePosture(velocityLim_map);
     _ik_solver->getModel()->eigenToMap(velocity_lim, velocityLim_map);
     
-    if(SCENARIO != 3) random_map.insert(std::make_pair("VIRTUALJOINT_1", generateRandom()*50));
-    else random_map.insert(std::make_pair("VIRTUALJOINT_1", -fabs(generateRandom()*50)));
-    random_map.insert(std::make_pair("VIRTUALJOINT_2", generateRandom()*50));
-    random_map.insert(std::make_pair("VIRTUALJOINT_3", generateRandom()*50));              
+    if(SCENARIO != 3) random_map.insert(std::make_pair("VIRTUALJOINT_1", generateRandom()*GAIN_VEL_FB_X));
+    else random_map.insert(std::make_pair("VIRTUALJOINT_1", -fabs(generateRandom()*GAIN_VEL_FB_X)));
+    random_map.insert(std::make_pair("VIRTUALJOINT_2", generateRandom()*GAIN_VEL_FB_Y));
+    random_map.insert(std::make_pair("VIRTUALJOINT_3", generateRandom()*GAIN_VEL_FB_Z));              
     
     if(RAND_VEL_CHAINS){
         for (auto i:colliding_chains)
@@ -103,9 +103,9 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     
     // luca
     float T = 0.0;
-    double dt = 0.005;
+    double dt = DT;
     int iter = 0;
-    int iterMax = 50;
+    int iterMax = ITER_MAX;
     
     initializeBalanceCheck(sigmaSmall);
         
