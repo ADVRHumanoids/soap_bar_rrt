@@ -63,6 +63,10 @@ _nh(nh)
     
     Eigen::Vector2d CoP_xlim;
     Eigen::Vector2d CoP_ylim;
+    CoP_xlim << -CoP_LIM_X, CoP_LIM_X;
+    CoP_ylim << -CoP_LIM_Y, CoP_LIM_Y;
+
+    /*
     if(SCENARIO == 3){ 
         CoP_xlim << -0.1, 0.1;
         CoP_ylim << -0.05, 0.05;
@@ -71,6 +75,8 @@ _nh(nh)
         CoP_xlim << -0.04, 0.04;
         CoP_ylim << -0.04, 0.04;
     }
+    */
+    
     _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2), true, CoP_xlim, CoP_ylim));
     
     // set initial configuration

@@ -21,6 +21,10 @@ NSPG::NSPG ( PositionCartesianSolver::Ptr ik_solver, ValidityCheckContext vc_con
         
         Eigen::Vector2d CoP_xlim;
         Eigen::Vector2d CoP_ylim;
+        CoP_xlim << -CoP_LIM_X, CoP_LIM_X;
+        CoP_ylim << -CoP_LIM_Y, CoP_LIM_Y;
+
+        /*
         if(SCENARIO == 3){ 
             CoP_xlim << -0.1, 0.1;
             CoP_ylim << -0.05, 0.05;
@@ -29,6 +33,8 @@ NSPG::NSPG ( PositionCartesianSolver::Ptr ik_solver, ValidityCheckContext vc_con
             CoP_xlim << -0.04, 0.04;
             CoP_ylim << -0.04, 0.04;
         }
+        */
+        
         _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(_ik_solver->getModel(), links, MU_FRICTION*sqrt(2), true, CoP_xlim, CoP_ylim));
 
     }
@@ -206,7 +212,31 @@ void NSPG::initializeBalanceCheck(Stance sigma){
     
 }
 
+/*
 bool NSPG::balanceCheck(Stance sigma){
     if (_cs->checkStability(CS_THRES)) return true; 
     return false;
+}
+*/
+
+bool NSPG::balanceCheck(Stance sigma){
+//    if (_cs->checkStability(CS_THRES)) return true;
+//    return false;
+
+    bool check = _cs->checkStability(CS_THRES);
+
+    if (check)
+    {
+        auto force_map = _cs->getForces();
+        for (auto force : force_map)
+        {
+            if (sqrt(force.second(0)*force.second(0) + force.second(1)*force.second(1) + force.second(2)*force.second(2)) < FORCE_THRES)
+            {
+                check = false;
+                break;
+            }
+        }
+    }
+
+    return check;
 }

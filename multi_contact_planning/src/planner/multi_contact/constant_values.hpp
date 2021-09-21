@@ -28,11 +28,14 @@ const double CS_THRES = 5*1e-2;
 
 // nspg
 const bool RAND_VEL_CHAINS = false;
-const double DT = 0.001; //0.005
+const double DT = 0.005; //0.001
 const int ITER_MAX = 50;
-const double GAIN_VEL_FB_X = 500; //50
-const double GAIN_VEL_FB_Y = 250; //50
-const double GAIN_VEL_FB_Z = 100; //50
+const double GAIN_VEL_FB_X = 50; //500;
+const double GAIN_VEL_FB_Y = 50; //250;
+const double GAIN_VEL_FB_Z = 50; //100;  
+const double FORCE_THRES = 40.0;
+const double CoP_LIM_X = 0.09;
+const double CoP_LIM_Y = 0.09;
 
 /*
 // SCENARIO 1, PHASE 0
@@ -89,18 +92,17 @@ const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
 */
 
-/*
+
 const int SCENARIO = 1;
 const int INIT_INDEX = 2;
 const int GOAL_INDEX = 3;
 const double MU_FRICTION = 0.5;  
 const double MU_FRICTION_HANDS = 0.5;  
-const double WORKSPACE_RADIUS_FOOT = 0.15;
+const double WORKSPACE_RADIUS_FOOT = 0.3;
 const double WORKSPACE_RADIUS_HAND = 0.8;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
-*/
 
 /*
 // SCENARIO 2, PHASE 0
@@ -130,6 +132,7 @@ const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
 */
 
+/*
 // SCENARIO 3
 const int SCENARIO = 3;
 const int INIT_INDEX = 0;
@@ -141,5 +144,6 @@ const double WORKSPACE_RADIUS_HAND = 0.23;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
+*/
 
 #endif
