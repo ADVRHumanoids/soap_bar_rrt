@@ -69,9 +69,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
 
     // STACK
     yaml << YAML::Key << "stack";
-    yaml << YAML::Value << YAML::BeginSeq;
-    yaml << YAML::BeginSeq << "dynamic_feasibility" << YAML::EndSeq;
-    yaml << contact_links << YAML::EndSeq;
+    yaml << YAML::Value << YAML::BeginSeq << contact_links << YAML::EndSeq;
 
     // CONSTRAINTS
     yaml << YAML::Key << "constraints";
@@ -87,11 +85,13 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
             if (link == "TCP_R" || link == "TCP_L" || link == "l_ball_tip_d" || link == "r_ball_tip_d")
                 continue;
             yaml << link + "_cop";
-            yaml << link + "_nt";
+//            yaml << link + "_nt";
         }
     
     }
-    yaml << YAML::EndSeq;
+//    yaml << YAML::EndSeq;
+    yaml << "dynamic_feasibility" << YAML::EndSeq;
+//    yaml << YAML::BeginSeq << "dynamic_feasibility" << YAML::EndSeq;
 
     // TASKS & CONSTRAINTS DEFS
     std::string libname = "libcartesio_acceleration_support.so";
@@ -206,7 +206,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
     }
 
     yaml << YAML::EndMap;
-    //std::cout<<yaml.c_str()<<std::endl;
+    std::cout << yaml.c_str() << std::endl;
 
     return YAML::Load(yaml.c_str());
 }
@@ -256,18 +256,23 @@ bool CentroidalStatics::compute()
     return _ci->update(0., 0.);
 }
 
+//bool CentroidalStatics::checkStability(const double eps)
+//{
+//    if(compute())
+//    {
+//        Eigen::VectorXd error;
+//        if(!_dyn_feas->getTaskError(error))
+//            return false;
+//        double res = error.norm();
+//        if(res <= eps)
+//            return true;
+//    }
+//    return false;
+//}
+
 bool CentroidalStatics::checkStability(const double eps)
 {
-    if(compute())
-    {   
-        Eigen::VectorXd error;
-        if(!_dyn_feas->getTaskError(error))
-            return false;
-        double res = error.norm();
-        if(res <= eps)
-            return true;
-    }
-    return false;
+     return compute();
 }
 
 const std::map<std::string, Eigen::Vector6d>& CentroidalStatics::getForces()
