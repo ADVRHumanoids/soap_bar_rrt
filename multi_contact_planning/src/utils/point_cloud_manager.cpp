@@ -51,54 +51,6 @@ PointCloudManager::PointCloudManager ( ros::NodeHandle& nh ):
                 _pcl_pointcloud->points[index].z = z;
                 index ++;
             }
-        }     
-        center << 0.8, -0.1, 1.1;
-        side_x = 0.3;
-        side_y = 1.1;
-        for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
-        {
-            x = center(0) - (side_x/2.0) + i*resolution;
-            for(int j = 1; j <= (int)(side_y/resolution); j++)
-            {
-                y = center(1) - (side_y/2.0) + j*resolution;
-                z = center(2) + 0.0;
-                _pcl_pointcloud->points[index].x = x;
-                _pcl_pointcloud->points[index].y = y;
-                _pcl_pointcloud->points[index].z = z;
-                index ++;
-            }
-        }
-        center << 0.8, 0.45, 0.5;
-        side_x = 0.3;
-        side_z = 1.0;
-        for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
-        {
-            x = center(0) - (side_x/2.0) + i*resolution;
-            for(int j = 1; j <= (int)(side_y/resolution); j++)
-            {
-                z = center(2) - (side_z/2.0) + j*resolution;
-                y = center(1) + 0.0;
-                _pcl_pointcloud->points[index].x = x;
-                _pcl_pointcloud->points[index].y = y;
-                _pcl_pointcloud->points[index].z = z;
-                index ++;
-            }
-        }
-        center << 0.8, -0.65, 0.5;
-        side_x = 0.3;
-        side_z = 1.0;
-        for(int i = 1; i <= (int)(side_x/resolution)-1; i++)
-        {
-            x = center(0) - (side_x/2.0) + i*resolution;
-            for(int j = 1; j <= (int)(side_y/resolution); j++)
-            {
-                z = center(2) - (side_z/2.0) + j*resolution;
-                y = center(1) + 0.0;
-                _pcl_pointcloud->points[index].x = x;
-                _pcl_pointcloud->points[index].y = y;
-                _pcl_pointcloud->points[index].z = z;
-                index ++;
-            }
         }
     }
     // PARALLEL WALLS CLIMBING

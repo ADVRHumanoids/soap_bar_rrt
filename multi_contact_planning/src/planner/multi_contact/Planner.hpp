@@ -57,6 +57,8 @@ class Planner {
         int n_dof;
         Eigen::VectorXd qmin, qmax;
 
+        bool solutionFound;
+
         bool isGoalStance(std::shared_ptr<Vertex> v);
         Eigen::Vector3d pickRandomPoint();
         bool nonEmptyReachableWorkspace(EndEffector pk, Configuration q);
@@ -78,6 +80,8 @@ class Planner {
         void retrieveContactPoses(Configuration q, Stance &sigma);
 
         bool computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration qNear, Configuration &qNew, bool adding);
+
+        bool checkBalanceAtStance(Stance sigma, Configuration q);
 
 
     public:
@@ -103,4 +107,3 @@ class Planner {
 };
 
 #endif
-

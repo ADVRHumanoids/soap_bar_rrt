@@ -63,6 +63,10 @@ _nh(nh)
 
     Eigen::Vector2d CoP_xlim;
     Eigen::Vector2d CoP_ylim;
+    CoP_xlim << -CoP_LIM_X, CoP_LIM_X;
+    CoP_ylim << -CoP_LIM_Y, CoP_LIM_Y;
+
+    /*
     if(SCENARIO == 3){
         CoP_xlim << -0.1, 0.1;
         CoP_ylim << -0.05, 0.05;
@@ -71,6 +75,8 @@ _nh(nh)
         CoP_xlim << -0.04, 0.04;
         CoP_ylim << -0.04, 0.04;
     }
+    */
+
     _cs = std::unique_ptr<XBot::Cartesian::Planning::CentroidalStatics>(new XBot::Cartesian::Planning::CentroidalStatics(NSPG->getIKSolver()->getModel(), links, MU_FRICTION*sqrt(2), true, CoP_xlim, CoP_ylim));
 
     // set initial configuration
@@ -357,7 +363,8 @@ bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Confi
     int branchSize = 1;
 
     std::shared_ptr<Vertex> v = tree->getVertex(iEnd);
-    bool solutionFound = isGoalStance(v);
+
+    //bool solutionFound = isGoalStance(v);
 
     if(!solutionFound){
         sigmaList.clear();
@@ -555,7 +562,8 @@ void Planner::run(){
     tree->addVertex(vInit);
 
     int j = 0;
-    bool solutionFound = false;
+    //bool solutionFound = false;
+    solutionFound = false;
 
     EndEffector pk;
     Eigen::Vector3d rRand;
@@ -706,6 +714,7 @@ void Planner::run(){
                     timeIKandCS += t_fsec;
 
                     if(resIKCS){
+                        /*
                         // adjust orientations in sigmaNew
                         retrieveContactPoses(qNew, sigmaNew);
 
@@ -716,8 +725,85 @@ void Planner::run(){
                         std::shared_ptr<Vertex> vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
                         tree->addVertex(vNew);
                         solutionFound = isGoalStance(vNew);
+                        foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
+                        */
+
+                        /*
+                        // adjust orientations in sigmaNew
+                        retrieveContactPoses(qNew, sigmaNew);
+                        // set forces in sigmaNew
+                        retrieveContactForces(qNew, sigmaNew);
+                        // construct new vertex
+                        std::shared_ptr<Vertex> vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
+                        solutionFound = isGoalStance(vNew);
+                        if(solutionFound){
+                            // adjust orientations in sigmaNew
+                            retrieveContactPoses(qGoal, sigmaGoal);
+                            // set forces in sigmaNew
+                            retrieveContactForces(qGoal, sigmaGoal);
+                            // construct new vertex
+                            vNew = std::make_shared<Vertex>(sigmaGoal, qGoal, iNear);
+                        }
+                        // add vertex
+                        tree->addVertex(vNew);
+                        foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
+                        */
+
+                        // adjust orientations in sigmaNew
+                        retrieveContactPoses(qNew, sigmaNew);
+                        // set forces in sigmaNew
+                        retrieveContactForces(qNew, sigmaNew);
+                        // construct new vertex
+                        std::shared_ptr<Vertex> vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
+
+                        if(SCENARIO == 1 && GOAL_INDEX == 3 && sigmaNew.isActiveEndEffector(L_FOOT) && sigmaNew.isActiveEndEffector(R_FOOT)){
+
+                            Eigen::Vector3d rCoMNew = computeCoM(qNew);
+                            double zCoM = rCoMNew(2);
+
+                            foutLogMCP << "zCoM = " << zCoM << std::endl;
+
+                            if(zCoM > 0.80){
+                                foutLogMCP << "COM HEIGHT REACHED" << std::endl;
+                                solutionFound = true;
+                            }
+                            else{
+                                // construct sigmaFeet with only feet
+                                Stance sigmaFeet;
+                                std::shared_ptr<Contact> c_LF = std::make_shared<Contact>(L_FOOT, sigmaNew.retrieveContactPose(L_FOOT), Eigen::Vector3d(0.0, 0.0, 0.0), sigmaNew.retrieveContactNormal(L_FOOT));
+                                sigmaFeet.addContact(c_LF);
+                                std::shared_ptr<Contact> c_RF = std::make_shared<Contact>(R_FOOT, sigmaNew.retrieveContactPose(R_FOOT), Eigen::Vector3d(0.0, 0.0, 0.0), sigmaNew.retrieveContactNormal(R_FOOT));
+                                sigmaFeet.addContact(c_RF);
+                                // check if qNew is balanced using only contacts in sigmaFeet
+                                solutionFound = checkBalanceAtStance(sigmaFeet, qNew);
+
+                                if(solutionFound){
+                                    foutLogMCP << "DOUBLE SUPPORT REACHED" << std::endl;
+                                    // set forces in sigmaNew
+                                    retrieveContactForces(qNew, sigmaFeet);
+                                    // construct new vertex
+                                    vNew = std::make_shared<Vertex>(sigmaFeet, qNew, iNear);
+
+                                }
+                            }
+                        }
+                        else{
+                            solutionFound = isGoalStance(vNew);
+                            if(solutionFound){
+                                // adjust orientations in sigmaNew
+                                retrieveContactPoses(qGoal, sigmaGoal);
+                                // set forces in sigmaNew
+                                retrieveContactForces(qGoal, sigmaGoal);
+                                // construct new vertex
+                                vNew = std::make_shared<Vertex>(sigmaGoal, qGoal, iNear);
+                            }
+                        }
+
+                        // add vertex
+                        tree->addVertex(vNew);
 
                         foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
+
                     }
                 }
             }
@@ -830,6 +916,65 @@ bool Planner::distanceCheck(Stance sigmaNew)
 
     return true;
 }
+
+bool Planner::checkBalanceAtStance(Stance sigma, Configuration q){
+
+    Eigen::VectorXd c(n_dof);
+    Eigen::Vector3d posFB = q.getFBPosition();
+    Eigen::Vector3d rotFB = q.getFBOrientation();
+    c.segment(0,3) = posFB;
+    c.segment(3,3) = rotFB;
+    c.tail(n_dof-6) = q.getJointValues();
+    NSPG->getIKSolver()->getModel()->setJointPosition(c);
+    NSPG->getIKSolver()->getModel()->update();
+
+    std::vector<std::string> active_links;
+    std::vector<Eigen::Affine3d> ref_tasks;
+    std::vector<Eigen::Vector3d> normals;
+    for(int i = 0; i < sigma.getSize(); i++)
+    {
+        EndEffector ee = sigma.getContact(i)->getEndEffectorName();
+        std::string contact_link = getTaskStringName(ee);
+        Eigen::Vector3d nC_i = sigma.getContact(i)->getNormal();
+        active_links.push_back(contact_link);
+        normals.push_back(nC_i);
+    }
+
+    _cs->setContactLinks(active_links);
+
+    //if(sigma.getSize() == 2) _cs->setOptimizeTorque(true);
+    //else _cs->setOptimizeTorque(false);
+
+    _cs->init(false);
+
+    for (int i = 0; i < sigma.getContacts().size(); i++)
+    {
+        Eigen::Matrix3d rot = generateRotationFrictionCone(normals[i]);
+        _cs->setContactRotationMatrix(active_links[i], rot);
+    }
+
+    // set (possibly different) friction coefficients for the hands
+    XBot::Cartesian::CartesianInterface::Ptr ci_CS = _cs->getCI();
+    auto tasks_CS = ci_CS->getTaskList();
+    for(int i = 0; i < tasks_CS.size(); i++){
+        XBot::Cartesian::TaskDescription::Ptr task_fc = nullptr;
+
+        if(tasks_CS[i].compare("TCP_R_fc") == 0) task_fc = ci_CS->getTask("TCP_R_fc");
+        if(tasks_CS[i].compare("TCP_L_fc") == 0) task_fc = ci_CS->getTask("TCP_L_fc");
+        if(tasks_CS[i].compare("l_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("l_ball_tip_d_fc");
+        if(tasks_CS[i].compare("r_ball_tip_d_fc") == 0) task_fc = ci_CS->getTask("r_ball_tip_d_fc");
+
+        if(task_fc != nullptr){
+            auto task_fc_0 = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task_fc);
+            task_fc_0->setFrictionCoeff(MU_FRICTION_HANDS*sqrt(2));
+        }
+    }
+
+    if (_cs->checkStability(5*1e-2)) return true;
+    return false;
+
+}
+
 
 void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
 
