@@ -64,10 +64,9 @@ def rotation(normal):
 
 def checkStability(model, stances, qlist):
     check = []
-    iter = 0
     for stance, q in zip(stances, qlist):
         active_ind = [ind['ind'] for ind in stance]
-        active_links = [model.ctrl_points[j] for j in active_ind]
+        active_links = [model.ctrl_points.values()[model.ctrl_points.keys().index(j)] for j in active_ind]
         model.cs.setContactLinks(active_links)
         get_contact_links = model.cs.getContactLinks()
 
@@ -75,8 +74,8 @@ def checkStability(model, stances, qlist):
         model.model.update()
         model.rspub.publishTransforms('/ci')
 
-
-        forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
+        # forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
+        forces = dict(zip(active_links, [np.array(i['ref']['force']) for i in stance]))
         model.cs.setForces(forces)
 
         optimize_torque = True
@@ -85,10 +84,7 @@ def checkStability(model, stances, qlist):
         normals = [j['ref']['normal'] for j in stance]
         print [rotation(elem) for elem in normals]
         [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
-
         check.append(model.state_vc(q))
-
-        get_forces = model.cs.getForces()
 
     return check
 

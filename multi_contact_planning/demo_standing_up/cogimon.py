@@ -13,6 +13,8 @@ import yaml
 import rospy
 import manifold
 
+from geometry_msgs.msg import WrenchStamped
+
 import cartesio_planning.NSPG
 import cartesio_planning.validity_check
 
@@ -40,6 +42,8 @@ class Cogimon:
         self.replay_model = xbot.ModelInterface(opt)
         self.id_model = xbot.ModelInterface(opt)
         self.logged_data = logged_data
+        # self.f_est_publisher_larm = rospy.Publisher('xbotcore/ft/left_arm', WrenchStamped, queue_size=10, latch=True)
+        # self.f_est_publisher_rarm = rospy.Publisher('xbotcore/ft/right_arm', WrenchStamped, queue_size=10, latch=True)
 
         # update from robot
         if self.simulation:
@@ -81,13 +85,15 @@ class Cogimon:
         self.ps.startGetPlanningSceneServer()
         self.ps.startMonitor()
 
+        print self.ctrl_points.values()
+        print type(self.ctrl_points.values())
         # opensot uses linearized inner pyramid friction cone's approximation while cpl uses the non linear cone
         self.cs = validity_check.CentroidalStatics(self.model,
                                                    self.ctrl_points.values(),
-                                                   0.5*np.sqrt(2),
-                                                   optimize_torque=False,
-                                                   xlims_cop=np.array([-0.025, 0.065]),
-                                                   ylims_cop=np.array([-0.025, 0.025]))
+                                                   0.8*np.sqrt(2),
+                                                   optimize_torque=True,
+                                                   xlims_cop=np.array([-0.1, 0.1]),
+                                                   ylims_cop=np.array([-0.05, 0.05]))
 
         if self.simulation:
             self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
