@@ -270,6 +270,9 @@ target_link_libraries(planning_server ${catkin_LIBRARIES} matlogger2::matlogger2
 add_executable(octomap_collision_main src/utils/octomap_collision_main.cpp)
 target_link_libraries(octomap_collision_main multi_contact_planning ${XBotInterface_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES}) ########################################### PF
 
+add_executable(control_stability_test src/test_nodes/control_stability_test.cpp)
+target_link_libraries(control_stability_test ${catkin_LIBRARIES} ${cartesian_interface_LIBRIRES} multi_contact_planning)
+
 # Point Cloud test
 #add_executable(point_cloud_test src/test_nodes/point_cloud_test.cpp)
 #target_link_libraries(point_cloud_test multi_contact_planning ${catkin_LIBRARIES} ${PCL_LIBRARIES}) ########################################### PF
@@ -377,6 +380,12 @@ install(TARGETS planning_server
     )
 
 install(TARGETS octomap_collision_main
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )
+
+install(TARGETS control_stability_test
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
