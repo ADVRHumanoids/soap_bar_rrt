@@ -972,7 +972,7 @@ bool Planner::checkBalanceAtStance(Stance sigma, Configuration q){
         }
     }
     
-    if (_cs->checkStability(5*1e-2)) return true;
+    if (_cs->checkStability(CS_THRES)) return true;
     return false;  
     
 }
@@ -1044,7 +1044,7 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
             }
         }
         
-        if (_cs->checkStability(5*1e-2)) foutLogMCP << "CS CHECK TRUE" << std::endl;
+        if (_cs->checkStability(CS_THRES)) foutLogMCP << "CS CHECK TRUE" << std::endl;
         else foutLogMCP << "CS CHECK FALSE" << std::endl;  
         
         /////////////////////// TRANSITION CHECK
@@ -1105,7 +1105,7 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
                 }
             }
             
-            if (_cs->checkStability(5*1e-2)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+            if (_cs->checkStability(CS_THRES)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
             else foutLogMCP << "TRANSITION CHECK FALSE" << std::endl; 
             
         }
@@ -1163,7 +1163,7 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
             _cs->setContactRotationMatrix(active_links[i], rot);
         }
 
-        if (_cs->checkStability(5*1e-2)) foutLogMCP << "CS CHECK TRUE" << std::endl;
+        if (_cs->checkStability(CS_THRES)) foutLogMCP << "CS CHECK TRUE" << std::endl;
         else foutLogMCP << "CS CHECK FALSE" << std::endl;  
         
         /////////////////////// TRANSITION CHECK
@@ -1207,7 +1207,7 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
                 _cs->setContactRotationMatrix(active_links[i], rot);
             }
 
-            if (_cs->checkStability(5*1e-2)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+            if (_cs->checkStability(CS_THRES)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
             else foutLogMCP << "TRANSITION CHECK FALSE" << std::endl; 
             
         }
