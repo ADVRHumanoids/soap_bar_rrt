@@ -21,6 +21,8 @@ class Configuration {
 		Configuration(int dof);
         ~Configuration();
 
+        Configuration& operator= (const Configuration& c);
+
     	Eigen::Vector3d getFBPosition();
 		Eigen::Vector3d getFBOrientation();
 		void setFBPosition(Eigen::Vector3d p);

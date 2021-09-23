@@ -8,6 +8,15 @@ Configuration::Configuration(int dof){
 
 Configuration::~Configuration(){ }
 
+Configuration& Configuration::operator= (const Configuration& c)
+{
+    this->setFBPosition(c.q_fb.segment(0,3));
+    this->setFBOrientation(c.q_fb.segment(3,3));
+    this->setJointValues(c.q_jnt);
+
+    return *this;
+}
+
 Eigen::Vector3d Configuration::getFBPosition(){
 	Eigen::Vector3d p = q_fb.head(3);
 	return p;
