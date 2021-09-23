@@ -112,6 +112,8 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     double dt = DT;
     int iter = 0;
     int iterMax = ITER_MAX;
+    unsigned int counter = 0;
+    unsigned int max_counter = 30;
     
     initializeBalanceCheck(sigmaSmall);
         
@@ -119,7 +121,7 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     bool collisionCheckRes = _vc_context.vc_aggregate.check("collisions"); 
     bool balanceCheckRes = balanceCheck(sigmaSmall);  
     
-    while(!collisionCheckRes || !balanceCheckRes || !ik_solved)
+    while(!collisionCheckRes || !balanceCheckRes || !ik_solved || counter < max_counter)
     {
         auto tic = std::chrono::high_resolution_clock::now();
         
@@ -149,7 +151,14 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
         if(ik_solved && collisionCheckRes) balanceCheckRes = balanceCheck(sigmaSmall);        
         
         _rspub->publishTransforms(ros::Time::now(), "/planner");
-                        
+
+        if (collisionCheckRes && balanceCheckRes && ik_solved)
+            counter ++;
+        else
+            counter = 0;
+
+        std::cout << "counter: " << counter << std::endl;
+
         auto toc = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> fsec = toc-tic;
         T += fsec.count();
@@ -212,17 +221,14 @@ void NSPG::initializeBalanceCheck(Stance sigma){
     
 }
 
-/*
-bool NSPG::balanceCheck(Stance sigma){
-    if (_cs->checkStability(CS_THRES)) return true; 
-    return false;
-}
-*/
 
-bool NSPG::balanceCheck(Stance sigma){
+//bool NSPG::balanceCheck(Stance sigma){
 //    if (_cs->checkStability(CS_THRES)) return true;
 //    return false;
+//}
 
+
+bool NSPG::balanceCheck(Stance sigma){
     bool check = _cs->checkStability(CS_THRES);
 
     if (check)
@@ -237,6 +243,5 @@ bool NSPG::balanceCheck(Stance sigma){
             }
         }
     }
-
     return check;
 }
