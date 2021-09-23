@@ -51,13 +51,14 @@ Eigen::Affine3d Stance::retrieveContactPose(EndEffector pk){
     for(int i = 0; i < contactsList.size(); i++){
         if(contactsList.at(i)->getEndEffectorName() == pk) return contactsList.at(i)->getPose();
     }
-
+    return Eigen::Affine3d::Identity();
 }
 
 Eigen::Vector3d Stance::retrieveContactNormal(EndEffector pk){
     for(int i = 0; i < contactsList.size(); i++){
         if(contactsList.at(i)->getEndEffectorName() == pk) return contactsList.at(i)->getNormal();
     }
+    return Eigen::Vector3d::Zero();
 }
 
 void Stance::print(){
