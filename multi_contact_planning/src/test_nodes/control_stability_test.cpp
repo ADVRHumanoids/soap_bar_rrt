@@ -1,5 +1,9 @@
 #include <ros/ros.h>
+#include <ros/service_server.h>
+#include <ros/service.h>
 #include <fstream>
+
+#include <std_srvs/Empty.h>
 
 #include <XBotInterface/ModelInterface.h>
 #include <XBotInterface/ConfigOptions.h>
@@ -14,6 +18,9 @@ using namespace XBot::Cartesian;
 std::string env(std::getenv("ROBOTOLOGY_ROOT"));
 
 int n_dof;
+int ind = 0;
+std::vector<Configuration> qList;
+Eigen::VectorXd q;
 
 void readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
     std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
@@ -40,10 +47,25 @@ void readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName
     }
 }
 
+bool q_change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
+{
+    ind++;
+    if (ind == qList.size())
+        ind = 0;
+
+    Configuration c = qList[ind];
+    q.segment(0,3) = c.getFBPosition();
+    q.segment(3,3) = c.getFBOrientation();
+    q.tail(n_dof-6) = c.getJointValues();
+
+    return true;
+}
+
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "control_stability_test_node");
     ros::NodeHandle nh("~");
+    ros::ServiceServer q_srv = nh.advertiseService("change_configuration", &q_change_service);
 
     // Load ModelInterface from param server
     auto cfg = XBot::ConfigOptionsFromParamServer();
@@ -52,7 +74,6 @@ int main(int argc, char *argv[])
     n_dof = model->getJointNum();
 
     // Read qList.txt
-    std::vector<Configuration> qList;
     readFromFileConfigs(qList, "qList");
 
     // Load problem
@@ -79,10 +100,10 @@ int main(int argc, char *argv[])
     rsc = std::make_shared<RosServerClass>(ci);
 
     // Take the first configuration from the qList
-    Eigen::VectorXd q;
-    q.segment(0,3) = qList[0].getFBPosition();
-    q.segment(3,3) = qList[0].getFBOrientation();
-    q.tail(n_dof-6) = qList[0].getJointValues();
+    q.resize(n_dof);
+    q.segment(0,3) = qList[ind].getFBPosition();
+    q.segment(3,3) = qList[ind].getFBOrientation();
+    q.tail(n_dof-6) = qList[ind].getJointValues();
 
     model->setJointPosition(q);
     model->update();
