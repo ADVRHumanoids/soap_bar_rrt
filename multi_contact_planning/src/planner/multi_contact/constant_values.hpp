@@ -29,10 +29,10 @@ const double CS_THRES = 0.5*1e-3;
 // nspg
 const bool RAND_VEL_CHAINS = false;
 const double DT = 0.005; //0.001
-const int ITER_MAX = 50;
-const double GAIN_VEL_FB_X = 50; //500;
-const double GAIN_VEL_FB_Y = 50; //250;
-const double GAIN_VEL_FB_Z = 50; //100;  
+const int ITER_MAX = 100;
+const double GAIN_VEL_FB_X = 150; //500;
+const double GAIN_VEL_FB_Y = 250; //250;
+const double GAIN_VEL_FB_Z = 150; //100;
 const double FORCE_THRES = 40.0;
 const double CoP_LIM_X = 0.09;
 const double CoP_LIM_Y = 0.09;
