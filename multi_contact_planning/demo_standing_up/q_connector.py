@@ -78,7 +78,7 @@ class Connector:
         _planner_config['state_validity_check'] = ['collisions', 'stability']
         _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'true'}
         _planner_config['stability'] = {'type': 'CentroidalStatics',
-                                                 'eps': 5 * 1e-2, 'friction_coefficient': 1.13,
+                                                 'eps': 0.5 * 1e-3, 'friction_coefficient': 0.5,
                                                  'links': active_links,
                                                  'rotations': quaternions,
                                                  'optimize_torque': optimize_torque,
@@ -232,8 +232,8 @@ class Connector:
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]
 
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
-        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f)) for c, f in zip(active_links, forces)]
+        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f)) for c, f in zip(active_links, forces)]
 
 
         non_active_links = self.model.ctrl_points.values()
@@ -665,7 +665,7 @@ class Connector:
             for k in range(1, 101):
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
-                rospy.sleep(2.0/100)
+                rospy.sleep(0.5/100)
         else:
             fmin_d = list()
             fmax_d = list()
@@ -683,7 +683,7 @@ class Connector:
             for k in range(1, 101):
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
-                rospy.sleep(2.0/100)
+                rospy.sleep(0.5/100)
 
     def run(self):
         s = len(self.q_list) - 1
@@ -781,22 +781,8 @@ class Connector:
                 print('rotations_goal set')
                 rospy.sleep(self.__sleep)
 
-            # print active_links_goal
-            # raw_input('click')
-            # if adding:
-            #     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20., 25)
-            #     print active_links_start
-            #     raw_input('click')
-            # else:
-            #     q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20., 25)
-            #     print active_links_goal
-            #     raw_input('click')
-            # self.q_list[i + 1] = q_goal
-            # self.setForces(q_goal, i)
-
             if not self.model.state_vc(q_goal):
-                print ['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one']
-                # rospy.sleep(self.__sleep)
+                raw_input(['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one'])
 
                 if adding:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
