@@ -24,7 +24,7 @@ const double GOAL_SAMPLER_TIME_BUDGET_COM = 3.0;
 const double RESOLUTION = 0.05;
 
 // centroidal statics
-const double CS_THRES = 5*1e-2;
+const double CS_THRES = 0.5*1e-3;
 
 // nspg
 const bool RAND_VEL_CHAINS = false;
