@@ -395,6 +395,18 @@ install(DIRECTORY launch/
     PATTERN ".svn" EXCLUDE
     )
 
+install(DIRECTORY examples/configs/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/configs
+    FILES_MATCHING PATTERN "*.launch"
+    PATTERN ".svn" EXCLUDE
+    )
+
+install(DIRECTORY examples/utils/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/utils
+    FILES_MATCHING PATTERN "*.launch"
+    PATTERN ".svn" EXCLUDE
+    )
+
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
 #   # myfile1
