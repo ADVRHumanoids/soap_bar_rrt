@@ -8,14 +8,18 @@ import cartesio_planning.planning as planning
 import cartesio_planning.validity_check as vc
 from cartesio_planning import NSPG
 from trajectory_msgs.msg import JointTrajectory
+import manifold
 import eigenpy
 import os
 import sys
 from moveit_msgs.msg import CollisionObject
-from shape_msgs.msg import SolidPrimitive
-from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Pose
-import roslaunch
+from std_srvs.srv import Empty
+from cartesio_acceleration_support import tasks
+from multi_contact_planning.srv import StiffnessDamping
+from std_srvs.srv import SetBool
+import xbot_interface.xbot_interface as xbot
+from xbot_msgs.msg import JointCommand
+import json
 
 # import coman_rising.py from cartesio_planning
 user = os.getenv("ROBOTOLOGY_ROOT")
@@ -39,7 +43,6 @@ class Connector:
         self.ik_dt = 0.01
         self.make_cartesian_interface(nspg=True)
         self.make_cartesian_interface(nspg=False)
-        # self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
 
         self.ik_solver = planning.PositionCartesianSolver(self.ci_nspg)
         self.planner_client = coman_rising.planner_client()
@@ -53,7 +56,18 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = True
+        self.__complete_solution = False
+        self.__node_counter = 0
+        self.__sleep = 0.1
+        self.__half = False
+
+        self.__chain_map = {"l_ball_tip": "left_arm", "r_ball_tip": "right_arm", "l_sole": "left_leg", "r_sole": "right_leg"}
+
+        self.__set_stiffdamp = rospy.ServiceProxy('xbot_mode/set_stiffness_damping', StiffnessDamping)
+        self.__reset_stiffness = rospy.ServiceProxy('xbot_mode/reset_stiffness', StiffnessDamping)
+        self.__stiffness_pub = rospy.Publisher('xbotcore/command', JointCommand, queue_size=10, latch=True)
+        self.__init_stiffness = rospy.ServiceProxy('xbot_mode/init_stiffness', Empty)
+        self.__ankle_stiffness = rospy.ServiceProxy('xbot_mode/ankle_stiffness', Empty)
 
 
     def callback(self, data):
@@ -64,30 +78,16 @@ class Connector:
         _planner_config['state_validity_check'] = ['collisions', 'stability']
         _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'true'}
         _planner_config['stability'] = {'type': 'CentroidalStatics',
-                                                 'eps': 5 * 1e-2, 'friction_coefficient': 0.71,
+                                                 'eps': 5 * 1e-2, 'friction_coefficient': 1.13,
                                                  'links': active_links,
                                                  'rotations': quaternions,
                                                  'optimize_torque': optimize_torque,
-                                                 'x_lim_cop': [-0.025, 0.075],
-                                                 'y_lim_cop': [-0.025, 0.025]}
+                                                 'x_lim_cop': [-0.1, 0.1],
+                                                 'y_lim_cop': [-0.05, 0.05]}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
 
         return vc_context
-
-    def sensors_init(self, arm_estimation_flag):
-
-        self.f_est = pyest.ForceEstimation(self.model, 0.05)  # 0.05 treshold
-
-        self.ft_map = cogimon.robot.getForceTorque()
-
-        if (arm_estimation_flag):
-            # create force estimator
-            indices_wrench = [0, 1, 2]
-            self.ft_map['l_arm_ft'] = self.f_est.addLink('l_ball_tip', indices_wrench, ['left_arm'])
-            self.ft_map['r_arm_ft'] = self.f_est.addLink('r_ball_tip', indices_wrench, ['right_arm'])
-            self.f_est.update()
-
 
     def make_problem_desc_ik(self):
 
@@ -97,7 +97,7 @@ class Connector:
         ik_cfg['solver_options'] = {'regularization': 1e-3, 'back_end': 'qpoases'}
 
         ik_cfg['stack'] = [
-            self.model.ctrl_points.values() + ['torso']
+            self.model.ctrl_points.values()# + ['torso']
         ]
 
         ik_cfg['constraints'] = ['JointLimits']
@@ -107,9 +107,10 @@ class Connector:
         for c in self.model.ctrl_points.values():
             ik_cfg[c] = {
                 'type': 'Cartesian',
-                'base_link': 'torso',
+                #'base_link': 'torso',
+                'base_link': 'world',
                 'distal_link': c,
-                'lambda': 1.
+                'lambda': 1.0,
             }
 
         ik_cfg['torso'] = {
@@ -175,6 +176,20 @@ class Connector:
 
         return True
 
+    def ci_solve_integrate_nspg(self, t):
+        if not self.ci_nspg.update(t, self.ik_dt):
+            return False
+
+        q = self.model.model.getJointPosition()
+        qdot = self.model.model.getJointVelocity()
+
+        q += qdot * self.ik_dt
+
+        self.model.model.setJointPosition(q)
+        self.model.model.update()
+
+        return True
+
     def make_cartesian_interface(self, nspg = False):
         # Cartesian task to lift the swing contact
         if nspg:
@@ -205,15 +220,41 @@ class Connector:
             for k in self.model.ctrl_points.values():
                 self.ctrl_tasks.append(self.ci.getTask(k))
 
+    def sendForces(self, i, replay=False):
+        forces = []
+        active_links = []
+        if replay == True:
+            active_links = self.__solution[i]['indices']
+            # active_links = [self.model.ctrl_points[j] for j in active_ind]
+            forces = self.__solution[i]['forces']
+        else:
+            forces = [j['ref']['force'] for j in self.stance_list[i]]
+            active_ind = [ind['ind'] for ind in self.stance_list[i]]
+            active_links = [self.model.ctrl_points[j] for j in active_ind]
+
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
+        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f)) for c, f in zip(active_links, forces)]
+
+
+        non_active_links = self.model.ctrl_points.values()
+        for link in active_links:
+            if link in non_active_links:
+                non_active_links.remove(link)
+
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array([0., 0., 0., 0., 0., 0.])) for c in non_active_links]
+
+
+
     def impact_detector(self, turn, magnitude):
 
-        task = self.ctrl_tasks[self.__lifted_contact]
+        task = self.ctrl_tasks[self.__lifted_contact_ind]
         detect_bool = 0
         wrench = self.model.ft_map[task.getName()].getWrench()
         print wrench
         # wrench[direction] = 0 # FOR SIMULATION
-        direction = [k for k, e in enumerate(self.stance_list[turn][self.__lifted_contact]['ref']['normal']) if e != 0]
-        if (abs(wrench[direction]) >= magnitude):
+        # direction = [k for k, e in enumerate(self.stance_list[turn+1][self.__lifted_contact]['ref']['normal']) if e != 0]
+        print np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2]))
+        if (np.sqrt((wrench[0]*wrench[0]) + (wrench[1]*wrench[1]) + (wrench[2]*wrench[2])) >= magnitude):
             detect_bool = 1
 
         return detect_bool
@@ -221,22 +262,42 @@ class Connector:
     def surface_reacher(self, turn, force_treshold):
 
         print 'starting surface reacher...'
-        self.ci.reset(0)
+
         task = self.ctrl_tasks[self.__lifted_contact_ind]
+        # task.setBaseLink('torso')
+        print task.getName()
+
+        self.model.model.syncFromEffort(self.model.robot)
+        self.model.model.update()
+        self.model.f_est.update()
+
         # velocity desired
-        vel_ref = 0.01
-        vel_task = vel_ref * (-np.array(self.stance_list[turn + 1][self.__lifted_contact]['ref']['normal']))
-        w_R_t = self.model.model.getPose('torso').linear
-        t_vel = np.dot(np.linalg.inv(w_R_t), np.array(vel_task).transpose())
-        vel_task = np.append(t_vel, [0, 0, 0])
+        vel_ref = 0.05
+        vel_task = list()
+        for stance in self.stance_list[turn + 1]:
+            if stance['ind'] == self.__lifted_contact:
+                vel_task = vel_ref * (-np.array(stance['ref']['normal']))
+
+        if task.getBaseLink() == 'world':
+            t_vel = np.dot(np.linalg.inv(np.eye(3, dtype=float)), np.array(vel_task).transpose())
+        else:
+            w_R_t = self.model.model.getPose('torso').linear
+            t_vel = np.dot(np.linalg.inv(w_R_t), np.array(vel_task).transpose())
+
+        vel_task = np.append(t_vel, [0.0, 0.0, 0.0])
+
+        print task.getName()
+        print task.getBaseLink()
 
         print vel_task
+        raw_input('click to start surface reacher')
         task.enable()
         task.setControlMode(pyci.ControlType.Velocity)
         lambda_value = task.getLambda()
         task.setLambda(0)
 
         self.ci_time = 0
+        q = self.model.model.getJointPosition()
 
         while not self.impact_detector(turn, force_treshold):
 
@@ -253,32 +314,78 @@ class Connector:
             self.ci_time += self.ik_dt
 
             self.model.robot.sense()
-            self.model.model.syncFrom(self.model.robot)
+            self.model.model.syncFromEffort(self.model.robot)
             self.model.f_est.update()
             rospy.sleep(self.ik_dt)
 
         task.enable()
         task.setControlMode(pyci.ControlType.Position)
         task.setLambda(lambda_value)
+        # task.setBaseLink('world')
 
         print 'Surface reacher done'
+        return q
 
         ############################################
         ############################################
 
     def q_bounder(self, q):
-        for i in range(len(q)):
+        for i in range(6, len(q)):
             if q[i] > self.model.qmax[i]:
                 q[i] = self.model.qmax[i]
             elif q[i] < self.model.qmin[i]:
                 q[i] = self.model.qmin[i]
 
+    def setForces(self, q, iterator):
+        # set active_links and rotations depending on stance_list[i+1]
+        active_ind = [ind['ind'] for ind in self.stance_list[iterator + 1]]
+        active_links = [self.model.ctrl_points[j] for j in active_ind]
+        self.model.cs.setContactLinks(active_links)
+
+        normals = [j['ref']['normal'] for j in self.stance_list[iterator + 1]]
+        rot = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+        quat_list_goal = []
+        for val in range(0, len(rot)):
+            quat_goal = [0., 0., 0., 0.]
+            quat_goal[0] = rot[val].x
+            quat_goal[1] = rot[val].y
+            quat_goal[2] = rot[val].z
+            quat_goal[3] = rot[val].w
+            map(float, quat_goal)
+            quat_list_goal.append(quat_goal)
+
+        r_goal = [self.rotation(elem) for elem in normals]
+        [self.model.cs.setContactRotationMatrix(k, j) for k, j in
+         zip(active_links, r_goal)]
+
+        self.model.cs.setOptimizeTorque(False)
+
+        self.model.model.setJointPosition(q)
+        self.model.model.update()
+
+        self.model.cs.checkStability(5*1e-2)
+        forces = self.model.cs.getForces()
+
+        indices = {}
+        for m in forces:
+            index = {ind: m for ind in self.model.ctrl_points.keys() if self.model.ctrl_points[ind] == m}
+            indices[index.keys()[0]] = index.values()[0]
+
+        for ind in indices:
+            for index in range(len(self.stance_list[iterator + 1])):
+                if self.stance_list[iterator+1][index]['ind'] == ind:
+                    self.stance_list[iterator+1][index]['ref']['force'] = list(forces[indices[ind]][0:3])
+
     def rotation(self, normal):
 
-        if normal == [0., 0., 1.]:
+        if normal[2] > 0.01:
             theta = [0, 0, 0]
-        elif normal == [-1., 0., 0.]:
+        elif normal[0] < -0.01:
             theta = [0, -np.pi / 2, 0]
+        elif normal[1] > 0.01:
+            theta = [-np.pi / 2, 0, 0]
+        elif normal[1] < -0.01:
+            theta = [np.pi / 2, 0, 0]
         else:
             raise Exception('wrong normal')
 
@@ -290,32 +397,7 @@ class Connector:
 
         return np.dot(Rz, np.dot(Rx, Ry))
 
-    def play_all_poses(self, num_iter):
-        index = 0
-        while index < num_iter:
-            for i in range(len(self.q_list)):
-                self.model.model.setJointPosition(self.q_list[i])
-                self.model.model.update()
-                self.model.rspub.publishTransforms('ci')
-
-                rospy.sleep(1)
-            index = index + 1
-
-    def play_solution(self, iter):
-        index = 0
-        # rospy.sleep(2.)
-        while index < iter:
-            for j in range(len(self.__solution)):
-                self.model.model.setJointPosition(self.__solution[j])
-                self.model.model.update()
-                if self.model.simulation:
-                    self.model.robot.setPositionReference(self.__solution[j][6:])
-                    self.model.robot.move()
-                self.model.rspub.publishTransforms('solution')
-                rospy.sleep(0.01)
-            index = index + 1
-
-    def NSPGsample(self, q_start, q_postural, active_links, quat_list, optimize_torque, timeout):
+    def NSPGsample(self, q_start, q_postural, active_links, quat_list, optimize_torque, timeout, max_counter=0):
         # create NSPG
         vc_context = self.make_vc_context(active_links, quat_list, optimize_torque)
         nspg = NSPG.NSPG(self.ik_solver, vc_context)
@@ -328,13 +410,12 @@ class Connector:
         self.model.model.update()
 
         print '[NSPG]: start sampling!'
-        if not nspg.sample(timeout):
+        if not nspg.sample(timeout, max_counter):
             print '[NSPG]: unable to find a feasible solution!'
             self.saveSolution()
             exit()
         else:
             print '[NSPG]: feasible goal pose found!'
-            rospy.sleep(2.)
 
         # set nspg solution as new goal state
         new_q_goal = nspg.getModel().getJointPosition()
@@ -348,104 +429,49 @@ class Connector:
             self.model.robot.move()
             rospy.sleep(dt)
 
-    def setClearenceObstacle(self, qstart, qgoal, stance_start):
-        if len(stance_start) > 2 and len(stance_start) < 4:
-            # find the lifted contact
-            lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
-                              x not in [j['ind'] for j in stance_start]][0]
-            lifted_contact_link = self.model.ctrl_points[lifted_contact]
-
-            # retrieve start and goal poses for the lifted contact
-            self.model.model.setJointPosition(qstart)
-            self.model.model.update()
-            T = self.model.model.getPose(lifted_contact_link)
-            start_pose = T.translation
-            self.model.model.setJointPosition(qgoal)
-            self.model.model.update()
-            T = self.model.model.getPose(lifted_contact_link)
-            goal_pose = T.translation
-
-            # if start and goal z-axis position is the same, create the clearence obstacle,
-            # otherwise no further action is needed
-            clearence = 0.005
-            if start_pose[2] - goal_pose[2] < clearence:
-                # create Marker
-                marker = Marker()
-                marker.header.frame_id = 'world'
-                marker.header.stamp = rospy.Time.now()
-
-                marker.type = Marker.CUBE
-                marker.action = Marker.ADD
-                marker.pose.position.x = (start_pose[0] + goal_pose[0])/2.
-                marker.pose.position.y = (start_pose[1] + goal_pose[1])/2.
-                marker.pose.position.z = clearence/2
-                marker.pose.orientation.x = 0
-                marker.pose.orientation.y = 0
-                marker.pose.orientation.z = 0
-                marker.pose.orientation.w = 1
-
-                marker.scale.x = 0.01
-                marker.scale.y = 0.2
-                marker.scale.z = clearence
-
-                # create CollisionObject
-                co = CollisionObject()
-                co.header.frame_id = marker.header.frame_id
-                co.id = 'clearence'
-                co.header.stamp = rospy.Time.now()
-                co.operation = CollisionObject.ADD
-
-                primitive = SolidPrimitive()
-                primitive.type = SolidPrimitive.BOX
-                primitive.dimensions.append(marker.scale.x)
-                primitive.dimensions.append(marker.scale.y)
-                primitive.dimensions.append(marker.scale.z)
-                co.primitives.append(primitive)
-
-                pose = Pose()
-                pose.position.x = marker.pose.position.x
-                pose.position.y = marker.pose.position.y
-                pose.position.z = marker.pose.position.z
-                pose.orientation.x = marker.pose.orientation.x
-                pose.orientation.y = marker.pose.orientation.y
-                pose.orientation.z = marker.pose.orientation.z
-                pose.orientation.w = marker.pose.orientation.w
-
-                co.primitive_poses.append(pose)
-
-                self.__marker_pub.publish(co)
+    def normalsToQuat(self, normals):
+        rot = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals]
+        quat_list = []
+        for val in range(0, len(rot)):
+            quat_goal = [0., 0., 0., 0.]
+            quat_goal[0] = rot[val].x
+            quat_goal[1] = rot[val].y
+            quat_goal[2] = rot[val].z
+            quat_goal[3] = rot[val].w
+            map(float, quat_goal)
+            quat_list.append(quat_goal)
+        return quat_list
 
     def computeStartAndGoal(self, clearence, i):
         # first check if the swing contact has to move on a plane (we assume that this happens when there are
         # three active links). In this case, first we detach the contact from the plane and then we plan to reach
         # the next contact pose
-        if len(self.stance_list[i]) == 3: #and i != 3 and i != 2:
+        if len(self.stance_list[i]) == 3 and len(self.stance_list[i-1]) == 4: #and i != 3 and i != 2:
             # raw_input('click to compute cartesian trajectory')
             # find the lifted contact
-            self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
-                              x not in [j['ind'] for j in self.stance_list[i]]][0]
-            self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
-            self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
+
 
             # hardcoded stuff for phase0
             if i == 4 and self.__complete_solution:
-                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             elif i == 4 and not self.__complete_solution:
                 # self.model.robot.sense()
                 # self.model.model.syncFrom(self.model.robot)
                 # q = self.model.model.getJointPosition()
                 # q[0:5] = self.q_list[i][0:5]
-                q_start = self.setClearence(i, self.q_list[i], 0.07, 'start')
+                q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             elif i != 4 and self.__complete_solution:
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             elif i != 4 and not self.__complete_solution:
-                # self.model.robot.sense()
-                # self.model.model.syncFrom(self.model.robot)
-                # q = self.model.model.getJointPosition()
+                self.model.robot.sense()
+                self.model.model.syncFrom(self.model.robot)
+                q = self.model.model.getJointPosition()
                 # q[0:5] = self.q_list[i][0:5]
-                # q = self.model.model.getJointPosition()
+                q = self.model.model.getJointPosition()
                 q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
-            self.q_bounder(q_start)
+
+            # q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
+            # self.q_bounder(q_start)
 
             # q_start = self.setClearence(i, self.q_list[i], clearence, 'start')
             # self.q_bounder(q_start)
@@ -458,75 +484,120 @@ class Connector:
                 q_start = self.q_list[i]
                 self.q_bounder(q_start)
             else:
-                # self.model.robot.sense()
-                # self.model.model.syncFrom(self.model.robot)
+                self.model.robot.sense()
+                self.model.model.syncFrom(self.model.robot)
                 # q_start = self.model.model.getJointPosition()
                 # q_start[0:5] = self.q_list[i][0:5]
                 q_start = self.q_list[i]
                 self.q_bounder(q_start)
             q_goal = self.q_list[i+1]
             self.q_bounder(q_goal)
+            self.planner_client.publishGroundCheck(self.model.ctrl_points.values()[0], [0, 0, 1], False)
 
         return q_start, q_goal
 
     def setClearence(self, i, start, clearence, state):
         # find the rotation matrices
+
         self.model.model.setJointPosition(start)
         self.model.model.update()
+        proj = manifold.make_constraint_from_param_server(self.model.model)
+
         # self.ci.reset(self.ik_dt)
 
-        w_R_t = self.model.model.getPose('torso').linear
+        # w_R_t = self.model.model.getPose('torso').linear
 
         # pick the lifting direction from the stance_list and transform it in torso frame
         normal = list()
         if state == 'start':
             for iterator in range(len(self.stance_list[i - 1])):
                 if self.stance_list[i - 1][iterator]['ind'] == self.__lifted_contact:
-                    normal = self.stance_list[i - 1][iterator]['ref']['normal']
+                    self.normal = self.stance_list[i - 1][iterator]['ref']['normal']
                     break
         elif state == 'goal' or state == 'touch':
             for iterator in range(len(self.stance_list[i])):
                 if self.stance_list[i][iterator]['ind'] == self.__lifted_contact:
-                    normal = self.stance_list[i][iterator]['ref']['normal']
+                    self.normal = self.stance_list[i][iterator]['ref']['normal']
+                    final = self.stance_list[i][iterator]['ref']['pose']
                     break
 
         # set clearence: state == start or state == goal -> clearence = clearence
         #                state == touch -> clearence = -model.getPose(lifted_contact).translation * normal
         if state == 'touch':
-            p = self.model.model.getPose(self.__lifted_contact_link).translation
-            clearence = - np.dot(p, [abs(ele) for ele in normal])
+           p = self.model.model.getPose(self.__lifted_contact_link).translation
+           step = np.array(final) - np.array(p)
+           clearence = - np.dot([abs(ele) for ele in step], [abs(ele) for ele in self.normal])
 
-        w_p_d = clearence * np.array(normal)
-        t_p_d = np.dot(np.linalg.inv(w_R_t), w_p_d.transpose())
+        w_p_d = clearence * np.array(self.normal)
+        # t_p_d = np.dot(np.linalg.inv(w_R_t), w_p_d.transpose())
 
         # set pose target for the lifted link
-        self.ci.getTask('torso').setPoseReference(self.model.model.getPose('torso'))
-        [self.ci.getTask(c).setPoseReference(
-            np.dot(self.model.model.getPose('torso').inverse(), self.model.model.getPose(c))) for c in
-            self.model.ctrl_points.values()]
+        # self.ci.getTask('torso').setPoseReference(self.model.model.getPose('torso'))
+        # [self.ci.getTask(c).setPoseReference(
+        #     np.dot(self.model.model.getPose('torso').inverse(), self.model.model.getPose(c))) for c in
+        #     self.model.ctrl_points.values()]
+        # lifted_contact_final_pose = self.ctrl_tasks[self.__lifted_contact_ind].getPoseReference()[0]
+        # lifted_contact_final_pose.translation += t_p_d
+        # self.ctrl_tasks[self.__lifted_contact_ind].setPoseTarget(lifted_contact_final_pose, 1.0)
+
+        # world base link
+        [self.ci.getTask(c).setPoseReference(self.model.model.getPose(c)) for c in self.model.ctrl_points.values()]
         lifted_contact_final_pose = self.ctrl_tasks[self.__lifted_contact_ind].getPoseReference()[0]
-        lifted_contact_final_pose.translation += t_p_d
+        lifted_contact_final_pose.translation += w_p_d
         self.ctrl_tasks[self.__lifted_contact_ind].setPoseTarget(lifted_contact_final_pose, 1.0)
 
         # solve
         q = np.empty(shape=[self.model.model.getJointNum(), 0])
         while self.ctrl_tasks[self.__lifted_contact_ind].getTaskState() == pyci.State.Reaching:
-            q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
-
             if not self.ci_solve_integrate(self.ci_time):
                 print('Unable to solve!!!')
                 unable_to_solve += 1
                 print(unable_to_solve)
             else:
                 unable_to_solve = 0
-
+                q_proj = proj.project(self.model.model.getJointPosition())
+            # q = np.hstack((q, q_proj.reshape(self.model.model.getJointNum(), 1)))
+            q = np.hstack((q, self.model.model.getJointPosition().reshape(self.model.model.getJointNum(), 1)))
             self.ci_time += self.ik_dt
 
+        # check for any self-collision
+        if not self.model.state_vc(q[:, -1], True):
+            raw_input('pose not valid!')
+            active_ind = [ind['ind'] for ind in self.stance_list[i]]
+            active_links = [self.model.ctrl_points[j] for j in active_ind]
+            normals = [j['ref']['normal'] for j in self.stance_list[i]]
+            quat_list = self.normalsToQuat(normals)
+            q_new = self.NSPGsample(q[:, -1], q[:, -1], active_links, quat_list, False, 20.)
+            if state == 'goal':
+                return q_new
+            self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), self.q_list[i], q_new)
+            contacts = {c: r for c, r in zip(active_links, quat_list)}
+            self.planner_client.publishContacts(contacts, False)
+            res = self.planner_client.solve(planner_type='RRTstar', plan_time=2,
+                                            interpolation_time=0.01, goal_threshold=0.05)
+            rospy.sleep(self.__sleep)
+            if self.__complete_solution:
+                for q in range(len(self.solution)):
+                    if state == 'start':
+                        self.__solution[i]['q'].append(q)
+                    else:
+                        self.__solution[i]['q'].append(q)
+                self.__counter = self.__counter + len(self.solution)
+
+            self.planner_client.updateManifold(active_links)
+            return q_new
+
+
         # if self.__complete_solution, save the cartesian solution
-        if (state == 'start' or state == 'touch') and self.__complete_solution:
-            q_list = list(q.transpose())
-            self.__solution = self.__solution + q_list
-            self.__counter = self.__counter + len(q_list)
+        if state == 'start' and self.__complete_solution:
+            for index in range(np.size(q, 1)):
+                self.__solution[i]['q'].append(list(q[:, index]))
+                self.__counter = self.__counter + 1
+
+        if state == 'touch' and self.__complete_solution:
+            for index in range(np.size(q, 1)):
+                self.__solution[i-1]['q'].append(list(q[:, index]))
+                self.__counter = self.__counter + 1
 
         # else play the solution as soon as it is calculated
         elif (state == 'start' or state == 'touch') and not self.__complete_solution:
@@ -535,20 +606,103 @@ class Connector:
                 self.model.model.update()
                 self.model.robot.setPositionReference(q[6:, index])
                 self.model.robot.move()
-                rospy.sleep(0.01)
+                rospy.sleep(0.03)
 
-        return self.model.model.getJointPosition()
+        return list(q[:, -1])
 
+    def init(self, replay=False):
+        # set control mode
+        self.model.robot.setControlMode(xbot.ControlMode.Position())
+
+        print 'waiting for set_activation service...'
+        rospy.wait_for_service('force_opt/set_activation')
+        print 'done!'
+        self.__set_fopt_active = rospy.ServiceProxy('force_opt/set_activation', SetBool)
+
+        # create ci_client
+        self.ci_ff = pyci.CartesianInterfaceRos("/force_opt")
+
+        # set initial contacts
+        if replay:
+            init_links = self.__solution[0]['indices']
+            init_normals = self.__solution[0]['normals']
+            self.set_limits(init_links, [self.rotation(n) for n in init_normals])
+            self.sendForces(0, replay=True)
+
+        else:
+            init_ind = [ind['ind'] for ind in self.stance_list[0]]
+            init_links = [self.model.ctrl_points[j] for j in init_ind]
+            init_normals = [j['ref']['normal'] for j in self.stance_list[0]]
+            self.set_limits(init_links, [self.rotation(n) for n in init_normals])
+            # self.set_limits(['r_sole', 'l_sole'], [self.rotation(n) for n in [[0, 0, 1], [0, 0, 1]]])
+            self.sendForces(0)
+
+        # activate fopt_node
+        self.__set_fopt_active(True)
+        self.__init_stiffness()
+
+    def set_limits(self, links, rot):
+        # set friction cone rotation matrices
+        [self.ci_ff.getTask('friction_cone_' + link).setContactRotationMatrix(r) for link, r in zip(links, rot)]
+
+        non_active_links = self.model.ctrl_points.values()
+        for link in links:
+            if link in non_active_links:
+                non_active_links.remove(link)
+        self.ci_ff.update(0.)
+        fmin_na = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in non_active_links]
+        fmax_na = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in non_active_links]
+
+        fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
+        fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
+        if len(links) == 2:
+            fmin_d = np.array([-500., -500., -500., -500., -500., 0.])
+            fmax_d = np.array([500., 500., 500., 500., 500., 0.])
+            fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
+            fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
+            fm = [(fmin_d - fmin[index])/100. for index in range(len(fmin))]
+            fM = [(fmax_d - fmax[index])/100. for index in range(len(fmax))]
+            for k in range(1, 101):
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
+                rospy.sleep(2.0/100)
+        else:
+            fmin_d = list()
+            fmax_d = list()
+            for index in range(len(links)):
+                if links[index] == 'l_sole' or links[index] == 'r_sole':
+                    fmin_d.append(np.array([-500., -500., -500., -500., -500., -0.]))
+                    fmax_d.append(np.array([500., 500., 500., 500., 500., 0.]))
+                else:
+                    fmin_d.append(np.array([-500., -500., -500., 0., 0., 0.]))
+                    fmax_d.append(np.array([500., 500., 500., 0., 0., 0.]))
+            fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
+            fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
+            fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
+            fM = [(fmax_d[index] - fmax[index]) / 100. for index in range(len(fmax))]
+            for k in range(1, 101):
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
+                [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
+                rospy.sleep(2.0/100)
 
     def run(self):
         s = len(self.q_list) - 1
-        i = 16
+        if not self.__complete_solution:
+            self.init()
+            raw_input('click')
+        i = 0
+        for index in range(i):
+            self.__solution.append({'indices': [], 'q': []})
+        # self.surface_reacher(4,1000)
+
         while i < s:
+            # self.__lifted_contact_link = 'r_ball_tip'
+            # self.__lifted_contact_ind = 1;
+            # self.__lifted_contact = 3
+            # self.surface_reacher(i, 20)
+
             # reset the counter
             self.__counter = 0
-
-            # set start and goal configurations
-            [q_start, q_goal] = self.computeStartAndGoal(0.015, i)
 
             # find active_links for start and goal
             active_ind_goal = [ind['ind'] for ind in self.stance_list[i+1]]
@@ -556,97 +710,132 @@ class Connector:
             active_ind_start = [ind['ind'] for ind in self.stance_list[i]]
             active_links_start = [self.model.ctrl_points[j] for j in active_ind_start]  # names
 
+            if self.__complete_solution:
+                self.__solution.append({'indices': active_links_start, 'q': [], 'normals': [], 'forces': []})
+
+            self.planner_client.updateManifold(active_links_start)
+            # raw_input('Manifold updated')
+            print 'Manifold updated'
+            # rospy.sleep(self.__sleep)
+
+            if len(active_links_start) < 4:
+                self.__lifted_contact = [x for x in list(self.model.ctrl_points.keys()) if
+                                         x not in [j['ind'] for j in self.stance_list[i]]][0]
+                self.__lifted_contact_link = self.model.ctrl_points[self.__lifted_contact]
+                self.__lifted_contact_ind = self.model.ctrl_points.keys().index(self.__lifted_contact)
+
+
+
             # find rotation matrices and quaternions for start and goal active_links
             normals_goal = [j['ref']['normal'] for j in self.stance_list[i+1]]
+            quat_list_goal = self.normalsToQuat(normals_goal)
+
             normals_start = [j['ref']['normal'] for j in self.stance_list[i]]
+            quat_list_start = self.normalsToQuat(normals_start)
 
-            rot_goal = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals_goal]
-            quat_list_goal = []
-            quat_goal = [0., 0., 0., 0.]
-            for val in range(0, len(rot_goal)):
-                quat_goal[0] = rot_goal[val].x
-                quat_goal[1] = rot_goal[val].y
-                quat_goal[2] = rot_goal[val].z
-                quat_goal[3] = rot_goal[val].w
-                map(float, quat_goal)
-                quat_list_goal.append(quat_goal)
+            if self.__complete_solution:
+                [self.__solution[i]['normals'].append(normal) for normal in normals_start]
 
-            rot_start = [eigenpy.Quaternion(self.rotation(elem)) for elem in normals_start]
-            quat_list_start = []
-            quat_start = [0., 0., 0., 0.]
-            for val in range(0, len(rot_start)):
-                quat_start[0] = rot_start[val].x
-                quat_start[1] = rot_start[val].y
-                quat_start[2] = rot_start[val].z
-                quat_start[3] = rot_start[val].w
-                map(float, quat_start)
-                quat_list_start.append(quat_start)
+                forces = [j['ref']['force'] for j in self.stance_list[i]]
+                [self.__solution[i]['forces'].append(force) for force in forces]
 
-            # find optimize_torque for start and goal stances
-            optimize_torque_goal = False
-            if len(active_links_goal) == 2 or i == 2:
-                optimize_torque_goal = True
-            else:
-                optimize_torque_goal = False
-            optimize_torque_start = False
-            if len(active_links_start) == 2 or i == 2:
-                optimize_torque_start = True
-            else:
-                optimize_torque_start = False
+            optimize_torque_goal = True
+            optimize_torque_start = True
+
+            if len(active_links_start) == 3:
+                all_links = self.model.ctrl_points.values()
+                [all_links.remove(active) for active in active_links_start]
+                lifted_link = all_links[0]
+                if self.model.simulation:
+                    self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
+
+            # set active_links_start for fopt_node
+            if not self.__complete_solution and self.model.simulation:
+                self.set_limits(active_links_start, [self.rotation(n) for n in normals_start])
+                self.sendForces(i)
+
+            # set start and goal configurations
+            [q_start, q_goal] = self.computeStartAndGoal(0.035, i)
+
 
             # check the goal state whether we are adding or removing a contact
             adding = False
             if len(active_links_goal) > len(active_links_start):                             # adding a contact
                 adding = True
                 self.model.cs.setContactLinks(active_links_start)                            # active_links
-                print('active_links_goal set')
-                rospy.sleep(2.)
-                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
-                 zip(active_links_start, [self.rotation(elem) for elem in normals_start])]   # rotations
-                print('rotations_goal set')
-                rospy.sleep(2.)
+                print('active_links_start set')
                 self.model.cs.setOptimizeTorque(optimize_torque_start)                       # optimize_torque
-                print('optimize_torque_goal set')
-                rospy.sleep(2.)
+                print('optimize_torque_start set')
+                r_start = [self.rotation(elem) for elem in normals_start]
+                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
+                 zip(active_links_start, r_start)]  # rotations
+                print('rotations_start set')
             else:                                                                            # removing a contact
                 self.model.cs.setContactLinks(active_links_goal)                             # active_links
-                print('active_links_start set')
-                rospy.sleep(2.)
-                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
-                 zip(active_links_goal, [self.rotation(elem) for elem in normals_goal])]     # rotations
-                print('rotations_start set')
-                rospy.sleep(2.)
+                print('active_links_goal set')
                 self.model.cs.setOptimizeTorque(optimize_torque_goal)                        # optimize_torque
-                print('optimize_torque_start set')
-                rospy.sleep(2.)
+                print('optimize_torque_goal set')
+                r_goal = [self.rotation(elem) for elem in normals_goal]
+                [self.model.cs.setContactRotationMatrix(k, j) for k, j in
+                 zip(active_links_goal, r_goal)]  # rotations
+                print('rotations_goal set')
+                rospy.sleep(self.__sleep)
+
+            # print active_links_goal
+            # raw_input('click')
+            # if adding:
+            #     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20., 25)
+            #     print active_links_start
+            #     raw_input('click')
+            # else:
+            #     q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20., 25)
+            #     print active_links_goal
+            #     raw_input('click')
+            # self.q_list[i + 1] = q_goal
+            # self.setForces(q_goal, i)
 
             if not self.model.state_vc(q_goal):
                 print ['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one']
-                rospy.sleep(2.)
+                # rospy.sleep(self.__sleep)
 
                 if adding:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20.)
                     self.q_list.insert(i + 1, q_goal)
                     self.stance_list.insert(i + 1, self.stance_list[i + 1])
+                    self.setForces(q_goal, i)
                 else:
                     q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20.)
                     self.q_list[i+1] = q_goal
+                    self.setForces(q_goal, i)
 
-            self.planner_client.updateManifold(active_links_start)
-            # raw_input('Manifold updated')
-            print 'Manifold updated'
-            rospy.sleep(2.)
-
+            self.model.model.setJointPosition(q_goal)
+            self.model.model.update()
+            self.model.goal_viz.publishMarkers([])
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
             print 'Start and Goal poses set'
-            rospy.sleep(2.)
+            if i > 0:
+                self.model.replay_model.setJointPosition(self.q_list[i-1])
+                self.model.replay_model.update()
+                self.model.sol_viz.publishMarkers([], True)
+            # rospy.sleep(self.__sleep)
+
+            # update GroundCollisionCheck
+            if len(active_links_start) == 3 and len(self.stance_list[i-1]) == 4:
+                for iterator in range(len(self.stance_list[i-1])):
+                    if self.stance_list[i-1][iterator]['ind'] == self.__lifted_contact:
+                        normal = self.stance_list[i-1][iterator]['ref']['normal']
+                        break
+                self.planner_client.publishGroundCheck(self.__lifted_contact_link, normal, True)
+                print 'GroundCollision check updated!'
+                # rospy.sleep(self.__sleep)
 
             if np.linalg.norm(np.array(q_start) - np.array(q_goal)) < 0.05:
                 print 'Start and Goal poses are the same, skipping!'
                 s = len(self.q_list) - 1
                 i = i + 1
-                rospy.sleep(2.)
+                self.__half = False
+                # rospy.sleep(self.__sleep)
                 continue
 
             # publish the contacts
@@ -655,49 +844,145 @@ class Connector:
             print contacts
             # raw_input("Contacts published")
             print 'Contacts published'
-            rospy.sleep(2.)
+            # rospy.sleep(self.__sleep)
 
-            res = self.planner_client.solve(PLAN_MAX_ATTEMPTS=2, planner_type='RRTConnect', plan_time=60, interpolation_time=0.01, goal_threshold=0.05)
-            rospy.sleep(0.5)
+            res = self.planner_client.solve(planner_type='RRTstar', plan_time=2, interpolation_time=0.01, goal_threshold=0.05)
+            rospy.sleep(self.__sleep)
 
-            if not res:
-                for deleter in range(self.__counter):
-                    del self.__solution[-1]
+            if not res[1]:
+                del self.__solution[-1]
+                self.__half = False
                 continue
+            elif res[0] == 5:
+                counter = 0
+                while res[0] == 5 and counter < 5:
+                    print 'Modifying the goal...'
+                    # rospy.sleep(self.__sleep)
+                    if adding:
+                        q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start, optimize_torque_start, 20., 25)
+                        self.q_list.insert(i + 1, q_goal)
+                        self.stance_list.insert(i + 1, self.stance_list[i + 1])
+                        self.setForces(q_goal, i)
+                    else:
+                        q_goal = self.NSPGsample(q_goal, q_start, active_links_goal, quat_list_goal, optimize_torque_goal, 20., 25)
+                        self.q_list[i + 1] = q_goal
+                        self.stance_list[i + 1] = self.stance_list[i + 1]
+                        self.setForces(q_goal, i)
+                    self.planner_client.updateManifold(active_links_start)
+                    print 'Planner reset'
+                    # rospy.sleep(self.__sleep)
+                    raw_input('setting start and goal poses')
+                    self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
+                    print 'Start and goal poses reset'
+                    # rospy.sleep(self.__sleep)
+                    res = self.planner_client.solve(planner_type='RRTstar', plan_time=3 + counter + 1, interpolation_time=0.01, goal_threshold=0.05)
+                    counter = counter + 1
+                    if counter == 5:
+                        print '[Error]: unable to connect start and goal poses'
+                        self.saveSolution()
+                        exit()
+                rospy.sleep(self.__sleep)
 
             if self.__complete_solution:
-
-                self.__solution = self.__solution + self.solution
+                for q in self.solution:
+                    self.__solution[i]['q'].append(q)
             else:
                 for q in self.solution:
                     self.model.model.setJointPosition(q)
                     self.model.model.update()
                     self.model.robot.setPositionReference(q[6:])
                     self.model.robot.move()
-                    rospy.sleep(0.01)
+                    rospy.sleep(0.03)
 
-            rospy.sleep(0.5)
+            # rospy.sleep(self.__sleep)
 
-            if len(active_links_start) == 3: # and i != 3 and i != 2:
-                if self.__complete_solution:
+            if len(active_links_start) == 3 and len(self.stance_list[i-1]) == 4:
+                if self.__complete_solution: # or self.normal[2] > 0.01:
                     dummy_vector = self.setClearence(i+1, q_goal, 0.015, 'touch')
                     self.q_list[i+1] = dummy_vector
                 else:
-                    self.surface_reacher(i, 20)
+                    check = 'n'
+                    while check == 'n':
+                        q = self.surface_reacher(i, 60)
+                        self.q_list[i+1] = q
+                        check = raw_input('is surface reacher done? (Y/n): ')
+
+            # forza giusta vez!
+            if not self.__complete_solution and self.model.simulation:
+                self.set_limits(active_links_goal, [self.rotation(n) for n in normals_goal])
+                self.sendForces(i+1)
 
             # raw_input("Press to next config")
             s = len(self.q_list) - 1
             i = i + 1
+            if self.model.simulation:
+                self.__reset_stiffness(100, 3, '')
             print 'next config'
-            rospy.sleep(2.)
 
     def saveSolution(self):
-        np.savetxt('solution.csv', self.__solution, delimiter=',')
+        with open('solution.txt', 'w') as fout:
+            json.dump(self.__solution, fout)
         print 'Solution saved!'
 
-    def replaySolution(self):
+    def openSolution(self, filename):
+        with open(filename) as json_file:
+            self.__solution = json.load(json_file)
+
+    def replaySolution(self, filename):
         self.__solution = []
-        txt = np.loadtxt('solution_phase1.csv', delimiter=',')
-        for i in range(np.size(txt, 0)):
-            self.__solution.append(txt[i, :])
-        self.play_solution(1)
+        self.openSolution(filename)
+        self.play_solution()
+
+    def play_all_poses(self, num_iter):
+        index = 0
+        while index < num_iter:
+            for i in range(0, len(self.q_list), 2):
+                self.model.replay_model.setJointPosition(self.q_list[i])
+                self.model.replay_model.update()
+                self.model.sol_viz.publishMarkers([], True)
+
+                rospy.sleep(0.2)
+            index = index + 1
+
+    def play_solution(self):
+        if self.model.simulation:
+            self.init(replay=True)
+            raw_input('init done. click to continue...')
+        for i in range(len(self.__solution)):
+            # set active contacts
+            all_links = self.model.ctrl_points.values()
+            active_links = self.__solution[i]['indices']
+            normals = self.__solution[i]['normals']
+            if self.model.simulation:
+                self.set_limits(active_links, [self.rotation(n) for n in normals])
+                self.sendForces(i, replay=True)
+
+            if len(active_links) == 3 and self.model.simulation:
+                [all_links.remove(active) for active in active_links]
+                lifted_link = all_links[0]
+                self.__set_stiffdamp(100, 2, self.__chain_map[lifted_link])
+
+            # compute velocities
+            ref_vel = list()
+            for index in range(1, len(self.__solution[i]['q'])):
+                ref_vel.append((np.array(self.__solution[i]['q'][index]) - np.array(self.__solution[i]['q'][index - 1])) / 0.01)
+            ref_vel.append(np.zeros(self.model.model.getJointNum()))
+            # move the robot
+            for q, dq in zip(self.__solution[i]['q'], ref_vel):
+                self.model.model.setJointPosition(q)
+                self.model.model.update()
+                self.model.rspub.publishTransforms('solution')
+
+                if self.model.simulation:
+                    self.model.robot.setPositionReference(q[6:])
+                    self.model.robot.setVelocityReference(dq[6:])
+                    self.model.robot.move()
+                    rospy.sleep(0.025)
+                else:
+                    rospy.sleep(0.01)
+
+
+            print ('{}% done...'.format(int((float(i)/float(len(self.__solution))) * 100)))
+
+            if self.model.simulation:
+                self.__reset_stiffness(100, 2, '')

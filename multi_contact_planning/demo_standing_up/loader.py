@@ -1,5 +1,6 @@
 import cartesio_planning.validity_check
 import numpy as np
+import rospy
 
 def readFromFileStances(path):
     f = open(path, "r")
@@ -42,11 +43,14 @@ def readFromFileConfigs(path):
     return q_list
 
 def rotation(normal):
-
-    if normal == [0., 0., 1.]:
+    if normal[2] > 0.01:
         theta = [0, 0, 0]
-    elif normal == [-1., 0., 0.]:
+    elif normal[0] < -0.01:
         theta = [0, -np.pi / 2, 0]
+    elif normal[1] > 0.01:
+        theta = [-np.pi / 2, 0, 0]
+    elif normal[1] < -0.01:
+        theta = [np.pi / 2, 0, 0]
     else:
         raise Exception('wrong normal')
 
@@ -60,67 +64,29 @@ def rotation(normal):
 
 def checkStability(model, stances, qlist):
     check = []
-    iter = 0
     for stance, q in zip(stances, qlist):
         active_ind = [ind['ind'] for ind in stance]
-        active_links = [model.ctrl_points[j] for j in active_ind]
+        active_links = [model.ctrl_points.values()[model.ctrl_points.keys().index(j)] for j in active_ind]
         model.cs.setContactLinks(active_links)
         get_contact_links = model.cs.getContactLinks()
 
-        normals = [j['ref']['normal'] for j in stance]
-        [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
-
-        # print 'active links are \n', model.cs.getContactLinks()
-        # print 'rotation matrices are: \n', [rotation(elem) for elem in normals]
-        # print 'rotation matrices are: \n', [model.cs.getContactFrame(j) for j in active_links]
-        # print 'configuration \n', q
         model.model.setJointPosition(q)
         model.model.update()
         model.rspub.publishTransforms('/ci')
 
-        # print 'poses: \n', [model.model.getPose(i) for i in active_links]
-
-        forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
-
+        # forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
+        forces = dict(zip(active_links, [np.array(i['ref']['force']) for i in stance]))
         model.cs.setForces(forces)
-        # print 'com: \n', model.model.getCOM()
-        # print active_links
-        # print 'contact:\n', [j['ref']['pose'] for j in stance]
-        # print 'forces:\n', [j['ref']['force'] for j in stance]
-        # print 'normals:\n', [j['ref']['normal'] for j in stance]
-        # print 'forces computed \n', model.cs.getForces()
 
-        # print 'cop',  sum([np.array(j['ref']['pose'])*j['ref']['force'][2]/686.7003 for j in stance])
-
-        optimize_torque = False
-        active_ind = [ind['ind'] for ind in stance]
-        if len(active_ind) == 2:
-            optimize_torque = True
-
+        optimize_torque = True
         model.cs.setOptimizeTorque(optimize_torque)
 
+        normals = [j['ref']['normal'] for j in stance]
+        print [rotation(elem) for elem in normals]
+        [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
         check.append(model.state_vc(q))
 
-        get_forces = model.cs.getForces()
-        # print 'forces computed \n', model.cs.getForces()
-
     return check
-
-def checkPaolo(model, stance_list, q_list):
-    check = []
-    for i in range(1, len(stance_list)):
-        active_ind = [ind['ind'] for ind in stance_list[i-1]]
-        active_links = [model.ctrl_points[j] for j in active_ind]
-        model.cs.setContactLinks(active_links)
-
-        normals = [j['ref']['normal'] for j in stance_list[i-1]]
-        [model.cs.setContactRotationMatrix(k, j) for k, j in zip(active_links, [rotation(elem) for elem in normals])]
-
-        model.cs.setOptimizeTorque(False)
-        check.append(model.state_vc(q_list[i]))
-
-    return check
-
 
 if __name__ == '__main__':
 

@@ -1,6 +1,22 @@
 import yaml
 from cartesian_interface.pyci_all import *
 from cartesio_planning import constraints
+import rospy
+
+# class Manifold:
+#     def __init__(self, model):
+#         manifold_str = rospy.get_param("planner/problem_description_constraint")
+#         manifold_dict = yaml.safe_load(manifold_str)
+#
+#         cs_str = yaml.dump(manifold_dict)
+#         self.cs_ci = pyci.CartesianInterface.MakeInstance('OpenSot', cs_str, model, 0.1, '/tmp')
+#
+#     def as_constraint(self):
+#         constr = constraints.CartesianConstraint(self.cs_ci)
+#         return constr
+#
+#     def reset(self, dt):
+#         self.cs_ci.reset(dt)
 
 
 def make_constraint(model, ctrl_points, swing_id):
@@ -42,5 +58,14 @@ def make_constraint(model, ctrl_points, swing_id):
 
     cs_str = yaml.dump(cs_cfg)
     cs_ci = pyci.CartesianInterface.MakeInstance('OpenSot', cs_str, model, 0.1, '/tmp/manifold')
+
+    return constraints.CartesianConstraint(cs_ci)
+
+def make_constraint_from_param_server(model):
+    manifold_str = rospy.get_param("planner/problem_description_constraint")
+    manifold_dict = yaml.safe_load(manifold_str)
+
+    cs_str = yaml.dump(manifold_dict)
+    cs_ci = pyci.CartesianInterface.MakeInstance('OpenSot', cs_str, model, 0.1, '/tmp')
 
     return constraints.CartesianConstraint(cs_ci)
