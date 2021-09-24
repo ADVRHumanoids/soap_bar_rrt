@@ -12,6 +12,7 @@
 class Contact {
 
     public:
+        typedef std::shared_ptr<Contact> Ptr;
 
         Contact(EndEffector _name, Eigen::Affine3d _pose, Eigen::VectorXd _force, Eigen::Vector3d _normal);
         ~Contact();
