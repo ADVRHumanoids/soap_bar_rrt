@@ -1,0 +1,24 @@
+<launch>
+
+    <param name="robot_description"
+        textfile="$(find multi_contact_planning)/utils/urdf/cogimon.urdf"/>
+
+    <param name="robot_description_semantic"
+        textfile="$(find multi_contact_planning)/utils/srdf/cogimon.srdf"/>
+
+    <param name="problem_description"
+        textfile="$(find multi_contact_planning)/configs/problem/coman_stack_force.yaml"/>
+
+    <param name="problem_description_rsc"
+        textfile="$(find multi_contact_planning)/configs/problem/control_stability_com_stack.yaml"/>
+
+    <node pkg="multi_contact_planning" type="control_stability_test" name="control_stability_test" output="screen">
+        <param name="solver" value=""/>
+        <param name="is_model_floating_base" value="true"/>
+        <param name="model_type" value="RBDL"/>
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz"
+        args="-d $(find multi_contact_planning)/configs/rviz/control_stability_test.rviz" output="screen"/>
+
+</launch>

@@ -1,0 +1,35 @@
+solver_options:
+    regularization: 1e-2
+    back_end: "qpoases"
+
+stack:
+    - ["Com", "LeftFoot", "RightFoot", "LeftBall", "RightBall"]
+
+
+constraints: ["JointLimits", "VelocityLimits"]
+
+JointLimits:
+    type: "JointLimits"
+
+VelocityLimits:
+    type: "VelocityLimits"
+
+Com:
+    type: "Com"
+    lambda: 1.0
+
+LeftFoot:
+    type: "Cartesian"
+    distal_link: "l_sole"
+
+RightFoot:
+    type: "Cartesian"
+    distal_link: "r_sole"
+
+LeftBall:
+    type: "Cartesian"
+    distal_link: "l_ball_tip"
+
+RightBall:
+    type: "Cartesian"
+    distal_link: "r_ball_tip"
