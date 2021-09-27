@@ -52,4 +52,10 @@ void Configuration::setJointValues(Eigen::VectorXd _q_jnt){
 	q_jnt = _q_jnt; 
 }
 
+void Configuration::print()
+{
+    std::cout << "Floating base: " << q_fb.transpose() << std::endl;
+    std::cout << "Joint position: " << q_jnt.transpose() << std::endl;
+}
+
 

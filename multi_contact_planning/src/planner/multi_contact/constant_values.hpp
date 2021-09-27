@@ -33,7 +33,7 @@ const int ITER_MAX = 100;
 const double GAIN_VEL_FB_X = 150; //500;
 const double GAIN_VEL_FB_Y = 250; //250;
 const double GAIN_VEL_FB_Z = 150; //100;
-const double FORCE_THRES = 40.0;
+const double FORCE_THRES = 70.0;
 const double CoP_LIM_X = 0.09;
 const double CoP_LIM_Y = 0.09;
 

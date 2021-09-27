@@ -2,6 +2,7 @@
 #define CONFIGURATION_H
 
 #include <stdlib.h>
+#include <iostream>
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -22,6 +23,8 @@ class Configuration {
         ~Configuration();
 
         Configuration& operator= (const Configuration& c);
+
+        void print();
 
     	Eigen::Vector3d getFBPosition();
 		Eigen::Vector3d getFBOrientation();

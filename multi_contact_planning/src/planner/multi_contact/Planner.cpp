@@ -1,4 +1,4 @@
-#include "Planner.hpp"  
+#include "Planner.hpp"
 
 // random numbers generators and distributions
 static std::default_random_engine exploitationGenerator;
@@ -537,6 +537,7 @@ Eigen::Affine3d Planner::computeForwardKinematics(Configuration q, EndEffector e
     Eigen::Vector3d rotFB = q.getFBOrientation();
     c.segment(0,3) = posFB;
     c.segment(3,3) = rotFB;
+    std::cout << "c.size: " << c.size() << "     q.size: " << q.getJointValues().size() << std::endl;
     c.tail(n_dof-6) = q.getJointValues();
     planner_model->setJointPosition(c);
     planner_model->update();
