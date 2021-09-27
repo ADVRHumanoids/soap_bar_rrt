@@ -59,6 +59,7 @@ void readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName
         q.setJointValues(c.tail(n_dof-6));
         qList.push_back(q);
     }
+    std::cout << "Loaded " << qList.size() << " configurations" << std::endl;
 }
 
 void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
@@ -114,6 +115,7 @@ void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
 
         sigmaList.push_back(sigma);
     }
+    std::cout << "Loaded " << sigmaList.size() << " stances" << std::endl;
 }
 
 void assign_stance(Contact::Ptr contact)
@@ -139,25 +141,30 @@ void assign_stance(Contact::Ptr contact)
     }
 
     // force reference
-    auto task = ci->getTask(name + "_wrench");
+    auto task = ci->getTask("force_" + name);
     auto task_force = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::ForceTask>(task);
     if (task_force == nullptr)
         ROS_ERROR("Something went wrong while casting to 'ForceTask'");
     task_force->setForceReference(force);
+    std::cout << "Force reference " << name << ": " << task_force->getForceReference().transpose() << std::endl;
 
-    task = ci->getTask(name + "_fc");
+    // friction cones
+    task = ci->getTask("friction_cone_" + name);
     auto task_fc = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task);
     if (task_fc == nullptr)
         ROS_ERROR("Something went wrong while casting to 'FrictionCone'");
-    task_fc->setContactRotationMatrix(pose.linear());
+    Eigen::Affine3d T;
+    model->getPose(name, T);
+    task_fc->setContactRotationMatrix(T.linear());
 
+    // force limits
     Eigen::Vector6d fmin_feet, fmax_feet, fmin_hands, fmax_hands;
     fmin_feet << -1000., -1000., -1000., -1000., -1000., -1000.;
     fmax_feet = -fmin_feet;
     fmin_hands << -1000., -1000., -1000., 0., 0., 0.;
     fmax_hands = -fmin_hands;
 
-    task = ci->getTask(name + "_F_lims");
+    task = ci->getTask("force_lims_" + name);
     auto task_flims = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::ForceLimits>(task);
     if (task_flims == nullptr)
         ROS_ERROR("Something went wrong while casting to 'ForceLimits'");
@@ -170,7 +177,6 @@ void assign_stance(Contact::Ptr contact)
 
 bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
 {
-    ind++;
     if (ind == qList.size())
         ind = 0;
 
@@ -178,10 +184,9 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
 
     // Update configuration and set it to the ModelInterface
     std::cout << "Updating configuration..." << std::endl;
-    Configuration c = qList[ind];
-    q.segment(0,3) = c.getFBPosition();
-    q.segment(3,3) = c.getFBOrientation();
-    q.tail(n_dof-6) = c.getJointValues();
+    q.segment(0,3) = qList[ind].getFBPosition();
+    q.segment(3,3) = qList[ind].getFBOrientation();
+    q.tail(n_dof-6) = qList[ind].getJointValues();
 
     model->setJointPosition(q);
     model->update();
@@ -209,6 +214,7 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
 
     for (auto ee : all_ee)
     {
+        std::cout << "non_active: " << ee << std::endl;
         std::string name;
         switch (ee){
             case (0):
@@ -225,13 +231,15 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
                 break;
         }
 
-        auto task = ci->getTask(name + "_F_lims");
+        auto task = ci->getTask("force_lims_" + name);
         auto task_flims = std::dynamic_pointer_cast<acceleration::ForceLimits>(task);
         if (task_flims == nullptr)
             ROS_ERROR("Something went wrong while casting to 'ForceLimits'");
         task_flims->setLimits(Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
     }
     std::cout << "Actual stance is: " << std::endl;
+    stance.print();
+    ind++;
 
     return true;
 }
@@ -253,35 +261,40 @@ int main(int argc, char *argv[])
     n_dof = model->getJointNum();
 
     // Read qList.txt and sigmaList.txt
+    q.resize(n_dof);
     readFromFileConfigs(qList, "qList");
-    readFromFileStances(stanceList, "stanceList");
+    std::cout << "Configurations loaded successfully!" << std::endl;
+    readFromFileStances(stanceList, "sigmaList");
+    std::cout << "Stances loaded successfully!" << std::endl;
 
     // Load problem
     XBot::Cartesian::RosServerClass::Ptr rsc;
-    std::string problem_description_string;
+    std::string problem_description_string, problem_description_string_rsc;
     if(!nh.getParam("problem_description", problem_description_string))
     {
         ROS_ERROR("problem_description not provided!");
         throw std::runtime_error("problem_description not provided!");
     }
+    if(!nh.getParam("problem_description_rsc", problem_description_string_rsc))
+    {
+        ROS_ERROR("problem_description_rsc not provided!");
+        throw std::runtime_error("problem_description_rsc not provided!");
+    }
 
     auto ik_yaml_goal = YAML::Load(problem_description_string);
+//    auto ik_yaml_rsc = YAML::Load(problem_description_string_rsc);
 
     double ci_period = 1.0;
-    auto ci_ctx = std::make_shared<Context>(
-                std::make_shared<Parameters>(ci_period),
-                model);
+    auto ci_ctx = std::make_shared<Context>(std::make_shared<Parameters>(ci_period), model);
+//    auto ci_ctx_rsc = std::make_shared<Context>(std::make_shared<Parameters>(ci_period), model);
 
     auto ik_prob = ProblemDescription(ik_yaml_goal, ci_ctx);
+//    auto ik_prob_rsc = ProblemDescription(ik_yaml_rsc, ci_ctx_rsc);
 
     ci = CartesianInterfaceImpl::MakeInstance("OpenSot", ik_prob, ci_ctx);
+//    auto ci_rsc = CartesianInterfaceImpl::MakeInstance("OpenSot", ik_prob_rsc, ci_ctx_rsc);
 
-    rsc = std::make_shared<RosServerClass>(ci);
-
-    // Take the first configuration from the qList
-//    cli.waitForExistence();
-//    std_srvs::Empty empty;
-//    cli.call(empty);
+//    rsc = std::make_shared<RosServerClass>(ci);
 
     double time = 0;
     int r = 30;
@@ -291,9 +304,11 @@ int main(int argc, char *argv[])
     {
         if (!ci->update(time, 1./r))
             ROS_WARN("unable to solve!");
+
+//        ci_rsc->update(time, 1./r);
         time += 1./r;
 
-        rsc->run();
+//        rsc->run();
         rs_pub.publishTransforms(ros::Time::now(), "ci");
 
         ros::spinOnce();
