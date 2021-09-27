@@ -96,10 +96,10 @@ if __name__ == '__main__':
     # q_list = q_list_ladder
     # stances = stances_ladder
 
-    # flag = loader.checkStability(cogimon, stances, q_list)
-    # print flag
+    flag = loader.checkStability(cogimon, stances, q_list)
+    print flag
     # raw_input('click to start interpolation')
-    # rospy.sleep(2.)
+    rospy.sleep(2.)
     # exit()
 
     if cogimon.simulation and True:
