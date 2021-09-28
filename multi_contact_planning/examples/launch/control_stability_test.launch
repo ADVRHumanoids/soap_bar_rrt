@@ -12,13 +12,14 @@
     <param name="problem_description_rsc"
         textfile="$(find multi_contact_planning)/configs/problem/control_stability_com_stack.yaml"/>
 
-    <node pkg="multi_contact_planning" type="control_stability_test" name="control_stability_test" output="screen">
-        <param name="solver" value=""/>
-        <param name="is_model_floating_base" value="true"/>
-        <param name="model_type" value="RBDL"/>
-    </node>
+    <node pkg="multi_contact_planning" type="control_stability_test" name="control_stability_test" output="screen"/>
+<!--    <node pkg="multi_contact_planning" type="cartesian_markers" name="cartesian_markers" output="screen"/>-->
 
     <node pkg="rviz" type="rviz" name="rviz"
         args="-d $(find multi_contact_planning)/configs/rviz/control_stability_test.rviz" output="screen"/>
+
+    <node pkg="cartesian_interface" type="marker_spawner" name="marker_spawner" output="screen">
+<!--        <param name="ns" value="cartesian_markers"/>-->
+    </node>
 
 </launch>
