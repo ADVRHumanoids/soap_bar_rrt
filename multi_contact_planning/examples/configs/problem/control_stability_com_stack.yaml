@@ -3,8 +3,8 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["Com", "LeftFoot", "RightFoot", "LeftBall", "RightBall"]
-
+    - ["LeftFoot", "RightFoot", "LeftBall", "RightBall"]
+    - ["Com"]
 
 constraints: ["JointLimits", "VelocityLimits"]
 
