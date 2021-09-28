@@ -146,7 +146,6 @@ void assign_stance(Contact::Ptr contact)
     auto task = ci->getTask("force_" + name);
     auto task_force = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::ForceTask>(task);
     task_force->setForceReference(force);
-    std::cout << "Force reference " << name << ": " << task_force->getForceReference().transpose() << std::endl;
 
     // friction cones
     task = ci->getTask("friction_cone_" + name);
@@ -164,7 +163,7 @@ void assign_stance(Contact::Ptr contact)
 
     task = ci->getTask("force_lims_" + name);
     auto task_flims = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::ForceLimits>(task);
-    if (task_flims == nullptr)
+    if (name == "r_sole" || name == "l_sole")
         task_flims->setLimits(fmin_feet, fmax_feet);
     else
         task_flims->setLimits(fmin_hands, fmax_hands);
@@ -176,10 +175,10 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
     if (ind == qList.size())
         ind = 0;
 
-//    std::cout << "Picking configuration # " << ind << std::endl;
+    std::cout << "Picking configuration # " << ind << std::endl;
 
     // Update configuration and set it to the ModelInterface
-//    std::cout << "Updating configuration..." << std::endl;
+    std::cout << "Updating configuration..." << std::endl;
     q.segment(0,3) = qList[ind].getFBPosition();
     q.segment(3,3) = qList[ind].getFBOrientation();
     q.tail(n_dof-6) = qList[ind].getJointValues();
@@ -189,10 +188,10 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
     ci_com->reset(time_);
 
 
-//    std::cout << "Actual configuration is: " << q.transpose() << std::endl;
+    std::cout << "Actual configuration is: " << q.transpose() << std::endl;
 
     // Update stance and ci tasks
-//    std::cout << "Updating stance..." << std::endl;
+    std::cout << "Updating stance..." << std::endl;
     Stance stance = stanceList[ind];
     auto contacts = stance.getContacts();
     for (auto contact : contacts)
@@ -233,9 +232,50 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
         auto task_flims = std::dynamic_pointer_cast<acceleration::ForceLimits>(task);
         task_flims->setLimits(Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
     }
-//    std::cout << "Actual stance is: " << std::endl;
-//    stance.print();
+    std::cout << "Actual stance is: " << std::endl;
+    stance.print();
     ind++;
+
+    return true;
+}
+
+bool update_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
+{
+    Eigen::VectorXd q_jnt(n_dof);
+    model->getJointPosition(q_jnt);
+
+    Configuration c(n_dof-6);
+    c.setFBPosition(q_jnt.segment(0,3));
+    c.setFBOrientation(q_jnt.segment(3,3));
+    c.setJointValues(q_jnt.tail(n_dof-6));
+
+    qList[ind-1] = c;
+
+    std::cout << "qList updated!" << std::endl;
+
+    for (int i = 0; i < stanceList[ind-1].getContacts().size(); i++)
+    {
+        std::string name;
+        switch (stanceList[ind-1].getContact(i)->getEndEffectorName()){
+            case (0):
+                name = "l_ball_tip";
+                break;
+            case(1):
+                name = "r_ball_tip";
+                break;
+            case(4):
+                name = "l_sole";
+                break;
+            case(5):
+                name = "r_sole";
+                break;
+        }
+        auto task = ci->getTask("force_" + name);
+        auto task_force = std::dynamic_pointer_cast<acceleration::ForceTask>(task);
+
+        auto force = task_force->getForceValue();
+        stanceList[ind-1].getContact(i)->setForce(force);
+    }
 
     return true;
 }
@@ -254,6 +294,7 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "control_stability_test_node");
     ros::NodeHandle nh("");
     ros::ServiceServer srv = nh.advertiseService("change_configuration", &change_service);
+    ros::ServiceServer upd_srv = nh.advertiseService("update_service", &update_service);
 
     ros::Subscriber q_sub;
     q_sub = nh.subscribe("cartesian_markers/com_markers_solution", 10, callback);
