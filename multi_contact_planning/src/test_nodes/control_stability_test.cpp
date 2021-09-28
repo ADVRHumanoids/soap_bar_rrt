@@ -28,11 +28,13 @@ std::string env(std::getenv("ROBOTOLOGY_ROOT"));
 XBot::ModelInterface::Ptr model;
 int n_dof;
 
-XBot::Cartesian::CartesianInterfaceImpl::Ptr ci;
+XBot::Cartesian::CartesianInterfaceImpl::Ptr ci, ci_com;
 
 int ind = 0;
 std::vector<Configuration> qList;
-Eigen::VectorXd q;
+Eigen::VectorXd q, q_jnt;
+
+double time_;
 
 std::vector<Stance>  stanceList;
 
@@ -143,16 +145,12 @@ void assign_stance(Contact::Ptr contact)
     // force reference
     auto task = ci->getTask("force_" + name);
     auto task_force = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::ForceTask>(task);
-    if (task_force == nullptr)
-        ROS_ERROR("Something went wrong while casting to 'ForceTask'");
     task_force->setForceReference(force);
     std::cout << "Force reference " << name << ": " << task_force->getForceReference().transpose() << std::endl;
 
     // friction cones
     task = ci->getTask("friction_cone_" + name);
     auto task_fc = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::FrictionCone>(task);
-    if (task_fc == nullptr)
-        ROS_ERROR("Something went wrong while casting to 'FrictionCone'");
     Eigen::Affine3d T;
     model->getPose(name, T);
     task_fc->setContactRotationMatrix(T.linear());
@@ -167,8 +165,6 @@ void assign_stance(Contact::Ptr contact)
     task = ci->getTask("force_lims_" + name);
     auto task_flims = std::dynamic_pointer_cast<XBot::Cartesian::acceleration::ForceLimits>(task);
     if (task_flims == nullptr)
-        ROS_ERROR("Something went wrong while casting to 'ForceLimits'");
-    if (name == "l_sole" || name == "r_sole")
         task_flims->setLimits(fmin_feet, fmax_feet);
     else
         task_flims->setLimits(fmin_hands, fmax_hands);
@@ -180,21 +176,23 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
     if (ind == qList.size())
         ind = 0;
 
-    std::cout << "Picking configuration # " << ind << std::endl;
+//    std::cout << "Picking configuration # " << ind << std::endl;
 
     // Update configuration and set it to the ModelInterface
-    std::cout << "Updating configuration..." << std::endl;
+//    std::cout << "Updating configuration..." << std::endl;
     q.segment(0,3) = qList[ind].getFBPosition();
     q.segment(3,3) = qList[ind].getFBOrientation();
     q.tail(n_dof-6) = qList[ind].getJointValues();
 
     model->setJointPosition(q);
     model->update();
+    ci_com->reset(time_);
 
-    std::cout << "Actual configuration is: " << q.transpose() << std::endl;
+
+//    std::cout << "Actual configuration is: " << q.transpose() << std::endl;
 
     // Update stance and ci tasks
-    std::cout << "Updating stance..." << std::endl;
+//    std::cout << "Updating stance..." << std::endl;
     Stance stance = stanceList[ind];
     auto contacts = stance.getContacts();
     for (auto contact : contacts)
@@ -233,15 +231,21 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
 
         auto task = ci->getTask("force_lims_" + name);
         auto task_flims = std::dynamic_pointer_cast<acceleration::ForceLimits>(task);
-        if (task_flims == nullptr)
-            ROS_ERROR("Something went wrong while casting to 'ForceLimits'");
         task_flims->setLimits(Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
     }
-    std::cout << "Actual stance is: " << std::endl;
-    stance.print();
+//    std::cout << "Actual stance is: " << std::endl;
+//    stance.print();
     ind++;
 
     return true;
+}
+
+void callback(const sensor_msgs::JointStatePtr& msg)
+{
+    q_jnt = Eigen::VectorXd::Map(msg->position.data(), msg->position.size());
+
+    model->setJointPosition(q_jnt);
+    model->update();
 }
 
 
@@ -250,7 +254,9 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "control_stability_test_node");
     ros::NodeHandle nh("");
     ros::ServiceServer srv = nh.advertiseService("change_configuration", &change_service);
-    ros::ServiceClient cli = nh.serviceClient<std_srvs::Empty>("change_configuration");
+
+    ros::Subscriber q_sub;
+    q_sub = nh.subscribe("cartesian_markers/com_markers_solution", 10, callback);
 
     // Load ModelInterface from param server
     auto cfg = XBot::ConfigOptionsFromParamServer();
@@ -268,7 +274,7 @@ int main(int argc, char *argv[])
     std::cout << "Stances loaded successfully!" << std::endl;
 
     // Load problem
-    XBot::Cartesian::RosServerClass::Ptr rsc;
+    XBot::Cartesian::RosServerClass::Ptr rsc,  rsc_com;
     std::string problem_description_string, problem_description_string_rsc;
     if(!nh.getParam("problem_description", problem_description_string))
     {
@@ -282,33 +288,52 @@ int main(int argc, char *argv[])
     }
 
     auto ik_yaml_goal = YAML::Load(problem_description_string);
-//    auto ik_yaml_rsc = YAML::Load(problem_description_string_rsc);
-
     double ci_period = 1.0;
     auto ci_ctx = std::make_shared<Context>(std::make_shared<Parameters>(ci_period), model);
-//    auto ci_ctx_rsc = std::make_shared<Context>(std::make_shared<Parameters>(ci_period), model);
-
     auto ik_prob = ProblemDescription(ik_yaml_goal, ci_ctx);
-//    auto ik_prob_rsc = ProblemDescription(ik_yaml_rsc, ci_ctx_rsc);
-
     ci = CartesianInterfaceImpl::MakeInstance("OpenSot", ik_prob, ci_ctx);
-//    auto ci_rsc = CartesianInterfaceImpl::MakeInstance("OpenSot", ik_prob_rsc, ci_ctx_rsc);
 
-//    rsc = std::make_shared<RosServerClass>(ci);
+    auto ik_yaml_goal_com = YAML::Load(problem_description_string_rsc);
+    auto ci_ctx_com = std::make_shared<Context>(std::make_shared<Parameters>(ci_period), model);
+    auto ik_prob_com = ProblemDescription(ik_yaml_goal_com, ci_ctx_com);
+    ci_com = CartesianInterfaceImpl::MakeInstance("OpenSot", ik_prob_com, ci_ctx_com);
 
-    double time = 0;
+    RosServerClass::Options opt;
+    opt.ros_namespace = "cartesian_markers";
+    opt.tf_prefix = "ci";
+
+    rsc = std::make_shared<RosServerClass>(ci, opt);
+    rsc_com = std::make_shared<RosServerClass>(ci_com);
+
+    time_ = 0;
     int r = 30;
     ros::Rate rate(r);
 
     while (ros::ok())
     {
-        if (!ci->update(time, 1./r))
-            ROS_WARN("unable to solve!");
+        if (!ci->update(time_, 1./r))
+            ROS_WARN("unable to solve force optimization!");
 
-//        ci_rsc->update(time, 1./r);
-        time += 1./r;
+        ci_com->update(time_, 1./r);
 
-//        rsc->run();
+        /* Integrate solution */
+        Eigen::VectorXd q_jnt, qdot, qddot;
+        model->getJointPosition(q_jnt);
+        model->getJointVelocity(qdot);
+        model->getJointAcceleration(qddot);
+
+        q_jnt += 1./r * qdot + 0.5 * std::pow(1./r, 2) * qddot;
+        qdot += 1./r * qddot;
+
+        model->setJointPosition(q_jnt);
+        model->setJointVelocity(qdot);
+        model->update();
+
+        time_ += 1./r;
+
+        rsc->run();
+        rsc_com->run();
+
         rs_pub.publishTransforms(ros::Time::now(), "ci");
 
         ros::spinOnce();
