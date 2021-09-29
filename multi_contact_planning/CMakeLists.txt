@@ -416,6 +416,10 @@ install(DIRECTORY examples/utils/
     PATTERN ".svn" EXCLUDE
     )
 
+catkin_install_python(PROGRAMS demo_standing_up/xbot_mode_handler.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
 #   # myfile1
