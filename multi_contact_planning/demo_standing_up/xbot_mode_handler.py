@@ -138,7 +138,7 @@ def initStiffness(EmptyRequest):
 
 def setInitStiff(robot):
     stiff = dict()
-    scale = 1.
+    scale = 2.
     stiff = robot.getStiffnessMap()
     stiff['RShSag'] = 700 * scale
     stiff['RShLat'] = 500 * scale

@@ -74,8 +74,8 @@ def checkStability(model, stances, qlist):
         model.model.update()
         model.rspub.publishTransforms('/ci')
 
-        # forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
-        forces = dict(zip(active_links, [np.array(i['ref']['force']) for i in stance]))
+        forces = dict(zip(active_links, [np.append(np.array(i['ref']['force']), [0,0,0]) for i in stance]))
+        # forces = dict(zip(active_links, [np.array(i['ref']['force']) for i in stance]))
         model.cs.setForces(forces)
 
         optimize_torque = True

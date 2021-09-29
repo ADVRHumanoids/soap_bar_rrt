@@ -73,8 +73,10 @@ if __name__ == '__main__':
     stances0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/Paolo/low_knees/sigmaList.txt")
     q_list1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/with_obstacle_3/qList.txt")
     stances1 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/with_obstacle_3/sigmaList.txt")
-    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/double_support/qList.txt")
-    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/double_support/sigmaList.txt")
+    # q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/double_support/qList.txt")
+    # stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/double_support/sigmaList.txt")
+    q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/qList_updated.txt")
+    stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/sigmaList_updated.txt")
     q_list_climbing0 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/wall_climbing/phase0/qList.txt")
     stances_climbing0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/wall_climbing/phase0/sigmaList.txt")
     q_list_climbing1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/wall_climbing/phase1/qList.txt")
@@ -96,10 +98,10 @@ if __name__ == '__main__':
     # q_list = q_list_ladder
     # stances = stances_ladder
 
-    flag = loader.checkStability(cogimon, stances, q_list)
-    print flag
+    # flag = loader.checkStability(cogimon, stances, q_list)
+    # print flag
     # raw_input('click to start interpolation')
-    rospy.sleep(2.)
+    # rospy.sleep(2.)
     # exit()
 
     if cogimon.simulation and True:
@@ -119,7 +121,7 @@ if __name__ == '__main__':
         wall_pose = dict()
 
         base_link = gzhandler.get_link_state('base_link', 'world')
-        wall_pose['position'] = [2.1 - 1.14631 + base_link.link_state.pose.position.x + 0.5, 0, 0]
+        wall_pose['position'] = [2.1 - q_list[0][0] + base_link.link_state.pose.position.x + 0.5, 0, 0]
         Rz = np.array([[np.cos(np.pi/2), -np.sin(np.pi/2), 0], [np.sin(np.pi/2), np.cos(np.pi/2), 0], [0, 0, 1]])
         quat = eigenpy.Quaternion(Rz)
         wall_pose['orientation'] = [quat.x, quat.y, quat.z, quat.w]
