@@ -13,7 +13,8 @@ static std::default_random_engine rotationGenerator;
 static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
 std::string env(getenv("ROBOTOLOGY_ROOT"));
-static std::ofstream foutLogMCP(env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
+//static std::ofstream foutLogMCP(env + "soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
+static std::ofstream foutLogMCP(env + "/PlanningData/logMCP.txt", std::ofstream::trunc);
 
 Planner::Planner(Configuration _qInit,
                  std::vector<EndEffector> _activeEEsInit,
