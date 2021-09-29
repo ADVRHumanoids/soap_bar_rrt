@@ -64,6 +64,21 @@ void readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName
     std::cout << "Loaded " << qList.size() << " configurations" << std::endl;
 }
 
+void writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePath = filePrefix + fileName + ".txt";
+    static std::ofstream fileOut(filePath, std::ofstream::trunc);
+
+    for(int i = 0; i < qList.size(); i++){
+        Configuration q = qList.at(i);
+        Eigen::VectorXd c(n_dof);
+        c.segment(0,3) = q.getFBPosition();
+        c.segment(3,3) = q.getFBOrientation();
+        c.tail(n_dof-6) = q.getJointValues();
+        fileOut << c.transpose() << std::endl;
+    }
+}
+
 void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
     std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
@@ -94,7 +109,7 @@ void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
             T.linear() = Eigen::Matrix3d::Identity(3,3);
 
             getline(fileIn, line); // force
-            Eigen::Vector3d F;
+            Eigen::Vector6d F;
             std::stringstream force_stream(line);
             index = 0;
             while(force_stream >> value){
@@ -118,6 +133,29 @@ void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
         sigmaList.push_back(sigma);
     }
     std::cout << "Loaded " << sigmaList.size() << " stances" << std::endl;
+}
+
+void writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName){
+    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePath = filePrefix + fileName + ".txt";
+    static std::ofstream fileOut(filePath, std::ofstream::trunc);
+
+    for(int i = 0; i < sigmaList.size(); i++){
+        Stance sigma = sigmaList.at(i);
+        fileOut << sigma.getSize() << std::endl;
+        for(int j = 0; j < sigma.getSize(); j++){
+            std::shared_ptr<Contact> c = sigma.getContact(j);
+            EndEffector ee = c->getEndEffectorName();
+            Eigen::Affine3d T = c->getPose();
+            Eigen::VectorXd F = c->getForce();
+            Eigen::Vector3d n = c->getNormal();
+
+            fileOut << ee << std::endl;
+            fileOut << T.translation().transpose() << std::endl;
+            fileOut << F.transpose() << std::endl;
+            fileOut << n.transpose() << std::endl;
+        }
+    }
 }
 
 void assign_stance(Contact::Ptr contact)
@@ -185,8 +223,8 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
 
     model->setJointPosition(q);
     model->update();
-    ci_com->reset(time_);
 
+    ci_com->reset(time_);
 
     std::cout << "Actual configuration is: " << q.transpose() << std::endl;
 
@@ -234,6 +272,9 @@ bool change_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
     }
     std::cout << "Actual stance is: " << std::endl;
     stance.print();
+
+    ci->reset(time_);
+
     ind++;
 
     return true;
@@ -280,24 +321,43 @@ bool update_service(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
     return true;
 }
 
-void callback(const sensor_msgs::JointStatePtr& msg)
+bool reset_service(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-    q_jnt = Eigen::VectorXd::Map(msg->position.data(), msg->position.size());
-
+    if (ind == 0)
+    {
+        ROS_WARN("change configuration and stance before resetting");
+        return false;
+    }
+    // reset configuration
+    Eigen::VectorXd q_jnt(n_dof);
+    q_jnt.segment(0,3) = qList[ind-1].getFBPosition();
+    q_jnt.segment(3,3) = qList[ind-1].getFBOrientation();
+    q_jnt.tail(n_dof-6) = qList[ind-1].getJointValues();
     model->setJointPosition(q_jnt);
     model->update();
-}
 
+    ci_com->reset(time_);
+
+    // reset stance
+    auto contacts = stanceList[ind-1].getContacts();
+    for (auto contact : contacts)
+    {
+        assign_stance(contact);
+    }
+
+    ci->reset(time_);
+
+    return true;
+}
 
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "control_stability_test_node");
     ros::NodeHandle nh("");
-    ros::ServiceServer srv = nh.advertiseService("change_configuration", &change_service);
+    ros::ServiceServer srv = nh.advertiseService("change_service", &change_service);
     ros::ServiceServer upd_srv = nh.advertiseService("update_service", &update_service);
+    ros::ServiceServer reset_srv = nh.advertiseService("reset_service", &reset_service);
 
-    ros::Subscriber q_sub;
-    q_sub = nh.subscribe("cartesian_markers/com_markers_solution", 10, callback);
 
     // Load ModelInterface from param server
     auto cfg = XBot::ConfigOptionsFromParamServer();
@@ -380,6 +440,10 @@ int main(int argc, char *argv[])
         ros::spinOnce();
         rate.sleep();
     }
+
+    // save the updated configurations and stances
+    writeOnFileConfigs(qList, "qList_updated");
+    writeOnFileStances(stanceList, "sigmaList_updated");
 
     return 0;
 }
