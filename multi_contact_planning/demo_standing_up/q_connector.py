@@ -232,8 +232,8 @@ class Connector:
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]
 
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
-        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f)) for c, f in zip(active_links, forces)]
+        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
+        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f)) for c, f in zip(active_links, forces)]
 
 
         non_active_links = self.model.ctrl_points.values()
@@ -267,6 +267,7 @@ class Connector:
         # task.setBaseLink('torso')
         print task.getName()
 
+        self.model.robot.sense()
         self.model.model.syncFromEffort(self.model.robot)
         self.model.model.update()
         self.model.f_est.update()
@@ -656,8 +657,8 @@ class Connector:
         fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
         fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
         if len(links) == 2:
-            fmin_d = np.array([-500., -500., -500., -500., -500., 0.])
-            fmax_d = np.array([500., 500., 500., 500., 500., 0.])
+            fmin_d = np.array([-700., -700., -700., -700., -700., 700.])
+            fmax_d = np.array([700., 700., 700., 700., 700., 700.])
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d - fmin[index])/100. for index in range(len(fmin))]
@@ -671,11 +672,11 @@ class Connector:
             fmax_d = list()
             for index in range(len(links)):
                 if links[index] == 'l_sole' or links[index] == 'r_sole':
-                    fmin_d.append(np.array([-500., -500., -500., -500., -500., -0.]))
-                    fmax_d.append(np.array([500., 500., 500., 500., 500., 0.]))
+                    fmin_d.append(np.array([-700., -700., -700., -700., -700., -700.]))
+                    fmax_d.append(np.array([700., 700., 700., 700., 700., 700.]))
                 else:
-                    fmin_d.append(np.array([-500., -500., -500., 0., 0., 0.]))
-                    fmax_d.append(np.array([500., 500., 500., 0., 0., 0.]))
+                    fmin_d.append(np.array([-700., -700., -700., 0., 0., 0.]))
+                    fmax_d.append(np.array([700., 700., 700., 0., 0., 0.]))
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
@@ -880,7 +881,7 @@ class Connector:
                     self.model.robot.move()
                     rospy.sleep(0.03)
 
-            # rospy.sleep(self.__sleep)
+            rospy.sleep(0.25)
 
             if len(active_links_start) == 3 and len(self.stance_list[i-1]) == 4:
                 if self.__complete_solution: # or self.normal[2] > 0.01:

@@ -369,9 +369,9 @@ int main(int argc, char *argv[])
 
     // Read qList.txt and sigmaList.txt
     q.resize(n_dof);
-    readFromFileConfigs(qList, "qList");
+    readFromFileConfigs(qList, "qList_updated");
     std::cout << "Configurations loaded successfully!" << std::endl;
-    readFromFileStances(stanceList, "sigmaList");
+    readFromFileStances(stanceList, "sigmaList_updated");
     std::cout << "Stances loaded successfully!" << std::endl;
 
     // Load problem
