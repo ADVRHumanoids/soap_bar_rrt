@@ -39,7 +39,7 @@ double time_;
 std::vector<Stance>  stanceList;
 
 void readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;
@@ -65,7 +65,7 @@ void readFromFileConfigs(std::vector<Configuration> &qList, std::string fileName
 }
 
 void writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
 
@@ -80,7 +80,7 @@ void writeOnFileConfigs(std::vector<Configuration> qList, std::string fileName){
 }
 
 void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     std::ifstream fileIn(filePath.c_str());
     std::string line;
@@ -136,7 +136,7 @@ void readFromFileStances(std::vector<Stance> &sigmaList, std::string fileName){
 }
 
 void writeOnFileStances(std::vector<Stance> sigmaList, std::string fileName){
-    std::string filePrefix = env + "/external/soap_bar_rrt/multi_contact_planning/PlanningData/";
+    std::string filePrefix = env + "/PlanningData/";
     std::string filePath = filePrefix + fileName + ".txt";
     static std::ofstream fileOut(filePath, std::ofstream::trunc);
 
@@ -369,9 +369,9 @@ int main(int argc, char *argv[])
 
     // Read qList.txt and sigmaList.txt
     q.resize(n_dof);
-    readFromFileConfigs(qList, "qList_updated");
+    readFromFileConfigs(qList, "qList");
     std::cout << "Configurations loaded successfully!" << std::endl;
-    readFromFileStances(stanceList, "sigmaList_updated");
+    readFromFileStances(stanceList, "sigmaList");
     std::cout << "Stances loaded successfully!" << std::endl;
 
     // Load problem
