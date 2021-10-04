@@ -359,7 +359,7 @@ class Connector:
         [self.model.cs.setContactRotationMatrix(k, j) for k, j in
          zip(active_links, r_goal)]
 
-        self.model.cs.setOptimizeTorque(False)
+        self.model.cs.setOptimizeTorque(True)
 
         self.model.model.setJointPosition(q)
         self.model.model.update()
@@ -375,7 +375,7 @@ class Connector:
         for ind in indices:
             for index in range(len(self.stance_list[iterator + 1])):
                 if self.stance_list[iterator+1][index]['ind'] == ind:
-                    self.stance_list[iterator+1][index]['ref']['force'] = list(forces[indices[ind]][0:3])
+                    self.stance_list[iterator+1][index]['ref']['force'] = list(forces[indices[ind]])
 
     def rotation(self, normal):
 
