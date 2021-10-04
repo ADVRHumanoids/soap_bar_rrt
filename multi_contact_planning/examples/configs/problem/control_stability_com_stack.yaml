@@ -3,8 +3,8 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["LeftFoot", "RightFoot", "LeftBall", "RightBall"]
-    - ["Com"]
+    - ["LeftFoot", "RightFoot", "LeftBall", "RightBall"] #, "RightWrist", "LeftWrist"]
+    - ["Com", "Torso"]
 
 constraints: ["JointLimits", "VelocityLimits"]
 
@@ -33,3 +33,16 @@ LeftBall:
 RightBall:
     type: "Cartesian"
     distal_link: "r_ball_tip"
+
+RightWrist:
+    type: "Cartesian"
+    distal_link: "RWrMot2"
+
+LeftWrist:
+    type: "Cartesian"
+    distal_link: "LWrMot2"
+
+Torso:
+    type: "Cartesian"
+    distal_link: "DWYTorso"
+    indices: [3, 4, 5]
