@@ -135,8 +135,8 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
     }
     */
     
-    std::vector<double> f_max(6,1000.);
-    std::vector<double> f_min(6,-1000.);
+    std::vector<double> f_max = {1000., 1000., 1000., 1000., 1000., 0.};
+    std::vector<double> f_min = {-1000., -1000., -1000., -1000., -1000., 0.};
     std::vector<double> f_max_hands = {1000., 1000., 1000., 0., 0., 0.};
     std::vector<double> f_min_hands = {-1000., -1000., -1000., 0., 0., 0.};
     if(!optimize_torque)
