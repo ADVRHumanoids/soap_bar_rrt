@@ -4,7 +4,7 @@ solver_options:
 
 stack:
     - ["LeftFoot", "RightFoot", "LeftBall", "RightBall"] #, "RightWrist", "LeftWrist"]
-    - ["Com", "Torso"]
+    - ["Com"] #, "Torso"]
 
 constraints: ["JointLimits", "VelocityLimits"]
 
