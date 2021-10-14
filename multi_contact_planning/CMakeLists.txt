@@ -39,6 +39,8 @@ find_package(matlogger2 REQUIRED)
 
 FIND_PACKAGE(PCL 1.7 REQUIRED)
 
+find_package(ros_msg_parser REQUIRED)
+
 #FIND_PACKAGE(PCL 1.7 QUIET COMPONENTS   common
 #                                        filters
 #                                        surface
@@ -239,6 +241,8 @@ target_link_libraries(self_collision_robot ${OMPL_LIBRARIES}
     ${catkin_LIBRARIES}
     matlogger2::matlogger2)
 
+add_executable(logger_node src/nodes/logger.cpp)
+target_link_libraries(logger_node multi_contact_planning ${catkin_LIBRARIES} ${ros_msg_parser_LIBRARIES} matlogger2::matlogger2)
 
 
 # goal_generation node
@@ -348,6 +352,13 @@ install(TARGETS trajectory_interpolation
     )
 
 install(TARGETS cartesian_trajectory_interpolation
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )
+
+
+install(TARGETS logger_node
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
