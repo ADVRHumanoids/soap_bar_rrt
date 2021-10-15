@@ -79,9 +79,9 @@
     <link name="RBall"/>
   </group>
   
-  <group name="head">
+<!--  <group name="head">
       <link name="Head"/>
-  </group>
+  </group>-->
   
   <group name="chains">
     <group name="left_leg"/>
@@ -90,6 +90,17 @@
     <group name="left_arm"/>
     <group name="right_arm"/>
   </group>
+
+  <group name="legs">
+    <group name="left_leg"/>
+    <group name="right_leg"/>
+  </group>
+
+  <group name="arms">
+    <group name="left_arm"/>
+    <group name="right_arm"/>
+  </group>
+
   <group_state group="chains" name="home">
     <joint name="WaistYaw" value="0.0"/>
     <joint name="WaistLat" value="0.0"/>

@@ -49,7 +49,6 @@ def setStiffnessAndDamping(robot, N_ITER, multiplier, chain):
     K3 = robot.leg(1).getStiffness()
     print robot.leg(1).getJointNames()
 
-
     Kd0 = list()
     Kd1 = list()
     Kd2 = list()
@@ -138,7 +137,7 @@ def initStiffness(EmptyRequest):
 
 def setInitStiff(robot):
     stiff = dict()
-    scale = 2.
+    scale = 1.25
     stiff = robot.getStiffnessMap()
     stiff['RShSag'] = 700 * scale
     stiff['RShLat'] = 500 * scale
@@ -180,7 +179,7 @@ def setInitStiff(robot):
             s[name] = (K_s + float(k) / (100 - 1) * (K_e - K_s))
         robot.setStiffness(s)
         robot.move()
-        rospy.sleep(1.0/100)
+        rospy.sleep(2.0/100)
 
 def ankleStiff(EmptyRequest):
     setAnkleStiff(robot)

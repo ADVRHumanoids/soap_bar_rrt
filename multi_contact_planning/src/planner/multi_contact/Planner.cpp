@@ -538,7 +538,6 @@ Eigen::Affine3d Planner::computeForwardKinematics(Configuration q, EndEffector e
     Eigen::Vector3d rotFB = q.getFBOrientation();
     c.segment(0,3) = posFB;
     c.segment(3,3) = rotFB;
-    std::cout << "c.size: " << c.size() << "     q.size: " << q.getJointValues().size() << std::endl;
     c.tail(n_dof-6) = q.getJointValues();
     planner_model->setJointPosition(c);
     planner_model->update();
@@ -888,6 +887,22 @@ bool Planner::distanceCheck(Stance sigmaNew)
         
         if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(R_HAND_D))   
             if(euclideanDistance(pRFoot, pRHandD) < DIST_THRES_MIN || euclideanDistance(pRFoot, pRHandD) > DIST_THRES_MAX) return false;
+
+        if (INIT_INDEX == 1)
+        {
+            if(sigmaNew.isActiveEndEffector(R_HAND_C) && sigmaNew.isActiveEndEffector(L_HAND_C))
+                if(std::sqrt(pow(pLHandC(0), 2) - pow(pRHandC(0), 2)) > DIST_THRES_MAX_HANDS) return false;
+            if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(L_FOOT))
+                if(std::sqrt(pow(pLFoot(0), 2) - pow(pRFoot(0), 2)) > DIST_THRES_MAX_HANDS) return false;
+        }
+
+        if (INIT_INDEX == 2)
+        {
+            if(sigmaNew.isActiveEndEffector(R_HAND_C) && sigmaNew.isActiveEndEffector(L_HAND_C))
+                if(std::sqrt(pow(pLHandC(2), 2) - pow(pRHandC(2), 2)) > WORKSPACE_RADIUS_HAND + 0.1) return false;
+            if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(L_FOOT))
+                if(std::sqrt(pow(pLFoot(0), 2) - pow(pRFoot(0), 2)) > WORKSPACE_RADIUS_FOOT + 0.1) return false;
+        }
     }
         
 //     if(sigmaNew.isActiveEndEffector(L_HAND_C) && sigmaNew.isActiveEndEffector(R_HAND_C))   

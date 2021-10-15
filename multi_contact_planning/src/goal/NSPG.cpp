@@ -113,7 +113,7 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
     int iter = 0;
     int iterMax = ITER_MAX;
     unsigned int counter = 0;
-    unsigned int max_counter = 30;
+    unsigned int max_counter = 0;
     
     initializeBalanceCheck(sigmaSmall);
         
@@ -156,8 +156,6 @@ bool NSPG::sample(double timeout, Stance sigmaSmall, Stance sigmaLarge)
             counter ++;
         else
             counter = 0;
-
-        std::cout << "counter: " << counter << std::endl;
 
         auto toc = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> fsec = toc-tic;

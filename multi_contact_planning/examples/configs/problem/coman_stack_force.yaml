@@ -43,28 +43,28 @@ r_sole_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "r_sole"
-    #weight: [1, 1, 1, 1e-3, 1e-3, 1e-3]
+    #weight: [1, 1, 1, 1e3, 1e3, 1e3]
     #weight: 1e-2
 
 l_sole_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "l_sole"
-    #weight: [1, 1, 1, 1e-3, 1e-3, 1e-3]
+    #weight: [1, 1, 1, 1e3, 1e3, 1e3]
     #weight: 1e-2
 
 r_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "r_ball_tip"
-    #weight: [1, 1, 1, 1e-3, 1e-3, 1e-3]
+    #weight: [1, 1, 1, 1e3, 1e3, 1e3]
     #weight: 1e-2
 
 l_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
     link: "l_ball_tip"
-    #weight: [1, 1, 1, 1e-3, 1e-3, 1e-3]
+    #weight: [1, 1, 1, 1e3, 1e3, 1e3]
     #weight: 1e-2
 
 r_sole_fc:
@@ -85,14 +85,14 @@ r_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "r_ball_tip"
-    friction_coeff: 0.75
+    friction_coeff: 0.5
 #    local: true
 
 l_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "l_ball_tip"
-    friction_coeff: 0.75
+    friction_coeff: 0.5
 #    local: true
 
 r_sole_F_lims:

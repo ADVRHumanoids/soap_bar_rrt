@@ -232,8 +232,10 @@ class Connector:
             active_ind = [ind['ind'] for ind in self.stance_list[i]]
             active_links = [self.model.ctrl_points[j] for j in active_ind]
 
-        # [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
-        [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f)) for c, f in zip(active_links, forces)]
+        if (len(forces[0]) == 3):
+            [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f[0:3] + [0., 0., 0.])) for c, f in zip(active_links, forces)]
+        else:
+            [tasks.ForceTask(self.ci_ff.getTask('force_' + c)).setForceReference(np.array(f)) for c, f in zip(active_links, forces)]
 
 
         non_active_links = self.model.ctrl_points.values()
@@ -265,7 +267,6 @@ class Connector:
 
         task = self.ctrl_tasks[self.__lifted_contact_ind]
         # task.setBaseLink('torso')
-        print task.getName()
 
         self.model.robot.sense()
         self.model.model.syncFromEffort(self.model.robot)
@@ -273,7 +274,7 @@ class Connector:
         self.model.f_est.update()
 
         # velocity desired
-        vel_ref = 0.05
+        vel_ref = 0.01
         vel_task = list()
         for stance in self.stance_list[turn + 1]:
             if stance['ind'] == self.__lifted_contact:
@@ -316,6 +317,8 @@ class Connector:
 
             self.model.robot.sense()
             self.model.model.syncFromEffort(self.model.robot)
+            self.model.model.update()
+            self.model.rspub.publishTransforms('solution')
             self.model.f_est.update()
             rospy.sleep(self.ik_dt)
 
@@ -657,7 +660,7 @@ class Connector:
         fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
         fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
         if len(links) == 2:
-            fmin_d = np.array([-700., -700., -700., -700., -700., 700.])
+            fmin_d = np.array([-700., -700., -700., -700., -700., -700.])
             fmax_d = np.array([700., 700., 700., 700., 700., 700.])
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
@@ -666,7 +669,7 @@ class Connector:
             for k in range(1, 101):
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
-                rospy.sleep(0.5/100)
+                rospy.sleep(1.0/100)
         else:
             fmin_d = list()
             fmax_d = list()
@@ -684,7 +687,7 @@ class Connector:
             for k in range(1, 101):
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(links, fm, fM, fmin, fmax)]
                 [self.ci_ff.getTask('force_lims_' + link).setLimits(m_start + (m * k), M_start + (M * k)) for link, m, M, m_start, M_start in zip(non_active_links, fm_na, fM_na, fmin_na, fmax_na)]
-                rospy.sleep(0.5/100)
+                rospy.sleep(1.0/100)
 
     def run(self):
         s = len(self.q_list) - 1
@@ -964,7 +967,7 @@ class Connector:
                     self.model.robot.setPositionReference(q[6:])
                     self.model.robot.setVelocityReference(dq[6:])
                     self.model.robot.move()
-                    rospy.sleep(0.025)
+                    rospy.sleep(0.04)
                 else:
                     rospy.sleep(0.01)
 
