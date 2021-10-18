@@ -2,7 +2,7 @@ close all
 clear all
 
 % load
-load('wrenches_stand_up.mat')
+load('wrenches__stand_up.mat')
 
 %% Remove first header.stamp
 cartesian_force_estimation_l_ball_tip.header_stamp = cartesian_force_estimation_l_ball_tip.header_stamp - xbotcore_ft_r_leg_ft.header_stamp(1);
@@ -170,6 +170,28 @@ for i = [1 : length(force_opt_pose_r_ball_tip.pose_orientation_x)]
     cartesian_force_estimation_r_ball_tip.wrench_force_x(i) = force(1);
     cartesian_force_estimation_r_ball_tip.wrench_force_y(i) = force(2);
     cartesian_force_estimation_r_ball_tip.wrench_force_z(i) = force(3);
+end
+
+for i = [1 : length(force_opt_pose_l_ball_tip.pose_orientation_x)]
+    rot = force_opt_pose_l_ball_tip.rot(:,:,i);
+    force = [force_opt_force_l_ball_tip_value.wrench_force_x(i);
+             force_opt_force_l_ball_tip_value.wrench_force_y(i);
+             force_opt_force_l_ball_tip_value.wrench_force_z(i)];     
+    force = rot * force;
+    force_opt_force_l_ball_tip_value.wrench_force_x(i) = force(1);
+    force_opt_force_l_ball_tip_value.wrench_force_y(i) = force(2);
+    force_opt_force_l_ball_tip_value.wrench_force_z(i) = force(3);
+end
+
+for i = [1 : length(force_opt_pose_r_ball_tip.pose_orientation_x)]
+    rot = force_opt_pose_r_ball_tip.rot(:,:,i);
+    force = [force_opt_force_r_ball_tip_value.wrench_force_x(i);
+             force_opt_force_r_ball_tip_value.wrench_force_y(i);
+             force_opt_force_r_ball_tip_value.wrench_force_z(i)];     
+    force = rot * force;
+    force_opt_force_r_ball_tip_value.wrench_force_x(i) = force(1);
+    force_opt_force_r_ball_tip_value.wrench_force_y(i) = force(2);
+    force_opt_force_r_ball_tip_value.wrench_force_z(i) = force(3);
 end
 
 %% Plot
