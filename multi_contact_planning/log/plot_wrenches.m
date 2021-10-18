@@ -28,10 +28,16 @@ xbotcore_ft_r_leg_ft.header_stamp = xbotcore_ft_r_leg_ft.header_stamp - xbotcore
 xbotcore_ft_l_leg_ft.wrench_force_x = -xbotcore_ft_l_leg_ft.wrench_force_x;
 xbotcore_ft_l_leg_ft.wrench_force_y = -xbotcore_ft_l_leg_ft.wrench_force_y;
 xbotcore_ft_l_leg_ft.wrench_force_z = -xbotcore_ft_l_leg_ft.wrench_force_z;
+xbotcore_ft_l_leg_ft.wrench_torque_x = -xbotcore_ft_l_leg_ft.wrench_torque_x;
+xbotcore_ft_l_leg_ft.wrench_torque_y = -xbotcore_ft_l_leg_ft.wrench_torque_y;
+xbotcore_ft_l_leg_ft.wrench_torque_z = -xbotcore_ft_l_leg_ft.wrench_torque_z;
 
 xbotcore_ft_r_leg_ft.wrench_force_x = -xbotcore_ft_r_leg_ft.wrench_force_x;
 xbotcore_ft_r_leg_ft.wrench_force_y = -xbotcore_ft_r_leg_ft.wrench_force_y;
 xbotcore_ft_r_leg_ft.wrench_force_z = -xbotcore_ft_r_leg_ft.wrench_force_z;
+xbotcore_ft_r_leg_ft.wrench_torque_x = -xbotcore_ft_r_leg_ft.wrench_torque_x;
+xbotcore_ft_r_leg_ft.wrench_torque_y = -xbotcore_ft_r_leg_ft.wrench_torque_y;
+xbotcore_ft_r_leg_ft.wrench_torque_z = -xbotcore_ft_r_leg_ft.wrench_torque_z;
 
 % Interpolate onto the same dt
 force_opt_pose_l_sole.pose_orientation_x = interp1(force_opt_pose_l_sole.header_stamp, force_opt_pose_l_sole.pose_orientation_x, xbotcore_ft_l_leg_ft.header_stamp);
@@ -73,6 +79,9 @@ force_opt_force_r_ball_tip_value.wrench_force_z = interp1(force_opt_force_r_ball
 force_opt_force_l_sole_value.wrench_force_x = interp1(force_opt_force_l_sole_value.header_stamp, force_opt_force_l_sole_value.wrench_force_x, xbotcore_ft_l_leg_ft.header_stamp);
 force_opt_force_l_sole_value.wrench_force_y = interp1(force_opt_force_l_sole_value.header_stamp, force_opt_force_l_sole_value.wrench_force_y, xbotcore_ft_l_leg_ft.header_stamp);
 force_opt_force_l_sole_value.wrench_force_z = interp1(force_opt_force_l_sole_value.header_stamp, force_opt_force_l_sole_value.wrench_force_z, xbotcore_ft_l_leg_ft.header_stamp);
+force_opt_force_l_sole_value.wrench_torque_x = interp1(force_opt_force_l_sole_value.header_stamp, force_opt_force_l_sole_value.wrench_torque_x, xbotcore_ft_l_leg_ft.header_stamp);
+force_opt_force_l_sole_value.wrench_torque_y = interp1(force_opt_force_l_sole_value.header_stamp, force_opt_force_l_sole_value.wrench_torque_y, xbotcore_ft_l_leg_ft.header_stamp);
+force_opt_force_l_sole_value.wrench_torque_z = interp1(force_opt_force_l_sole_value.header_stamp, force_opt_force_l_sole_value.wrench_torque_z, xbotcore_ft_l_leg_ft.header_stamp);
 
 force_opt_force_r_sole_value.wrench_force_x = interp1(force_opt_force_r_sole_value.header_stamp, force_opt_force_r_sole_value.wrench_force_x, xbotcore_ft_l_leg_ft.header_stamp);
 force_opt_force_r_sole_value.wrench_force_y = interp1(force_opt_force_r_sole_value.header_stamp, force_opt_force_r_sole_value.wrench_force_y, xbotcore_ft_l_leg_ft.header_stamp);
@@ -137,6 +146,31 @@ for i = [1 : length(force_opt_pose_l_sole.pose_orientation_x)]
     xbotcore_ft_l_leg_ft.wrench_force_x(i) = force(1);
     xbotcore_ft_l_leg_ft.wrench_force_y(i) = force(2);
     xbotcore_ft_l_leg_ft.wrench_force_z(i) = force(3);
+    torque = [xbotcore_ft_l_leg_ft.wrench_torque_x(i);
+              xbotcore_ft_l_leg_ft.wrench_torque_y(i);
+              xbotcore_ft_l_leg_ft.wrench_torque_z(i)];
+    torque = rot * torque;
+    xbotcore_ft_l_leg_ft.wrench_torque_x(i) = torque(1);
+    xbotcore_ft_l_leg_ft.wrench_torque_y(i) = torque(2);
+    xbotcore_ft_l_leg_ft.wrench_torque_z(i) = torque(3);    
+end
+
+for i = [1 : length(force_opt_pose_l_sole.pose_orientation_x)]
+    rot = force_opt_pose_l_sole.rot(:,:,i);
+    force = [force_opt_force_l_sole_value.wrench_force_x(i);
+             force_opt_force_l_sole_value.wrench_force_y(i);
+             force_opt_force_l_sole_value.wrench_force_z(i)];     
+    force = rot * force;
+    force_opt_force_l_sole_value.wrench_force_x(i) = force(1);
+    force_opt_force_l_sole_value.wrench_force_y(i) = force(2);
+    force_opt_force_l_sole_value.wrench_force_z(i) = force(3);
+    torque = [force_opt_force_l_sole_value.wrench_torque_x(i);
+              force_opt_force_l_sole_value.wrench_torque_y(i);
+              force_opt_force_l_sole_value.wrench_torque_z(i)];
+    torque = rot * torque;
+    force_opt_force_l_sole_value.wrench_torque_x(i) = torque(1);
+    force_opt_force_l_sole_value.wrench_torque_y(i) = torque(2);
+    force_opt_force_l_sole_value.wrench_torque_z(i) = torque(3);    
 end
 
 for i = [1 : length(force_opt_pose_r_sole.pose_orientation_x)]
@@ -248,3 +282,13 @@ plot(xbotcore_ft_l_leg_ft.header_stamp, force_opt_force_l_ball_tip_value.wrench_
 plot(xbotcore_ft_l_leg_ft.header_stamp, cartesian_force_estimation_l_ball_tip.wrench_force_x, 'r')
 plot(xbotcore_ft_l_leg_ft.header_stamp, cartesian_force_estimation_l_ball_tip.wrench_force_y, 'g')
 plot(xbotcore_ft_l_leg_ft.header_stamp, cartesian_force_estimation_l_ball_tip.wrench_force_z, 'b')
+
+figure(6) 
+hold on
+title("LSoleTorque value vs actual")
+plot(xbotcore_ft_l_leg_ft.header_stamp, force_opt_force_l_sole_value.wrench_torque_x, 'r--', 'LineWidth', 1)
+plot(xbotcore_ft_l_leg_ft.header_stamp, force_opt_force_l_sole_value.wrench_torque_y, 'g--', 'LineWidth', 1)
+plot(xbotcore_ft_l_leg_ft.header_stamp, force_opt_force_l_sole_value.wrench_torque_z, 'b--', 'LineWidth', 1)
+plot(xbotcore_ft_l_leg_ft.header_stamp, xbotcore_ft_l_leg_ft.wrench_torque_x, 'r', 'LineWidth', 1)
+plot(xbotcore_ft_l_leg_ft.header_stamp, xbotcore_ft_l_leg_ft.wrench_torque_y, 'g', 'LineWidth', 1)
+plot(xbotcore_ft_l_leg_ft.header_stamp, xbotcore_ft_l_leg_ft.wrench_torque_z, 'b', 'LineWidth', 1)
