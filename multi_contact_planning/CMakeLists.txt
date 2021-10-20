@@ -39,7 +39,7 @@ find_package(matlogger2 REQUIRED)
 
 FIND_PACKAGE(PCL 1.7 REQUIRED)
 
-find_package(ros_msg_parser REQUIRED)
+find_package(ros_msg_parser QUIET)
 
 #FIND_PACKAGE(PCL 1.7 QUIET COMPONENTS   common
 #                                        filters
@@ -241,8 +241,12 @@ target_link_libraries(self_collision_robot ${OMPL_LIBRARIES}
     ${catkin_LIBRARIES}
     matlogger2::matlogger2)
 
-add_executable(logger_node src/nodes/logger.cpp)
-target_link_libraries(logger_node multi_contact_planning ${catkin_LIBRARIES} ${ros_msg_parser_LIBRARIES} matlogger2::matlogger2)
+if (${ros_msg_parser_FOUND})
+    add_executable(logger_node src/nodes/logger.cpp)
+    target_link_libraries(logger_node multi_contact_planning ${catkin_LIBRARIES} ${ros_msg_parser_LIBRARIES} matlogger2::matlogger2)
+else()
+    message("ros_msg_parser package not found, not installing logger_node")
+endif()
 
 
 # goal_generation node
@@ -357,12 +361,13 @@ install(TARGETS cartesian_trajectory_interpolation
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
-
-install(TARGETS logger_node
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+if (${ros_msg_parser_FOUND})
+    install(TARGETS logger_node
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        )
+endif()
 
 
 #install(TARGETS stability_test
