@@ -25,16 +25,16 @@ const double GOAL_SAMPLER_TIME_BUDGET_COM = 3.0;
 const double RESOLUTION = 0.05;
 
 // centroidal statics
-const double CS_THRES = 0.5*1e-3;
+const double CS_THRES = 0.5*1e-2;
 
 // nspg
 const bool RAND_VEL_CHAINS = false;
 const double DT = 0.001; //0.001
 const int ITER_MAX = 100;
-const double GAIN_VEL_FB_X = 50; //500;
+const double GAIN_VEL_FB_X = 100; //500;
 const double GAIN_VEL_FB_Y = 100; //250;
 const double GAIN_VEL_FB_Z = 50; //100;
-const double FORCE_THRES = 40.0;
+const double FORCE_THRES = 20.0;
 const double CoP_LIM_X = 0.08;
 const double CoP_LIM_Y = 0.035;
 
@@ -45,8 +45,8 @@ const double CoP_LIM_Y = 0.035;
 //const int GOAL_INDEX = 1;
 //const double MU_FRICTION = 0.5;
 //const double MU_FRICTION_HANDS = 0.5;
-//const double WORKSPACE_RADIUS_FOOT = 0.63;
-//const double WORKSPACE_RADIUS_HAND = 0.63;
+//const double WORKSPACE_RADIUS_FOOT = 0.33;
+//const double WORKSPACE_RADIUS_HAND = 0.33;
 //const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 //const bool FREE_YAW_ROTATION = false;
 //const double DIST_HANDS_THRES_MAX = 1.0;

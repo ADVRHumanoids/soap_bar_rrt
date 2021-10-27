@@ -2,7 +2,7 @@ close all
 clear all
 
 % load
-load('wrenches__stand_up.mat')
+load('wrenches_walking.mat')
 
 %% Remove first header.stamp
 cartesian_force_estimation_l_ball_tip.header_stamp = cartesian_force_estimation_l_ball_tip.header_stamp - xbotcore_ft_r_leg_ft.header_stamp(1);

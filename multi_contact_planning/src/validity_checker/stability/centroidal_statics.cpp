@@ -175,7 +175,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
         yaml << YAML::Key << "lib_name" << YAML::Value << libname;
         yaml << YAML::Key << "type" << YAML::Value << "Force";
         yaml << YAML::Key << "link" << YAML::Value << link;
-        std::vector<double> weight = {1e-2, 1e-2, 1e-2, 1e1, 1e1, 1e1};
+        std::vector<double> weight = {1e-2, 1e-2, 1e-2, 1, 1, 1};
         yaml << YAML::Key << "weight" << YAML::Value << weight;
         yaml << YAML::EndMap;
     }

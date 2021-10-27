@@ -198,7 +198,7 @@ void assign_stance(Contact::Ptr contact)
 
     // force limits
     Eigen::Vector6d fmin_feet, fmax_feet, fmin_hands, fmax_hands;
-    fmin_feet << -1000., -1000., -1000., -1000., -1000., -1000.;
+    fmin_feet << -1000., -1000., -1000., -10., -10., 0.;
     fmax_feet = -fmin_feet;
     fmin_hands << -1000., -1000., -1000., 0., 0., 0.;
     fmax_hands = -fmin_hands;
@@ -373,9 +373,9 @@ int main(int argc, char *argv[])
 
     // Read qList.txt and sigmaList.txt
     q.resize(n_dof);
-    readFromFileConfigs(qList, "qList_updated");
+    readFromFileConfigs(qList, "qList");
     std::cout << "Configurations loaded successfully!" << std::endl;
-    readFromFileStances(stanceList, "sigmaList_updated");
+    readFromFileStances(stanceList, "sigmaList");
     std::cout << "Stances loaded successfully!" << std::endl;
 
     // Load problem

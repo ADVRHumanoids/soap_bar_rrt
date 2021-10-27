@@ -69,10 +69,10 @@ if __name__ == '__main__':
     cogimon = cogimon.Cogimon(urdf, srdf, ctrl_points, logged_data, simulation=True)
 
     user = os.getenv('ROBOTOLOGY_ROOT')
-    q_list0 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/Paolo/low_knees/qList.txt")
-    stances0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/Paolo/low_knees/sigmaList.txt")
-    q_list1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/with_obstacle_3/qList.txt")
-    stances1 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/with_obstacle_3/sigmaList.txt")
+    q_list0 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/Paolo/low_knees/#1/qList.txt")
+    stances0 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase0/Paolo/low_knees/#1/sigmaList.txt")
+    q_list1 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/with_obstacle_4/qList.txt")
+    stances1 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase1/with_obstacle_4/sigmaList.txt")
     # q_list2 = loader.readFromFileConfigs(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/qList.txt")
     # stances2 = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/phase2/sigmaList.txt")
     q_list2 = loader.readFromFileConfigs(user + "/PlanningData/qList_updated.txt")
@@ -87,10 +87,10 @@ if __name__ == '__main__':
     stances_ladder = loader.readFromFileStances(user + "/external/soap_bar_rrt/multi_contact_planning/ladder/yaw_constrained/1/sigmaList.txt")
 
 
-    # q_list = q_list0 + q_list1 # + q_list2
-    # stances = stances0 + stances1 # + stances2
-    q_list = q_list2
-    stances = stances2
+    q_list = q_list0 + q_list1 # + q_list2
+    stances = stances0 + stances1 # + stances2
+    # q_list = q_list2
+    # stances = stances2
 
     # wall climbing
     # q_list = q_list_climbing0 #+ q_list_climbing1
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     # rospy.sleep(2.)
     # exit()
 
-    if cogimon.simulation and True:
+    if cogimon.simulation and False:
         gzhandler = grh.GazeboRobotHandler()
         gzhandler.set_robot_posture(np.array(q_list2[0])[6:])
         initial_pos = dict()
@@ -138,16 +138,16 @@ if __name__ == '__main__':
 
     qc = q_connector.Connector(cogimon, q_list, stances)
     # qc.play_all_poses(1)
-    # qc.replaySolution('solution.txt')
+    qc.replaySolution('solution.txt')
     # qc.replaySolution('solution_phase0.csv')
     # qc.replaySolution('solution_phase1.csv')
     # qc.replaySolution('solution_phase2.txt')
-    # exit()
+    exit()
 
     qc.run()
     # raw_input('click to see the whole solution')
     # qc.play_solution(1)
-    # qc.saveSolution()
+    qc.saveSolution()
 
     # cogimon.robot.sense()
     # cogimon.model.syncFrom(cogimon.robot)

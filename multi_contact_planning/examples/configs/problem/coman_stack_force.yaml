@@ -18,11 +18,29 @@ constraints:
     - "r_ball_tip_F_lims"
     - "LeftCoP"
     - "RightCoP"
+    - "NormalTorqueRight"
+    - "NormalTorqueLeft"
 
 Com:
     type: "Com"
     lambda: 1.0
     weight: 1
+
+NormalTorqueRight:
+    lib_name: libcartesio_acceleration_support.so
+    type: "NormalTorque"
+    link: "r_sole"
+    friction_coeff: 0.4
+    x_limits: [-0.05, 0.05]
+    y_limits: [-0.025, 0.025]
+
+NormalTorqueLeft:
+    lib_name: libcartesio_acceleration_support.so
+    type: "NormalTorque"
+    link: "l_sole"
+    friction_coeff: 0.4
+    x_limits: [-0.05, 0.05]
+    y_limits: [-0.025, 0.025]
 
 LeftCoP:
     lib_name: libcartesio_acceleration_support.so

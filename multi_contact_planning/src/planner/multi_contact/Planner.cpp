@@ -891,9 +891,9 @@ bool Planner::distanceCheck(Stance sigmaNew)
         if (INIT_INDEX == 1)
         {
             if(sigmaNew.isActiveEndEffector(R_HAND_C) && sigmaNew.isActiveEndEffector(L_HAND_C))
-                if(std::sqrt(pow(pLHandC(0), 2) - pow(pRHandC(0), 2)) > DIST_THRES_MAX_HANDS) return false;
+                if(std::abs(pRHandC(0) - pLHandC(0)) > DIST_THRES_MAX_HANDS) return false;
             if(sigmaNew.isActiveEndEffector(R_FOOT) && sigmaNew.isActiveEndEffector(L_FOOT))
-                if(std::sqrt(pow(pLFoot(0), 2) - pow(pRFoot(0), 2)) > DIST_THRES_MAX_HANDS) return false;
+                if(std::abs(pRFoot(0) - pLFoot(0)) > DIST_THRES_MAX_FEET) return false;
         }
 
         if (INIT_INDEX == 2)

@@ -56,7 +56,7 @@ class Connector:
         self.__lifted_contact_ind = int()
         self.__lifted_contact_link = str()
         self.__counter = 0
-        self.__complete_solution = False
+        self.__complete_solution = True
         self.__node_counter = 0
         self.__sleep = 0.1
         self.__half = False
@@ -78,12 +78,12 @@ class Connector:
         _planner_config['state_validity_check'] = ['collisions', 'stability']
         _planner_config['collisions'] = {'type': 'CollisionCheck', 'include_environment': 'true'}
         _planner_config['stability'] = {'type': 'CentroidalStatics',
-                                                 'eps': 0.5 * 1e-3, 'friction_coefficient': 0.5,
+                                                 'eps': 0.5 * 1e-2, 'friction_coefficient': 0.5,
                                                  'links': active_links,
                                                  'rotations': quaternions,
                                                  'optimize_torque': optimize_torque,
-                                                 'x_lim_cop': [-0.1, 0.1],
-                                                 'y_lim_cop': [-0.05, 0.05]}
+                                                 'x_lim_cop': [-0.08, 0.08],
+                                                 'y_lim_cop': [-0.035, 0.035]}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
 
@@ -660,8 +660,8 @@ class Connector:
         fmin = [self.ci_ff.getTask('force_lims_' + link).getLimits()[0] for link in links]
         fmax = [self.ci_ff.getTask('force_lims_' + link).getLimits()[1] for link in links]
         if len(links) == 2:
-            fmin_d = np.array([-700., -700., -700., -700., -700., -700.])
-            fmax_d = np.array([700., 700., 700., 700., 700., 700.])
+            fmin_d = np.array([-1000., -1000., -1000., -1000., -1000., -1000.])
+            fmax_d = np.array([1000., 1000., 1000., 1000., 1000., 1000.])
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d - fmin[index])/100. for index in range(len(fmin))]
@@ -675,11 +675,11 @@ class Connector:
             fmax_d = list()
             for index in range(len(links)):
                 if links[index] == 'l_sole' or links[index] == 'r_sole':
-                    fmin_d.append(np.array([-700., -700., -700., -700., -700., -700.]))
-                    fmax_d.append(np.array([700., 700., 700., 700., 700., 700.]))
+                    fmin_d.append(np.array([-1000., -1000., -1000., -1000., -1000., -1000.]))
+                    fmax_d.append(np.array([1000., 1000., 1000., 1000., 1000., 1000.]))
                 else:
-                    fmin_d.append(np.array([-700., -700., -700., 0., 0., 0.]))
-                    fmax_d.append(np.array([700., 700., 700., 0., 0., 0.]))
+                    fmin_d.append(np.array([-1000., -1000., -700., 0., 0., 0.]))
+                    fmax_d.append(np.array([1000., 1000., 700., 0., 0., 0.]))
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
