@@ -69,6 +69,8 @@ class Connector:
         self.__init_stiffness = rospy.ServiceProxy('xbot_mode/init_stiffness', Empty)
         self.__ankle_stiffness = rospy.ServiceProxy('xbot_mode/ankle_stiffness', Empty)
 
+        self.__first = False
+
 
     def callback(self, data):
         self.solution = [list(data.points[index].positions) for index in range(len(data.points))]
@@ -82,8 +84,8 @@ class Connector:
                                                  'links': active_links,
                                                  'rotations': quaternions,
                                                  'optimize_torque': optimize_torque,
-                                                 'x_lim_cop': [-0.08, 0.08],
-                                                 'y_lim_cop': [-0.035, 0.035]}
+                                                 'x_lim_cop': [-0.1, 0.1],
+                                                 'y_lim_cop': [-0.05, 0.05]}
 
         vc_context = vc.ValidityCheckContext(yaml.dump(_planner_config), self.model.model)
 
@@ -678,8 +680,8 @@ class Connector:
                     fmin_d.append(np.array([-1000., -1000., -1000., -1000., -1000., -1000.]))
                     fmax_d.append(np.array([1000., 1000., 1000., 1000., 1000., 1000.]))
                 else:
-                    fmin_d.append(np.array([-1000., -1000., -700., 0., 0., 0.]))
-                    fmax_d.append(np.array([1000., 1000., 700., 0., 0., 0.]))
+                    fmin_d.append(np.array([-1000., -1000., -1000., 0., 0., 0.]))
+                    fmax_d.append(np.array([1000., 1000., 1000., 0., 0., 0.]))
             fm_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmin_na[index]) / 100. for index in range(len(fmin_na))]
             fM_na = [(np.array([0., 0., 0., 0., 0., 0.]) - fmax_na[index]) / 100. for index in range(len(fmax_na))]
             fm = [(fmin_d[index] - fmin[index]) / 100. for index in range(len(fmin))]
@@ -785,6 +787,8 @@ class Connector:
                 print('rotations_goal set')
                 rospy.sleep(self.__sleep)
 
+
+
             if not self.model.state_vc(q_goal):
                 raw_input(['for configuration ', i+1, ' goal pose is not valid, click to compute a new feasible one'])
 
@@ -798,9 +802,14 @@ class Connector:
                     self.q_list[i+1] = q_goal
                     self.setForces(q_goal, i)
 
-            self.model.model.setJointPosition(q_goal)
-            self.model.model.update()
-            self.model.goal_viz.publishMarkers([])
+            if i == s - 1 and not self.__first:
+                q_goal = self.NSPGsample(q_goal, q_start, active_links_start, quat_list_start,
+                                         optimize_torque_start, 20.)
+                self.q_list.insert(i + 1, q_goal)
+                self.stance_list.insert(i + 1, self.stance_list[i + 1])
+                self.setForces(q_goal, i)
+                self.__first = True
+
             self.planner_client.publishStartAndGoal(self.model.model.getEnabledJointNames(), q_start, q_goal)
             # raw_input("Start and Goal poses sent")
             print 'Start and Goal poses set'
@@ -967,9 +976,9 @@ class Connector:
                     self.model.robot.setPositionReference(q[6:])
                     self.model.robot.setVelocityReference(dq[6:])
                     self.model.robot.move()
-                    rospy.sleep(0.04)
+                    rospy.sleep(0.02)
                 else:
-                    rospy.sleep(0.01)
+                    rospy.sleep(0.005)
 
 
             print ('{}% done...'.format(int((float(i)/float(len(self.__solution))) * 100)))
