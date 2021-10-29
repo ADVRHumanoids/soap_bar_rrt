@@ -87,7 +87,7 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
             if (link == "TCP_R" || link == "TCP_L" || link == "l_ball_tip_d" || link == "r_ball_tip_d")
                 continue;
             yaml << link + "_cop";
-//            yaml << link + "_nt";
+            yaml << link + "_nt";
         }
     
     }
@@ -138,8 +138,8 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
     }
     */
     
-    std::vector<double> f_max = {1000., 1000., 1000., 1000., 1000., 0.};
-    std::vector<double> f_min = {-1000., -1000., -1000., -1000., -1000., 0.};
+    std::vector<double> f_max = {1000., 1000., 1000., 1000., 1000., 1000.};
+    std::vector<double> f_min = {-1000., -1000., -1000., -1000., -1000., -1000.};
     std::vector<double> f_max_hands = {1000., 1000., 1000., 0., 0., 0.};
     std::vector<double> f_min_hands = {-1000., -1000., -1000., 0., 0., 0.};
     if(!optimize_torque)
@@ -175,16 +175,18 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
         yaml << YAML::Key << "lib_name" << YAML::Value << libname;
         yaml << YAML::Key << "type" << YAML::Value << "Force";
         yaml << YAML::Key << "link" << YAML::Value << link;
-        std::vector<double> weight = {1e-2, 1e-2, 1e-2, 1, 1, 1};
+        std::vector<double> weight = {1e-3, 1e-3, 1e-3, 1, 1, 1};
         yaml << YAML::Key << "weight" << YAML::Value << weight;
         yaml << YAML::EndMap;
     }
 
     if(_optimize_torque)
     {
-        std::vector<double> x,y;
+        std::vector<double> x,y,x_nt,y_nt;
         x.push_back(_x_lims_cop[0]); x.push_back(_x_lims_cop[1]);
         y.push_back(_y_lims_cop[0]); y.push_back(_y_lims_cop[1]);
+        x_nt = {-0.05, 0.05};
+        y_nt = {-0.025, 0.025};
         for(auto link : contact_links)
         {
             yaml << YAML::Key << link + "_cop";
@@ -203,9 +205,9 @@ YAML::Node CentroidalStatics::createYAMLProblem(const std::vector<std::string>& 
             yaml << YAML::Key << "lib_name" << YAML::Value << libname;
             yaml << YAML::Key << "type" << YAML::Value << "NormalTorque";
             yaml << YAML::Key << "link" << YAML::Value << link;
-            yaml << YAML::Key << "x_limits" << x;
-            yaml << YAML::Key << "y_limits" << y;
-            yaml << YAML::Key << "friction_coeff" << YAML::Value << friction_coeff;
+            yaml << YAML::Key << "x_limits" << x_nt;
+            yaml << YAML::Key << "y_limits" << y_nt;
+            yaml << YAML::Key << "friction_coeff" << YAML::Value << 0.4;
             yaml << YAML::EndMap;
         }
     }
