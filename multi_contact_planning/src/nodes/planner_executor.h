@@ -118,6 +118,10 @@ private:
 
     /////////////////////////////////////////// PF
     
+    void writeOnFileConfigs(std::vector<Configuration> qList, std::ofstream* fileOut);
+    void writeOnFileStances(std::vector<Stance> sigmaList, std::ofstream* fileOut);
+
+    
     typedef std::shared_ptr<Planning::PlanningSceneWrapper> PlanningScenePtr;
 
     void init_load_model();

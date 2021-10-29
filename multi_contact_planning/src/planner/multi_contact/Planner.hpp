@@ -83,6 +83,8 @@ class Planner {
         
         bool checkBalanceAtStance(Stance sigma, Configuration q);
         
+        std::ofstream* foutLogMCP;
+        
 
     public:
 

@@ -14,7 +14,12 @@ static std::uniform_real_distribution<double> rotationDistribution(-1.0, 1.0);
 
 std::string env(getenv("ROBOTOLOGY_ROOT"));
 //static std::ofstream foutLogMCP(env + "soap_bar_rrt/multi_contact_planning/PlanningData/logMCP.txt", std::ofstream::trunc);
-static std::ofstream foutLogMCP(env + "/PlanningData/logMCP.txt", std::ofstream::trunc);
+//static std::ofstream foutLogMCP(env + "/PlanningData/logMCP.txt", std::ofstream::trunc);
+
+
+//std::ofstream* foutLogMCP;
+//foutLogMCP = new std::ofstream(env + "/PlanningData/logMCP.txt", std::ofstream::trunc);
+//std::ofstream foutLogMCP = *foutLogMCP_ptr;
 
 Planner::Planner(Configuration _qInit,
                  std::vector<EndEffector> _activeEEsInit,
@@ -29,6 +34,21 @@ Planner::Planner(Configuration _qInit,
                  ros::NodeHandle& nh):
 _nh(nh)
 {
+    // create logger
+    std::string name_base = env + "/PlanningData/logMCP";
+    int iFile = 0;
+    bool createdFile = false;
+    while(iFile < 50 && !createdFile){
+        std::string name = name_base + std::to_string(iFile) + ".txt";
+        std::ifstream f(name.c_str());
+        if(!f.good()){
+            foutLogMCP = new std::ofstream(name, std::ofstream::trunc);
+            createdFile = true;
+        }
+        else iFile++;        
+    }
+
+    
     // set model, goal generator and cartesian interface
     planner_model = _planner_model;
     NSPG = _NSPG;
@@ -84,7 +104,7 @@ _nh(nh)
     qInit = _qInit;
     
     // create initial stance
-    foutLogMCP << "create initial stance" << std::endl;
+    *foutLogMCP << "create initial stance" << std::endl;
     for(int i = 0; i < _activeEEsInit.size(); i++){
         Eigen::Affine3d T_i = computeForwardKinematics(qInit, _activeEEsInit.at(i));
         Eigen::Vector3d F_i(0.0, 0.0, 0.0);
@@ -98,7 +118,7 @@ _nh(nh)
     qGoal = _qGoal;
 
     // create goal stance
-    foutLogMCP << "create goal stance" << std::endl;
+    *foutLogMCP << "create goal stance" << std::endl;
     for(int i = 0; i < _activeEEsGoal.size(); i++){
         Eigen::Affine3d T_i = computeForwardKinematics(qGoal, _activeEEsGoal.at(i));
         Eigen::Vector3d F_i(0.0, 0.0, 0.0);
@@ -370,6 +390,7 @@ bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Confi
     if(!solutionFound){
         sigmaList.clear();
         qList.clear();
+        *foutLogMCP << "SOLUTION NOT FOUND" << std::endl;
         return false;
     }
 
@@ -397,7 +418,11 @@ bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Confi
 
     std::reverse(sigmaList.begin(), sigmaList.end());
     std::reverse(qList.begin(), qList.end());
-
+    
+    *foutLogMCP << "SOLUTION FOUND" << std::endl;
+    *foutLogMCP << "qList size =  = " << qList.size() << std::endl;
+    *foutLogMCP << "sigmaList size =  = " << sigmaList.size() << std::endl;
+    
     return true;
 }
 
@@ -551,7 +576,7 @@ Eigen::Affine3d Planner::computeForwardKinematics(Configuration q, EndEffector e
 
 void Planner::run(){
 
-    foutLogMCP << "********************************* PLANNING STARTED *********************************" << std::endl;
+    *foutLogMCP << "********************************* PLANNING STARTED *********************************" << std::endl;
     
     float timeIKandCS = 0.0;
     float timeTotal = 0.0;
@@ -579,14 +604,14 @@ void Planner::run(){
 
     while(j < MAX_ITERATIONS && !solutionFound)
         {
-            foutLogMCP << "j = " << j << std::endl;
+            *foutLogMCP << "j = " << j << std::endl;
 
             double pr = exploitationDistribution(exploitationGenerator);
             if(pr < EXPLOITATION_RATE)
             {
                 // exploitation
                 // pick a random contact from sigmaGoal and retrieve the corresponding ee and position
-                foutLogMCP << "+++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++" << std::endl;
+                *foutLogMCP << "+++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++" << std::endl;
                 std::shared_ptr<Contact> c = pickRandomContactFromGoalStance();
                 pk = c->getEndEffectorName();
                 rRand = c->getPose().translation();
@@ -595,14 +620,14 @@ void Planner::run(){
             {
                 // exploration
                 // pick a random ee and a random point
-                foutLogMCP << "+++++++++++++++++++++++++++++ EXPLORATION +++++++++++++++++++++++++++++" << std::endl;
+                *foutLogMCP << "+++++++++++++++++++++++++++++ EXPLORATION +++++++++++++++++++++++++++++" << std::endl;
                 pk = pickRandomEndEffector();
                 rRand = pickRandomPoint();
             }
 
             int iNear = findNearestVertexIndex(pk, rRand);
-            foutLogMCP << "iNear = " << iNear << std::endl;
-            foutLogMCP << "pk = " << pk << std::endl;
+            *foutLogMCP << "iNear = " << iNear << std::endl;
+            *foutLogMCP << "pk = " << pk << std::endl;
             
             if(iNear != -1)
             {
@@ -612,15 +637,15 @@ void Planner::run(){
                 Configuration qNear = vNear->getConfiguration();
 
                 std::vector<EndEffector> activeEEsNear = sigmaNear.retrieveActiveEndEffectors();
-                foutLogMCP << "activeEEsNear.size() = " << activeEEsNear.size() << std::endl;
-                for(int z = 0; z < activeEEsNear.size(); z++) foutLogMCP << activeEEsNear.at(z) << std::endl;
+                *foutLogMCP << "activeEEsNear.size() = " << activeEEsNear.size() << std::endl;
+                for(int z = 0; z < activeEEsNear.size(); z++) *foutLogMCP << activeEEsNear.at(z) << std::endl;
 
                 std::vector<EndEffector> activeEEsDes;
                 Eigen::Affine3d T_k;
                 Eigen::Vector3d n_k;
                 if(sigmaNear.isActiveEndEffector(pk))
                 {
-                    foutLogMCP << "REMOVING A CONTACT" << std::endl;
+                    *foutLogMCP << "REMOVING A CONTACT" << std::endl;
                     adding = false;
                     for(int i = 0; i < activeEEsNear.size(); i++){
                         if(activeEEsNear.at(i) != pk) activeEEsDes.push_back(activeEEsNear.at(i));
@@ -628,7 +653,7 @@ void Planner::run(){
                 }   
                 else
                 {
-                    foutLogMCP << "ADDING A CONTACT" << std::endl;
+                    *foutLogMCP << "ADDING A CONTACT" << std::endl;
                     adding = true;
                     for(int i = 0; i < activeEEsNear.size(); i++) activeEEsDes.push_back(activeEEsNear.at(i));
                     activeEEsDes.push_back(pk);
@@ -639,11 +664,11 @@ void Planner::run(){
                     n_k = getNormalAtPointByIndex(pointIndex);
                 }
 
-                foutLogMCP << "activeEEsDes.size() = " << activeEEsDes.size() << std::endl;
+                *foutLogMCP << "activeEEsDes.size() = " << activeEEsDes.size() << std::endl;
                 for(int i = 0; i < activeEEsDes.size(); i++){
                     EndEffector ee = activeEEsDes.at(i);
                     std::string ee_str = getTaskStringName(ee);
-                    foutLogMCP << ee_str << std::endl;
+                    *foutLogMCP << ee_str << std::endl;
                 }
                 
                 // generate sigmaNew 
@@ -705,13 +730,13 @@ void Planner::run(){
                     //if(SCENARIO == 2) adding = false;
                     adding = adding && FREE_YAW_ROTATION;
                     bool resIKCS = computeIKandCS(sigmaSmall, sigmaLarge, qNear, qNew, adding);
-                    if(resIKCS) foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
-                    else foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
+                    if(resIKCS) *foutLogMCP << "--------------- GS SUCCESS ---------------" << std::endl;
+                    else *foutLogMCP << "--------------- GS FAIL ---------------" << std::endl;
                     
                     auto toc = std::chrono::high_resolution_clock::now();
                     std::chrono::duration<float> fsec = toc-tic;
                     float t_fsec = fsec.count();
-                    foutLogMCP << "GS TIME = " << t_fsec << std::endl;
+                    *foutLogMCP << "GS TIME = " << t_fsec << std::endl;
                     timeIKandCS += t_fsec;
                     
                     if(resIKCS){
@@ -752,6 +777,7 @@ void Planner::run(){
                         foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
                         */
                         
+                        /*
                         // adjust orientations in sigmaNew 
                         retrieveContactPoses(qNew, sigmaNew);
                         // set forces in sigmaNew
@@ -764,10 +790,10 @@ void Planner::run(){
                             Eigen::Vector3d rCoMNew = computeCoM(qNew);
                             double zCoM = rCoMNew(2);
                             
-                            foutLogMCP << "zCoM = " << zCoM << std::endl;
+                            *foutLogMCP << "zCoM = " << zCoM << std::endl;
 
                             if(zCoM > 0.80){
-                                foutLogMCP << "COM HEIGHT REACHED" << std::endl;
+                                *foutLogMCP << "COM HEIGHT REACHED" << std::endl;
                                 solutionFound = true;
                             }
                             else{
@@ -781,7 +807,7 @@ void Planner::run(){
                                 solutionFound = checkBalanceAtStance(sigmaFeet, qNew);
                                 
                                 if(solutionFound){
-                                    foutLogMCP << "DOUBLE SUPPORT REACHED" << std::endl;
+                                    *foutLogMCP << "DOUBLE SUPPORT REACHED" << std::endl;
                                     // set forces in sigmaNew
                                     retrieveContactForces(qNew, sigmaFeet);    
                                     // construct new vertex    
@@ -804,8 +830,29 @@ void Planner::run(){
                         
                         // add vertex
                         tree->addVertex(vNew);
+                        */
+                        
+                         // adjust orientations in sigmaNew 
+                        retrieveContactPoses(qNew, sigmaNew);
+                        // set forces in sigmaNew
+                        retrieveContactForces(qNew, sigmaNew);                    
+                        // construct new vertex    
+                        std::shared_ptr<Vertex> vNew = std::make_shared<Vertex>(sigmaNew, qNew, iNear);
+                        // check if goal is reached             
+                        solutionFound = isGoalStance(vNew);
+                        if(solutionFound){
+                            // adjust orientations in sigmaNew 
+                            retrieveContactPoses(qGoal, sigmaGoal);
+                            // set forces in sigmaNew
+                            retrieveContactForces(qGoal, sigmaGoal);                    
+                            // construct new vertex    
+                            vNew = std::make_shared<Vertex>(sigmaGoal, qGoal, iNear);
+                        }
+                        // add vertex
+                        tree->addVertex(vNew);
+                        
 
-                        foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
+                        *foutLogMCP << "VERTEX # = " << tree->getSize()-1 << std::endl;
                         
                     }
                 }
@@ -822,11 +869,11 @@ void Planner::run(){
     std::chrono::duration<float> fsec_timeTotal = toc_timeTotal-tic_timeTotal;
     timeTotal += fsec_timeTotal.count();
     
-    foutLogMCP << "---------- DATA ----------" << std::endl;
-    foutLogMCP << "timeTotal = " << timeTotal << std::endl;
-    foutLogMCP << "timeIKandCS = " << timeIKandCS << std::endl;
-    foutLogMCP << "iters = " << j << std::endl;
-    foutLogMCP << "tree size =  = " << tree->getSize() << std::endl;
+    *foutLogMCP << "---------- DATA ----------" << std::endl;
+    *foutLogMCP << "timeTotal = " << timeTotal << std::endl;
+    *foutLogMCP << "timeIKandCS = " << timeIKandCS << std::endl;
+    *foutLogMCP << "iters = " << j << std::endl;
+    *foutLogMCP << "tree size =  = " << tree->getSize() << std::endl;
     
 }
 
@@ -997,18 +1044,18 @@ bool Planner::checkBalanceAtStance(Stance sigma, Configuration q){
 
 void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList){
     
-    foutLogMCP << "STABILITY CHECK" << std::endl;
+    *foutLogMCP << "STABILITY CHECK" << std::endl;
     
     Configuration qCurr;
     Stance sigmaCurr;
     for(int i = 0; i < qList.size(); i++){
-        foutLogMCP << "************************************ i = " << i << std::endl;
+        *foutLogMCP << "************************************ i = " << i << std::endl;
         
         qCurr = qList.at(i);
         sigmaCurr = sigmaList.at(i);
         Eigen::Vector3d rCoMCurr = computeCoM(qCurr);
     
-        foutLogMCP << "rCoM = " << rCoMCurr.transpose() << std::endl;
+        *foutLogMCP << "rCoM = " << rCoMCurr.transpose() << std::endl;
         
         Eigen::VectorXd cNew(n_dof);
         Eigen::Vector3d posFB = qCurr.getFBPosition();
@@ -1061,11 +1108,11 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
             }
         }
         
-        if (_cs->checkStability(CS_THRES)) foutLogMCP << "CS CHECK TRUE" << std::endl;
-        else foutLogMCP << "CS CHECK FALSE" << std::endl;  
+        if (_cs->checkStability(CS_THRES)) *foutLogMCP << "CS CHECK TRUE" << std::endl;
+        else *foutLogMCP << "CS CHECK FALSE" << std::endl;  
         
         /////////////////////// TRANSITION CHECK
-        if(i == 0) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+        if(i == 0) *foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
         else{
             Stance sigmaPrev = sigmaList.at(i-1);
             Stance sigmaLarge, sigmaSmall;
@@ -1122,8 +1169,8 @@ void Planner::checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configu
                 }
             }
             
-            if (_cs->checkStability(CS_THRES)) foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
-            else foutLogMCP << "TRANSITION CHECK FALSE" << std::endl; 
+            if (_cs->checkStability(CS_THRES)) *foutLogMCP << "TRANSITION CHECK TRUE" << std::endl;
+            else *foutLogMCP << "TRANSITION CHECK FALSE" << std::endl; 
             
         }
     }
@@ -1293,7 +1340,7 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
     double time_budget = GOAL_SAMPLER_TIME_BUDGET;
     Eigen::VectorXd c(n_dof);
     if (!NSPG->getIKSolver()->solve()){
-        foutLogMCP << "STOP BEFORE NSPG" << std::endl;
+        *foutLogMCP << "STOP BEFORE NSPG" << std::endl;
         return false;
     }
     
@@ -1375,7 +1422,7 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
     
     if (_cs->checkStability(CS_THRES))
     {
-        foutLogMCP << "----------STABILITY CHECK PASSED----------" << std::endl;
+        *foutLogMCP << "----------STABILITY CHECK PASSED----------" << std::endl;
         
         std::map<std::string, Eigen::Vector6d> FCmap = _cs->getForces();
         for(int i = 0; i < sigma.getSize(); i++)
@@ -1390,7 +1437,7 @@ void Planner::retrieveContactForces(Configuration q, Stance &sigma){
             wrench = FCmap.find(contact_link)->second;
             sigma.getContact(i)->setForce(wrench);
             
-            foutLogMCP << "---wrench = " << wrench.transpose() << std::endl;
+            *foutLogMCP << "---wrench = " << wrench.transpose() << std::endl;
         }
     }
 }

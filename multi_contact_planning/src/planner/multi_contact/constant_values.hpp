@@ -25,58 +25,58 @@ const double GOAL_SAMPLER_TIME_BUDGET_COM = 3.0;
 const double RESOLUTION = 0.05;
 
 // centroidal statics
-const double CS_THRES = 0.5*1e-3;
+const double CS_THRES = 0.05;//0.5*1e-3;
 
 // nspg
 const bool RAND_VEL_CHAINS = false;
-const double DT = 0.001; //0.001
+const double DT = 0.005; //0.001
 const int ITER_MAX = 100;
-const double GAIN_VEL_FB_X = 50; //500;
-const double GAIN_VEL_FB_Y = 100; //250;
-const double GAIN_VEL_FB_Z = 50; //100;
+const double GAIN_VEL_FB_X = 500; //50
+const double GAIN_VEL_FB_Y = 250; //100
+const double GAIN_VEL_FB_Z = 100; //50
 const double FORCE_THRES = 40.0;
 const double CoP_LIM_X = 0.08;
 const double CoP_LIM_Y = 0.035;
 
+/*
+// SCENARIO 1, PHASE 0 --> OK, sim in folder
+const int SCENARIO = 1;
+const int INIT_INDEX = 0;
+const int GOAL_INDEX = 1;
+const double MU_FRICTION = 0.5;
+const double MU_FRICTION_HANDS = 0.5;
+const double WORKSPACE_RADIUS_FOOT = 0.33;
+const double WORKSPACE_RADIUS_HAND = 0.33;
+const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
+const bool FREE_YAW_ROTATION = false;
+const double DIST_HANDS_THRES_MAX = 1.0;
+const double DIST_THRES_MIN = 0.60;
+const double DIST_THRES_MAX = 1.80;
+*/
 
-// SCENARIO 1, PHASE 0
-//const int SCENARIO = 1;
-//const int INIT_INDEX = 0;
-//const int GOAL_INDEX = 1;
-//const double MU_FRICTION = 0.5;
-//const double MU_FRICTION_HANDS = 0.5;
-//const double WORKSPACE_RADIUS_FOOT = 0.63;
-//const double WORKSPACE_RADIUS_HAND = 0.63;
-//const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
-//const bool FREE_YAW_ROTATION = false;
-//const double DIST_HANDS_THRES_MAX = 1.0;
-//const double DIST_THRES_MIN = 0.60;
-//const double DIST_THRES_MAX = 1.80;
+/*
+// SCENARIO 1, PHASE 1 --> OK, sim in folder
+const int SCENARIO = 1;
+const int INIT_INDEX = 1;
+const int GOAL_INDEX = 2;
+const double MU_FRICTION = 0.5;
+const double MU_FRICTION_HANDS = 0.5;
+const double WORKSPACE_RADIUS_FOOT = 0.23;
+const double WORKSPACE_RADIUS_HAND = 0.23;
+const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
+const bool FREE_YAW_ROTATION = false;
+const double DIST_HANDS_THRES_MAX = 1.0;
+const double DIST_THRES_MIN = 0.50;
+const double DIST_THRES_MAX = 1.0;
+*/  
 
-
-
-// SCENARIO 1, PHASE 1
-//const int SCENARIO = 1;
-//const int INIT_INDEX = 1;
-//const int GOAL_INDEX = 2;
-//const double MU_FRICTION = 0.5;
-//const double MU_FRICTION_HANDS = 0.5;
-//const double WORKSPACE_RADIUS_FOOT = 0.23;
-//const double WORKSPACE_RADIUS_HAND = 0.23;
-//const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
-//const bool FREE_YAW_ROTATION = false;
-//const double DIST_HANDS_THRES_MAX = 1.0;
-//const double DIST_THRES_MIN = 0.50;
-//const double DIST_THRES_MAX = 1.0;
-
-
-
-// SCENARIO 1, PHASE 2
+/*
+// SCENARIO 1, PHASE 2 --> OK, sim in folder
 const int SCENARIO = 1;
 const int INIT_INDEX = 2;
 const int GOAL_INDEX = 3;
-const double MU_FRICTION = 0.4;
-const double MU_FRICTION_HANDS = 0.4;
+const double MU_FRICTION = 0.5;
+const double MU_FRICTION_HANDS = 0.5;
 const double WORKSPACE_RADIUS_FOOT = 0.3;
 const double WORKSPACE_RADIUS_HAND = 0.8;
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
@@ -84,7 +84,7 @@ const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
 const double DIST_THRES_MIN = 0.60;
 const double DIST_THRES_MAX = 1.80;
-
+*/
 
 /* //LUCA
 const int SCENARIO = 1;
@@ -112,8 +112,8 @@ const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
 */
 
-/*
-// SCENARIO 2, PHASE 0
+
+// SCENARIO 2, PHASE 0 --> OK, sim in folder
 const int SCENARIO = 2;
 const int INIT_INDEX = 0;
 const int GOAL_INDEX = 1;
@@ -126,26 +126,26 @@ const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
 const double DIST_THRES_MIN = 0.60;
 const double DIST_THRES_MAX = 1.80;
-*/
 
-/*
-// SCENARIO 2, PHASE 1
+
+/* 
+// SCENARIO 2, PHASE 1 --> OK, sim in folder
 const int SCENARIO = 2;
 const int INIT_INDEX = 1;
 const int GOAL_INDEX = 2;
 const double MU_FRICTION = 0.8;  
 const double MU_FRICTION_HANDS = 0.8;  
-const double WORKSPACE_RADIUS_FOOT = 0.23;    
+const double WORKSPACE_RADIUS_FOOT = 0.23;      
 const double WORKSPACE_RADIUS_HAND = 0.23;  
 const double GOAL_SAMPLER_TIME_BUDGET = 3.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
 const double DIST_THRES_MIN = 0.60;
 const double DIST_THRES_MAX = 1.80;
-*/
+*/ 
 
-/*
-// SCENARIO 3
+/* 
+// SCENARIO 3 --> OK, sim in folder
 const int SCENARIO = 3;
 const int INIT_INDEX = 0;
 const int GOAL_INDEX = 2;
@@ -158,6 +158,6 @@ const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
 const double DIST_THRES_MIN = 0.60;
 const double DIST_THRES_MAX = 1.80;
-*/
+*/ 
 
 #endif

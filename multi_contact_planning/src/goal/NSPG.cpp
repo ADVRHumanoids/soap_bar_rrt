@@ -220,12 +220,12 @@ void NSPG::initializeBalanceCheck(Stance sigma){
 }
 
 
-//bool NSPG::balanceCheck(Stance sigma){
-//    if (_cs->checkStability(CS_THRES)) return true;
-//    return false;
-//}
+bool NSPG::balanceCheck(Stance sigma){
+    if (_cs->checkStability(CS_THRES)) return true;
+    return false;
+}
 
-
+/*
 bool NSPG::balanceCheck(Stance sigma){
     bool check = _cs->checkStability(CS_THRES);
 
@@ -243,3 +243,4 @@ bool NSPG::balanceCheck(Stance sigma){
     }
     return check;
 }
+*/
