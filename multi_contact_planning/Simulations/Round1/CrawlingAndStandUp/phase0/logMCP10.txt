@@ -1,0 +1,1767 @@
+create initial stance
+----------STABILITY CHECK PASSED----------
+---wrench = 2.73483e-07 5.37601e-09     315.159   0.0957965    -4.97778           0
+---wrench = 5.71184e-07 1.08795e-08     315.139   0.0957965    -4.97778           0
+create goal stance
+----------STABILITY CHECK PASSED----------
+---wrench = 0.000670656 -0.00101999     197.868           0           0           0
+---wrench = 7.71211e-05 -0.00100949     196.931           0           0           0
+---wrench = -4.51133e-05  0.000984798      117.982      2.33797     -9.43837            0
+---wrench = -0.000681834   0.00104507      117.516      2.33799     -9.40113            0
+********************************* PLANNING STARTED *********************************
+j = 0
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 1
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+--------------- GS SUCCESS ---------------
+GS TIME = 0.107292
+----------STABILITY CHECK PASSED----------
+---wrench = -0.00126298 4.48944e-05     265.152     21.2123      21.212           0
+---wrench = -2.37464e-05 -0.000206465      212.261       16.981      16.9808            0
+---wrench =  0.000727012 -0.000183171      152.885            0            0            0
+VERTEX # = 1
+j = 1
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 0
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0369264
+----------STABILITY CHECK PASSED----------
+---wrench = -0.000704535  5.45718e-05      256.709     -19.8197      20.5366            0
+---wrench = -0.000904439  3.06979e-05      260.772     -19.8197      20.8616            0
+---wrench = 0.000870128 0.000401685     112.817           0           0           0
+VERTEX # = 2
+j = 2
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 0
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 3
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 0
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 4
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 5
+j = 5
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 0
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 6
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 7
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 0
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 8
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 2
+pk = 1
+activeEEsNear.size() = 3
+4
+5
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_L
+TCP_R
+--------------- GS SUCCESS ---------------
+GS TIME = 0.037531
+----------STABILITY CHECK PASSED----------
+---wrench = -0.00109782  -0.0016219     207.857    -2.92956     16.6285           0
+---wrench = 0.000494037 -0.00160616     208.457    -2.92967     16.6766           0
+---wrench = 0.000826987  0.00229964     88.9808           0           0           0
+---wrench =   6.342e-05 0.000911015     125.003           0           0           0
+VERTEX # = 3
+j = 9
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 1
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0278346
+----------STABILITY CHECK PASSED----------
+---wrench =  0.00045085 0.000581258     174.612     1.24338     13.9689           0
+---wrench = -0.000112096  0.000576918      174.357      1.24339      13.9485            0
+---wrench =  0.000826979 -0.000829093      138.585            0            0            0
+---wrench =  -0.00107599 -0.000610359      142.744            0            0            0
+VERTEX # = 4
+j = 10
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 1
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+j = 11
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 4
+pk = 1
+activeEEsNear.size() = 4
+4
+5
+1
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0189136
+----------STABILITY CHECK PASSED----------
+---wrench = 1.59794e-05 0.000473681     212.937     -17.035    -7.42205           0
+---wrench = 0.000487275 0.000546729     227.982    -18.2386    -7.42202           0
+---wrench = -0.000413996  -0.00125565      189.379            0            0            0
+VERTEX # = 5
+j = 12
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 13
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 3
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0175486
+----------STABILITY CHECK PASSED----------
+---wrench = -0.00521842 -0.00557386     403.955     -18.636     32.3163           0
+---wrench = 0.00304386 0.00467505    57.3895          0          0          0
+---wrench =  0.00235745 0.000877356     168.953           0           0           0
+VERTEX # = 6
+j = 14
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 15
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 3
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+j = 16
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 3
+pk = 0
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0178023
+----------STABILITY CHECK PASSED----------
+---wrench = -1.48386e-05 -0.000315362      232.878      18.6302      4.83276            0
+---wrench =  8.31891e-05 -0.000258462      217.887      17.4309       4.8328            0
+---wrench = 0.000219482 0.000567137     179.532           0           0           0
+VERTEX # = 7
+j = 17
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 4
+pk = 1
+activeEEsNear.size() = 4
+4
+5
+1
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 18
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 4
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+1
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0226405
+----------STABILITY CHECK PASSED----------
+---wrench = 0.00165108 0.00736464    351.831   -28.1462    28.1468          0
+---wrench =  0.00425871 -0.00251872     147.059           0           0           0
+---wrench = -0.00589161 -0.00507996     131.408           0           0           0
+VERTEX # = 8
+j = 19
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 20
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 5
+pk = 1
+activeEEsNear.size() = 3
+4
+5
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_L
+TCP_R
+--------------- GS SUCCESS ---------------
+GS TIME = 1.64113
+----------STABILITY CHECK PASSED----------
+---wrench = 0.000384616 -0.00238249     169.387   0.0430252      13.551           0
+---wrench =   0.0021262 -0.00238395     169.378   0.0430321     13.5503           0
+---wrench =  -0.0037105 0.000932172      151.66           0           0           0
+---wrench = 0.00100988  0.0034167    139.872          0          0          0
+VERTEX # = 9
+j = 21
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 0
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0188091
+----------STABILITY CHECK PASSED----------
+---wrench = 0.0260207 0.0260047    342.18   27.3741  -27.3747         0
+---wrench = -0.00968269    0.025407     159.739      12.779    -12.7793           0
+---wrench = -0.0164586 -0.0515911    128.378          0          0          0
+VERTEX # = 10
+j = 22
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 0
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+j = 23
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 5
+pk = 1
+activeEEsNear.size() = 3
+4
+5
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_L
+TCP_R
+j = 24
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 25
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 0
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 26
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 4
+pk = 1
+activeEEsNear.size() = 4
+4
+5
+1
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 27
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 28
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0176961
+----------STABILITY CHECK PASSED----------
+---wrench = 0.00959834 -0.0301842    346.726   -27.7378    27.7384          0
+---wrench =  -0.0333467 0.000735194     135.831           0           0           0
+---wrench = 0.0235427 0.0290897   147.741         0         0         0
+VERTEX # = 11
+j = 29
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 3
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+j = 30
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 7
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0357298
+----------STABILITY CHECK PASSED----------
+---wrench = 0.000807225  1.7687e-05     181.687     4.33985     14.5349           0
+---wrench =  0.000833322 -0.000174392      180.797      4.34054      14.4638            0
+---wrench =  0.000100166 -3.67994e-05      148.742            0            0            0
+---wrench = -0.00174949 0.000202143     119.073           0           0           0
+VERTEX # = 12
+j = 31
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 32
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 5
+pk = 1
+activeEEsNear.size() = 3
+4
+5
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_L
+TCP_R
+j = 33
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 0
+pk = 0
+activeEEsNear.size() = 2
+4
+5
+ADDING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_L
+j = 34
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = -1
+pk = 4
+j = 35
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 11
+pk = 5
+activeEEsNear.size() = 3
+4
+0
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_L
+TCP_R
+r_sole
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0188848
+----------STABILITY CHECK PASSED----------
+---wrench =  0.00168469 -0.00221668       171.2   0.0108982      13.696           0
+---wrench = -0.00346872 0.000706037     150.699           0           0           0
+---wrench = 0.00128699 0.00289143    137.203          0          0          0
+---wrench = -0.000315898  -0.00221539      171.197    0.0108103      13.6958            0
+VERTEX # = 13
+j = 36
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 6
+pk = 5
+activeEEsNear.size() = 3
+4
+0
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_L
+TCP_R
+r_sole
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0241782
+----------STABILITY CHECK PASSED----------
+---wrench = 0.000209651  -0.0013998     222.582    -2.29767     17.8066           0
+---wrench = 0.00467366 0.00205185    69.7275          0          0          0
+---wrench =  0.00238659 0.000839094     114.953           0           0           0
+---wrench = -0.00733576 -0.00148675     223.034    -2.29904     17.8428           0
+VERTEX # = 14
+j = 37
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 8
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0240167
+----------STABILITY CHECK PASSED----------
+---wrench = 0.00334989 0.00129713    205.292    3.98404    16.4233          0
+---wrench = 0.00639488 -0.0018212    104.383          0          0          0
+---wrench = -0.00321396  -0.0012083     116.127           0           0           0
+---wrench = -0.00704748  0.00148395     204.496     3.98604     16.3597           0
+VERTEX # = 15
+j = 38
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0198409
+----------STABILITY CHECK PASSED----------
+---wrench = -0.0193361 0.00167869    196.848          0          0          0
+---wrench = 0.0145624 0.0172467   107.314         0         0         0
+---wrench =   0.004624 -0.0191225    326.136      8.211    26.0908          0
+VERTEX # = 16
+j = 39
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+j = 40
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 7
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+j = 41
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 0
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+j = 42
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 43
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 8
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+j = 44
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 45
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 14
+pk = 0
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0188696
+----------STABILITY CHECK PASSED----------
+---wrench = -0.000189348  -0.00118726      236.929      18.9542      10.9738            0
+---wrench =  0.000465226 -0.000224755      173.283            0            0            0
+---wrench = -0.00029423  0.00142827     220.086     17.6069     10.9742           0
+VERTEX # = 17
+j = 46
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 47
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 7
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+j = 48
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 49
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 12
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+1
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0181941
+----------STABILITY CHECK PASSED----------
+---wrench =   0.00399514 -0.000296313      332.803      12.4325      26.6242            0
+---wrench =   0.00160115 -0.000411154      207.096            0            0            0
+---wrench =  -0.0056384 0.000713516     90.3977           0           0           0
+VERTEX # = 18
+j = 50
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 8
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+j = 51
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 8
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+j = 52
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 53
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 54
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 18
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0271689
+----------STABILITY CHECK PASSED----------
+---wrench =   0.00165855 -3.77288e-05      182.247      4.67172      14.5798            0
+---wrench =   0.00062579 -6.69669e-05      148.426            0            0            0
+---wrench = -0.00114574 0.000202053     118.307           0           0           0
+---wrench = -0.00114101 -0.00010142     181.317     4.67213     14.5054           0
+VERTEX # = 19
+j = 55
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 56
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 57
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 3
+pk = 0
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+j = 58
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 59
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 60
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 61
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 62
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 17
+pk = 0
+activeEEsNear.size() = 3
+4
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+r_sole
+TCP_L
+j = 63
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 0
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+j = 64
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 8
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+j = 65
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+j = 66
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 67
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 7
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+j = 68
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 69
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 70
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 6
+pk = 5
+activeEEsNear.size() = 3
+4
+0
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_L
+TCP_R
+r_sole
+j = 71
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+j = 72
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 73
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 74
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 11
+pk = 5
+activeEEsNear.size() = 3
+4
+0
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_L
+TCP_R
+r_sole
+j = 75
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 76
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 77
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 78
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 79
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 80
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 81
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 82
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 14
+pk = 0
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+j = 83
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 84
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 4
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+1
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+TCP_L
+j = 85
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 86
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 87
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 14
+pk = 0
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+j = 88
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 89
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 15
+pk = 0
+activeEEsNear.size() = 4
+4
+1
+0
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0366829
+----------STABILITY CHECK PASSED----------
+---wrench = -0.0105585 -0.0150887    328.039    26.2431   -4.79344          0
+---wrench =  0.00656724 -0.00234236     108.779           0           0           0
+---wrench = 0.00358688  0.0173489     193.48    15.4784   -4.80099          0
+VERTEX # = 20
+j = 90
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 4
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+1
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+TCP_L
+j = 91
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 7
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+j = 92
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 93
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 3
+pk = 0
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+j = 94
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 95
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 0
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+j = 96
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 97
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 98
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 18
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+j = 99
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 20
+pk = 0
+activeEEsNear.size() = 3
+4
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+r_sole
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0250099
+----------STABILITY CHECK PASSED----------
+---wrench =   0.00236574 -0.000941093      186.117      3.23585      14.8893            0
+---wrench =  0.00619726 0.000346046     137.947           0           0           0
+---wrench =  -0.00142007 -0.000763948      185.472      3.23671      14.8378            0
+---wrench = -0.00719786  0.00139222     120.761           0           0           0
+VERTEX # = 21
+j = 100
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 9
+pk = 0
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+r_sole
+TCP_R
+j = 101
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 4
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_L
+TCP_R
+r_sole
+j = 102
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 103
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 104
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 21
+pk = 4
+activeEEsNear.size() = 4
+4
+1
+5
+0
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+TCP_R
+r_sole
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0187746
+----------STABILITY CHECK PASSED----------
+---wrench = 0.0398444  -0.02914   90.3527         0         0         0
+---wrench = -0.00177484  -0.0113189     384.726      30.778     30.7781           0
+---wrench = -0.0381795  0.0405619    155.219          0          0          0
+VERTEX # = 22
+j = 105
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 11
+pk = 5
+activeEEsNear.size() = 3
+4
+0
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_L
+TCP_R
+r_sole
+j = 106
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 6
+pk = 5
+activeEEsNear.size() = 3
+4
+0
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_L
+TCP_R
+r_sole
+j = 107
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 8
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+j = 108
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 15
+pk = 0
+activeEEsNear.size() = 4
+4
+1
+0
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+j = 109
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 7
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+j = 110
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 111
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 0
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_R
+r_sole
+j = 112
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 3
+pk = 5
+activeEEsNear.size() = 4
+4
+5
+0
+1
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+TCP_R
+j = 113
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 16
+pk = 4
+activeEEsNear.size() = 3
+0
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_L
+TCP_R
+r_sole
+l_sole
+j = 114
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 18
+pk = 5
+activeEEsNear.size() = 3
+4
+1
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+TCP_L
+r_sole
+j = 115
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 17
+pk = 0
+activeEEsNear.size() = 3
+4
+1
+5
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+TCP_R
+r_sole
+TCP_L
+j = 116
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 117
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 13
+pk = 1
+activeEEsNear.size() = 4
+4
+0
+1
+5
+REMOVING A CONTACT
+activeEEsDes.size() = 3
+l_sole
+TCP_L
+r_sole
+j = 118
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 22
+pk = 4
+activeEEsNear.size() = 3
+1
+5
+0
+ADDING A CONTACT
+activeEEsDes.size() = 4
+TCP_R
+r_sole
+TCP_L
+l_sole
+j = 119
++++++++++++++++++++++++++++++ EXPLOITATION +++++++++++++++++++++++++++++
+iNear = 10
+pk = 0
+activeEEsNear.size() = 3
+4
+5
+1
+ADDING A CONTACT
+activeEEsDes.size() = 4
+l_sole
+r_sole
+TCP_R
+TCP_L
+--------------- GS SUCCESS ---------------
+GS TIME = 0.0344783
+----------STABILITY CHECK PASSED----------
+---wrench =   0.00115289 -0.000135825      171.597      1.74009      13.7277            0
+---wrench =   0.00120751 -0.000142277      171.241       1.7401      13.6992            0
+---wrench = -0.000549582  1.37591e-06      142.429            0            0            0
+---wrench = -0.00193944 5.30901e-05     145.031           0           0           0
+----------STABILITY CHECK PASSED----------
+---wrench = 0.000676004  -0.0010283     197.868           0           0           0
+---wrench = 0.000116171  -0.0010178     196.931           0           0           0
+---wrench = -3.13375e-05  0.000917514      117.982      2.33798     -9.43838            0
+---wrench = -0.000651208  0.000977785      117.516        2.338     -9.40114            0
+VERTEX # = 23
+---------- DATA ----------
+timeTotal = 2.73702
+timeIKandCS = 2.26595
+iters = 120
+tree size =  = 24
+SOLUTION FOUND
+qList size =  = 7
+sigmaList size =  = 7
