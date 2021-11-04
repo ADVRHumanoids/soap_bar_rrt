@@ -337,6 +337,8 @@ int Planner::findNearestVertexIndex(EndEffector pk, Eigen::Vector3d r){
             if( sigma_parent.getSize() < sigma.getSize() && sigma.getContact(sigma.getSize()-1)->getEndEffectorName() == pk) c5 = false;
         }
         
+        //if(SCENARIO == 1 && INIT_INDEX == 0) c5 = true;
+        
         bool allConditionsRespected = c1 && c2 && c3 && c4 && c5;
 
         if(allConditionsRespected){
@@ -1331,7 +1333,7 @@ bool Planner::computeIKandCS(Stance sigmaSmall, Stance sigmaLarge, Configuration
     cPrev.segment(3,3) = rotFB;
     cPrev.tail(n_dof-6) = qNear.getJointValues();
     
-    if(SCENARIO == 2 || SCENARIO == 3) NSPG->getIKSolver()->getModel()->getRobotState("home", cPrev);
+    //if(SCENARIO == 2 || SCENARIO == 3) NSPG->getIKSolver()->getModel()->getRobotState("home", cPrev);
     
     NSPG->getIKSolver()->getModel()->setJointPosition(cPrev);
     NSPG->getIKSolver()->getModel()->update();

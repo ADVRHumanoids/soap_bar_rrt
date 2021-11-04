@@ -922,17 +922,17 @@ TCP_R:  0.339316
 TCP_L:  0.339311
 0.0360668
  0.306357
-
     */
-    
+
+   
     //LF
     pos_ref.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
     //RF
     pos_ref.push_back(Eigen::Vector3d(0.0, -0.2, 0.0));
     //LH
-    pos_ref.push_back(Eigen::Vector3d(0.34, 0.04, 0.31));
+    pos_ref.push_back(Eigen::Vector3d(0.289424, -0.2, 1.3));
     //RH
-    pos_ref.push_back(Eigen::Vector3d(0.34, -0.24, 0.5));
+    pos_ref.push_back(Eigen::Vector3d(0.289424, 0.0580331, 0.9984));
 
     std::cout << "setting..." << std::endl;
     for (auto pos : pos_ref)
