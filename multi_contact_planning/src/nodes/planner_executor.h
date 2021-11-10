@@ -133,6 +133,7 @@ private:
     void init_planner_srv();
     void init_goal_generator();
     void init_interpolator();
+    void init_load_point_cloud();
 
     // PF ///////////////////////////////////////////////////////////////////////
     void setReferences(std::vector<std::string> active_tasks, std::vector<Eigen::Affine3d> ref_tasks, Eigen::VectorXd q_ref);

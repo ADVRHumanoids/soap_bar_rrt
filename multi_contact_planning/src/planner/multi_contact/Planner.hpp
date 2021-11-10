@@ -58,6 +58,8 @@ class Planner {
         Eigen::VectorXd qmin, qmax;
         
         bool solutionFound;
+        
+        Eigen::VectorXd performance_data;
 
         bool isGoalStance(std::shared_ptr<Vertex> v);
         Eigen::Vector3d pickRandomPoint();
@@ -105,7 +107,9 @@ class Planner {
         void checkSolutionCS(std::vector<Stance> sigmaList, std::vector<Configuration> qList);
         
         void clearTree();
-
+        
+        Eigen::VectorXd getPerformanceData();
+        
 };
 
 #endif

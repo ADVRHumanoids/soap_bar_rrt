@@ -1,7 +1,7 @@
 #ifndef CONSTANT_VALUES_HPP
 #define	CONSTANT_VALUES_HPP
 
-const int NUM_SIM = 1;
+const int NUM_SIM = 10;
 
 // planner
 const int MAX_ITERATIONS = 5000; //10000;
@@ -74,8 +74,9 @@ const double DIST_THRES_MAX = 1.0;
 const double GAIN_VEL_FB_X = 50;
 const double GAIN_VEL_FB_Y = 100;
 const double GAIN_VEL_FB_Z = 50;
-*/
+*/ 
 
+/* 
 // SCENARIO 1, PHASE 2 --> OK, sim in folder
 const int SCENARIO = 1;
 const int INIT_INDEX = 2;
@@ -92,6 +93,7 @@ const double DIST_THRES_MAX = 1.80;
 const double GAIN_VEL_FB_X = 100; //50;
 const double GAIN_VEL_FB_Y = 200; //100;
 const double GAIN_VEL_FB_Z = 100; //50;
+*/ 
 
 /* 
 // SCENARIO 2, PHASE 0 --> OK, sim in folder
@@ -112,7 +114,7 @@ const double GAIN_VEL_FB_Y = 100;
 const double GAIN_VEL_FB_Z = 50;
 */  
 
-/* 
+/*
 // SCENARIO 2, PHASE 1 --> OK, sim in folder
 const int SCENARIO = 2;
 const int INIT_INDEX = 1;
@@ -131,7 +133,7 @@ const double GAIN_VEL_FB_Y = 100;
 const double GAIN_VEL_FB_Z = 50;
 */
 
-/* 
+
 // SCENARIO 3 --> OK, sim in folder
 const int SCENARIO = 3;
 const int INIT_INDEX = 0;
@@ -148,6 +150,6 @@ const double DIST_THRES_MAX = 1.80;
 const double GAIN_VEL_FB_X = 50;
 const double GAIN_VEL_FB_Y = 100;
 const double GAIN_VEL_FB_Z = 50;
-*/
+
 
 #endif

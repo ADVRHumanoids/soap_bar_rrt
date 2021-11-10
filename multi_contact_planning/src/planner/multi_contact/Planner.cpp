@@ -38,7 +38,7 @@ _nh(nh)
     std::string name_base = env + "/PlanningData/logMCP";
     int iFile = 0;
     bool createdFile = false;
-    while(iFile < 50 && !createdFile){
+    while(iFile < 100 && !createdFile){
         std::string name = name_base + std::to_string(iFile) + ".txt";
         std::ifstream f(name.c_str());
         if(!f.good()){
@@ -425,6 +425,8 @@ bool Planner::retrieveSolution(std::vector<Stance> &sigmaList, std::vector<Confi
     *foutLogMCP << "qList size =  = " << qList.size() << std::endl;
     *foutLogMCP << "sigmaList size =  = " << sigmaList.size() << std::endl;
     
+    performance_data(5) = qList.size();
+    
     return true;
 }
 
@@ -579,6 +581,9 @@ Eigen::Affine3d Planner::computeForwardKinematics(Configuration q, EndEffector e
 void Planner::run(){
 
     *foutLogMCP << "********************************* PLANNING STARTED *********************************" << std::endl;
+    
+    performance_data = Eigen::VectorXd(6);
+    performance_data.setZero();
     
     float timeIKandCS = 0.0;
     float timeTotal = 0.0;
@@ -877,6 +882,11 @@ void Planner::run(){
     *foutLogMCP << "iters = " << j << std::endl;
     *foutLogMCP << "tree size =  = " << tree->getSize() << std::endl;
     
+    if(solutionFound) performance_data(0) = 100.0;
+    performance_data(1) = timeTotal;
+    performance_data(2) = timeIKandCS;
+    performance_data(3) = j;
+    performance_data(4) = tree->getSize();
 }
 
 
@@ -1606,5 +1616,9 @@ void Planner::retrieveContactPoses(Configuration q, Stance &sigma){
 
 void Planner::clearTree(){
     tree->clear();
+}
+
+Eigen::VectorXd Planner::getPerformanceData(){
+    return performance_data;
 }
 

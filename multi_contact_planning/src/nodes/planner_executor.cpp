@@ -183,6 +183,7 @@ PlannerExecutor::PlannerExecutor():
     init_load_config();
     std::cout << " INITIALIZED 1" << std::endl;
     init_load_model();
+    init_load_point_cloud();
     std::cout << " INITIALIZED 2" << std::endl;
     init_load_planner();
     std::cout << " INITIALIZED 3" << std::endl;
@@ -194,6 +195,7 @@ PlannerExecutor::PlannerExecutor():
     init_trj_publisiher();
     init_planner_srv();
     init_interpolator();
+    
 
     index_config = -1;
     plan.clear();
@@ -213,6 +215,16 @@ void PlannerExecutor::run()
     
     
     //_ros_server->run();
+}
+
+void PlannerExecutor::init_load_point_cloud()
+{ 
+    _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n);
+    _pc_manager->computeNormals(0.2);
+    _pc_manager->fromNormaltoMarkerArray(0.2);
+
+    _pc_pub = _n.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1, true);
+    _pc_pub.publish(_pc_manager->getPCLPointCloud());
 }
 
 void PlannerExecutor::init_load_model()
@@ -282,8 +294,6 @@ void PlannerExecutor::init_load_model()
         q2 << 1.37916, -0.0452019, 0.741769, 2.77419, 1.73201, -2.80766, 0.199848, -1.59846, 0.147274, 0.806989, -0.627383, 0.0335152, -0.362771, -1.46298, -0.411544, 0.620283, -0.566775, 0.0729728, 0.238731, 0.0357891, -0.89306, 0.403775, 0.511243, -0.411215, 0.566071, -0.042367, -0.485923, -0.794039, -0.437168, -0.477672, -0.848047, 0.157772, 0.335566, 0.0409536;
         
         q3 << 1.32281, -0.171222, 0.830531, 0.704922, 0.506857, -0.492552, -0.0952847, -1.16194, 0.435238, 0.543048, -0.0204751, -0.135461, -0.966372, -1.72108, -0.321558, 1.10161, -0.0781724, 0.0562917, -0.173261, 0.384311, -0.379017, 0.553359, 0.313132, -1.23383, 0.730766, -0.394947, 0.109519, -0.67749, -0.0527484, -0.286616, -1.89373, 0.620612, 0.425717, 0.233216;
-
-
     }
     
     if(SCENARIO == 2){
@@ -366,13 +376,14 @@ void PlannerExecutor::init_load_model()
     std::cout << "TCP_L: " << T.translation() << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////////////  
-
+    /*
     _pc_manager = std::make_shared<XBot::Planning::PointCloudManager>(_n);
     _pc_manager->computeNormals(0.2);
     _pc_manager->fromNormaltoMarkerArray(0.2);
 
     _pc_pub = _n.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1, true);
     _pc_pub.publish(_pc_manager->getPCLPointCloud());
+    */
 }
 
 void PlannerExecutor::init_load_config()
@@ -1567,13 +1578,49 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
 
         if(runPlanner){
             
+            //std::ofstream* fout_LogTot;
+            //std::string name_LogTot = env + "/PlanningData/AAA_LogTot.txt";
+            //fout_LogTot = new std::ofstream(name_LogTot, std::ofstream::trunc);
+            Eigen::VectorXd sum_data(6);
+            sum_data.setZero();
+            int success = 0;
+            
+            std::ofstream* fout_LogTot;
+            std::string name_LogTot_base = env + "/PlanningData/AAA_LogTot";
+            int iLogTot = 0;
+            bool createdFileLogTot = false;
+            while(iLogTot < 50 && !createdFileLogTot){
+                std::string name_LogTot = name_LogTot_base + std::to_string(iLogTot) + ".txt";
+                std::ifstream f(name_LogTot.c_str());
+                if(!f.good()){
+                    fout_LogTot = new std::ofstream(name_LogTot, std::ofstream::trunc);
+                    createdFileLogTot = true;
+                }
+                else iLogTot++;        
+            }
+
             for(int i = 0; i < NUM_SIM; i++){
+                
+                /////////////////////////////////////////////
+                init_load_config();
+                init_load_model();
+                //init_load_planner();
+                //init_load_validity_checker();
+                init_goal_generator();
+                init_subscribe_start_goal();
+                //init_trj_publisiher();
+                //init_planner_srv();
+                //init_interpolator();
+                /////////////////////////////////////////////
+                
+                /*
                 _model->setJointPosition(q_init);
                 _model->update();
                 _start_model->setJointPosition(q_init);
                 _start_model->update();
                 _goal_model->setJointPosition(q_goal);
                 _goal_model->update();
+                */
                 
                 // create files 
                 std::ofstream* fout_q;
@@ -1582,7 +1629,7 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
                 std::string name_sigma_base = env + "/PlanningData/sigmaList";
                 int iFile = 0;
                 bool createdFile = false;
-                while(iFile < 50 && !createdFile){
+                while(iFile < 100 && !createdFile){
                     std::string name_q = name_q_base + std::to_string(iFile) + ".txt";
                     std::string name_sigma = name_sigma_base + std::to_string(iFile) + ".txt";
                     std::ifstream f(name_q.c_str());
@@ -1626,7 +1673,32 @@ bool PlannerExecutor::planner_service(multi_contact_planning::CartesioPlanner::R
                 
                 //delete planner;
                 planner->clearTree();
+                
+                Eigen::VectorXd performance_data = planner->getPerformanceData();
+                *fout_LogTot << "success = " << performance_data(0) << std::endl;
+                *fout_LogTot << "planning time = " << performance_data(1) << std::endl;
+                *fout_LogTot << "tran gen time = " << performance_data(2) << std::endl;
+                *fout_LogTot << "iterations = " << performance_data(3) << std::endl;
+                *fout_LogTot << "tree size = " << performance_data(4) << std::endl;
+                *fout_LogTot << "sol size = " << performance_data(5) << std::endl;
+                if(performance_data(0) > 0.0){
+                    success++;
+                    sum_data = sum_data + performance_data;
+                }
+                
             }
+            
+            *fout_LogTot << "****************************** FINAL DATA ******************************" << std::endl;
+            Eigen::VectorXd avg_data;
+            if(success > 0.0) avg_data = sum_data/success;
+            else avg_data.setZero();
+            *fout_LogTot << "TOT success = " << success << std::endl;
+            *fout_LogTot << "AVG planning time = " << avg_data(1) << std::endl;
+            *fout_LogTot << "AVG tran gen time = " << avg_data(2) << std::endl;
+            *fout_LogTot << "AVG iterations = " << avg_data(3) << std::endl;
+            *fout_LogTot << "AVG tree size = " << avg_data(4) << std::endl;
+            *fout_LogTot << "AVG sol size = " << avg_data(5) << std::endl;
+                
         }
         else{
             sigmaList.clear();
