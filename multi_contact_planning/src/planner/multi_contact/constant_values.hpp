@@ -38,15 +38,15 @@ const double FORCE_THRES = 40.0;
 const double CoP_LIM_X = 0.08;
 const double CoP_LIM_Y = 0.035;
 
- 
+/*
 // SCENARIO 1, PHASE 0 --> OK, sim in folder
 const int SCENARIO = 1;
 const int INIT_INDEX = 0;
 const int GOAL_INDEX = 1;
 const double MU_FRICTION = 0.5;
 const double MU_FRICTION_HANDS = 0.5;
-const double WORKSPACE_RADIUS_FOOT = 0.33;
-const double WORKSPACE_RADIUS_HAND = 0.33;
+const double WORKSPACE_RADIUS_FOOT = 0.23;
+const double WORKSPACE_RADIUS_HAND = 0.23;
 const double GOAL_SAMPLER_TIME_BUDGET = 1.0;
 const bool FREE_YAW_ROTATION = false;
 const double DIST_HANDS_THRES_MAX = 1.0;
@@ -55,7 +55,7 @@ const double DIST_THRES_MAX = 1.80;
 const double GAIN_VEL_FB_X = 50;
 const double GAIN_VEL_FB_Y = 20;
 const double GAIN_VEL_FB_Z = 50;
- 
+*/ 
 
 /*
 // SCENARIO 1, PHASE 1 --> OK, sim in folder
@@ -95,7 +95,7 @@ const double GAIN_VEL_FB_Y = 200; //100;
 const double GAIN_VEL_FB_Z = 100; //50;
 */ 
 
-/* 
+  
 // SCENARIO 2, PHASE 0 --> OK, sim in folder
 const int SCENARIO = 2;
 const int INIT_INDEX = 0;
@@ -112,7 +112,7 @@ const double DIST_THRES_MAX = 1.80;
 const double GAIN_VEL_FB_X = 50;
 const double GAIN_VEL_FB_Y = 100;
 const double GAIN_VEL_FB_Z = 50;
-*/  
+   
 
 /*
 // SCENARIO 2, PHASE 1 --> OK, sim in folder
