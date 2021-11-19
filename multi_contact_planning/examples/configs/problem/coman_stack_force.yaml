@@ -3,7 +3,7 @@ solver_options:
     back_end: "qpoases"
 
 stack:
-    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"]
+    - ["l_sole_wrench", "r_sole_wrench", "r_ball_tip_wrench", "l_ball_tip_wrench"] #, "UnderactuatedDyn"]
     # - ["Com"]
 
 constraints:
@@ -12,14 +12,22 @@ constraints:
     - "r_sole_fc"
     - "l_ball_tip_fc"
     - "r_ball_tip_fc"
+    #- "l_ball_tip_d_fc"
+    #- "r_ball_tip_d_fc"
     - "l_sole_F_lims"
     - "r_sole_F_lims"
     - "l_ball_tip_F_lims"
     - "r_ball_tip_F_lims"
+    #- "l_ball_tip_d_F_lims"
+    #- "r_ball_tip_d_F_lims"
     - "LeftCoP"
     - "RightCoP"
     - "NormalTorqueRight"
     - "NormalTorqueLeft"
+
+definitions:
+ - &left_ee l_ball_tip
+ - &right_ee r_ball_tip
 
 Com:
     type: "Com"
@@ -46,15 +54,15 @@ LeftCoP:
     lib_name: libcartesio_acceleration_support.so
     type: "CoP"
     link: "l_sole"
-    x_limits: [-0.1, 0.1]
-    y_limits: [-0.05, 0.05]
+    x_limits: [-0.04, 0.04]
+    y_limits: [-0.04, 0.04]
 
 RightCoP:
     lib_name: libcartesio_acceleration_support.so
     type: "CoP"
     link: "r_sole"
-    x_limits: [-0.1, 0.1]
-    y_limits: [-0.05, 0.05]
+    x_limits: [-0.04, 0.04]
+    y_limits: [-0.04, 0.04]
 
 
 r_sole_wrench:
@@ -74,14 +82,28 @@ l_sole_wrench:
 r_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
-    link: "r_ball_tip"
+    link: *right_ee
     #weight: [1, 1, 1, 1e3, 1e3, 1e3]
     #weight: 1e-2
 
 l_ball_tip_wrench:
     lib_name: libcartesio_acceleration_support.so
     type: "Force"
-    link: "l_ball_tip"
+    link: *left_ee
+    #weight: [1, 1, 1, 1e3, 1e3, 1e3]
+    #weight: 1e-2
+
+r_ball_tip_d_wrench:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Force"
+    link: "r_ball_tip_d"
+    #weight: [1, 1, 1, 1e3, 1e3, 1e3]
+    #weight: 1e-2
+
+l_ball_tip_d_wrench:
+    lib_name: libcartesio_acceleration_support.so
+    type: "Force"
+    link: "l_ball_tip_d"
     #weight: [1, 1, 1, 1e3, 1e3, 1e3]
     #weight: 1e-2
 
@@ -89,28 +111,42 @@ r_sole_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "r_sole"
-    friction_coeff: 0.75
+    friction_coeff: 0.91
 #    local: true
 
 l_sole_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
     link: "l_sole"
-    friction_coeff: 0.75
+    friction_coeff: 0.91
 #    local: true
 
 r_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
-    link: "r_ball_tip"
-    friction_coeff: 0.5
+    link: *right_ee
+    friction_coeff: 0.91
 #    local: true
 
 l_ball_tip_fc:
     lib_name: libcartesio_acceleration_support.so
     type: "FrictionCone"
-    link: "l_ball_tip"
-    friction_coeff: 0.5
+    link: *left_ee
+    friction_coeff: 0.91
+#    local: true
+
+r_ball_tip_d_fc:
+    lib_name: libcartesio_acceleration_support.so
+    type: "FrictionCone"
+    link: "r_ball_tip_d"
+    friction_coeff: 1.15
+#    local: true
+
+l_ball_tip_d_fc:
+    lib_name: libcartesio_acceleration_support.so
+    type: "FrictionCone"
+    link: "l_ball_tip_d"
+    friction_coeff: 1.15
 #    local: true
 
 r_sole_F_lims:
@@ -130,14 +166,28 @@ l_sole_F_lims:
 r_ball_tip_F_lims:
     lib_name: libcartesio_acceleration_support.so
     type: "ForceLimits"
-    link: "r_ball_tip"
+    link: *right_ee
     min: [-1000, -1000, -1000, 0, 0, 0]
     max: [1000, 1000, 1000,  0, 0, 0]
 
 l_ball_tip_F_lims:
     lib_name: libcartesio_acceleration_support.so
     type: "ForceLimits"
-    link: "l_ball_tip"
+    link: *left_ee
+    min: [-1000, -1000, -1000, 0, 0, 0]
+    max: [1000, 1000, 1000, 0, 0, 0]
+
+r_ball_tip_d_F_lims:
+    lib_name: libcartesio_acceleration_support.so
+    type: "ForceLimits"
+    link: "r_ball_tip_d"
+    min: [-1000, -1000, -1000, 0, 0, 0]
+    max: [1000, 1000, 1000,  0, 0, 0]
+
+l_ball_tip_d_F_lims:
+    lib_name: libcartesio_acceleration_support.so
+    type: "ForceLimits"
+    link: "l_ball_tip_d"
     min: [-1000, -1000, -1000, 0, 0, 0]
     max: [1000, 1000, 1000, 0, 0, 0]
 
@@ -163,8 +213,8 @@ LHandFlims:
 UnderactuatedDyn:
     lib_name: libcartesio_acceleration_support.so
     type: "DynamicFeasibility"
-    contacts: ["l_sole", "r_sole", "l_ball_tip", "r_ball_tip"]
-    #weight: [1, 1, 1, 1e-1, 1e-1, 1e-1]
+    contacts: ["l_sole", "r_sole", *left_ee, *right_ee]
+    weight: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1]
     dynamics: false
 
 postural:
